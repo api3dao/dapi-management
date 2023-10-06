@@ -11,7 +11,6 @@
     "prettier:check": "prettier --check \"./**/*.{js,ts,md,json,sol}\"",
     "prettier": "prettier --write \"./**/*.{js,ts,md,json,sol}\"",
     "test": "hardhat test --parallel",
-    "test:extended": "EXTENDED_TEST=TRUE hardhat test --parallel",
     "test:coverage": "hardhat coverage",
     "test:gas": "REPORT_GAS=TRUE hardhat test"
   },
@@ -26,13 +25,14 @@
     "@openzeppelin/merkle-tree": "^1.0.5",
     "@typechain/ethers-v5": "^10.1.0",
     "@typechain/hardhat": "^6.1.2",
+    "chai": "^4.2.0",
     "dotenv": "^16.0.3",
     "eslint": "^8.30.0",
     "hardhat": "^2.17.4",
-    "chai": "^4.2.0",
     "hardhat-gas-reporter": "^1.0.8",
     "prettier": "^2.8.1",
     "prettier-plugin-solidity": "^1.1.0",
+    "rimraf": "^5.0.5",
     "solidity-coverage": "^0.8.2",
     "typechain": "^8.1.0",
     "typescript": "^4.6.3"
