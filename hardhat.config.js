@@ -1,6 +1,17 @@
 require('@nomicfoundation/hardhat-toolbox');
+const { hardhatConfig } = require('@api3/chains');
+require('dotenv').config();
 
-/** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: '0.8.17',
+  etherscan: hardhatConfig.etherscan(),
+  networks: hardhatConfig.networks(),
+  solidity: {
+    version: '0.8.18',
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+    },
+  },
 };

@@ -1,19 +1,10 @@
-# NOTE: Keep in sync with other configuration ignore files
-
 node_modules
-
-artifacts
-cache
+.env
 coverage
 coverage.json
-gas_report
+typechain
+typechain-types
 
-# We no longer use `credentials.json`. Nevertheless, keep it in here in case
-# someone forgot to remove it and accidentally pushes it.
-credentials.json
-.env
-
-src/contracts
-dist
-
-.idea
+# Hardhat files
+cache
+artifacts
