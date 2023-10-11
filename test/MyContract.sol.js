@@ -4,11 +4,11 @@ const helpers = require('@nomicfoundation/hardhat-network-helpers');
 
 describe('MyContract', function () {
   async function deploy() {
+    const roleNames = ['deployer', 'randomPerson'];
     const accounts = await ethers.getSigners();
-    const roles = {
-      deployer: accounts[0],
-      randomPerson: accounts[9],
-    };
+    const roles = roleNames.reduce(async (acc, roleName, index) => {
+      return { ...acc, [roleName]: accounts[index] };
+    }, {});
 
     const MyContract = await ethers.getContractFactory('MyContract', roles.deployer);
     const myContract = await MyContract.deploy();
