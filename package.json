@@ -21,7 +21,7 @@
     "prettier": "prettier --write \"./**/*.{js,ts,md,json,sol}\"",
     "test": "hardhat test",
     "test:coverage": "hardhat coverage",
-    "write-env-example": "node scripts/merkle/write-env-example.js",
+    "write-env-example": "node scripts/write-env-example.js",
     "sign:integration": "node scripts/merkle/apiIntegrationMT.js",
     "sign:fallback": "node scripts/merkle/dapiFallbackMT.js",
     "sign:management": "node scripts/merkle/dapiManagementMT.js",
@@ -52,6 +52,8 @@
     "typescript": ">=4.5.0"
   },
   "dependencies": {
+    "@api3/airnode-protocol-v1": "^2.10.0",
+    "@openzeppelin/contracts": "4.9.3",
     "@openzeppelin/merkle-tree": "^1.0.5"
   }
 }
