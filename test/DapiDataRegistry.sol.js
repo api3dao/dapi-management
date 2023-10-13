@@ -239,7 +239,7 @@ describe('DapiDataRegistry', function () {
       )
         .to.emit(dapiDataRegistry, 'RegisteredSignedApiUrl')
         .withArgs(roles.airnode.address, oisTitle, url);
-      //TODO fetch registered value
+      expect(await dapiDataRegistry.airnodeToSignedApi(roles.airnode.address)).to.deep.equal([oisTitle, url]);
     });
   });
 
@@ -253,7 +253,7 @@ describe('DapiDataRegistry', function () {
       await expect(dapiDataRegistry.connect(roles.randomPerson).registerDatafeed(encodedBeacon))
         .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
         .withArgs(dataFeedId, encodedBeacon);
-      //TODO fetch registered value
+      expect(await dapiDataRegistry.dataFeedIdToDataFeedData(dataFeedId)).to.deep.equal(encodedBeacon);
     });
     it('registers beaconSet datafeed', async function () {
       const { roles, dapiDataRegistry, dataFeedId, encodedBeacons } = await helpers.loadFixture(deploy);
@@ -263,7 +263,7 @@ describe('DapiDataRegistry', function () {
       await expect(dapiDataRegistry.connect(roles.randomPerson).registerDatafeed(dataFeedData))
         .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
         .withArgs(dataFeedId, dataFeedData);
-      //TODO fetch registered value
+      expect(await dapiDataRegistry.dataFeedIdToDataFeedData(dataFeedId)).to.deep.equal(dataFeedData);
     });
   });
 
@@ -290,14 +290,21 @@ describe('DapiDataRegistry', function () {
           dataFeedId,
           roles.sponsorWallet.address,
           1, //deviationThreshold,
-          84600, //heartbeatInterval,
+          86400, //heartbeatInterval,
           dapiTreeRoot,
           dapiTreeProof
         )
       )
         .to.emit(dapiDataRegistry, 'RegisteredDapi')
-        .withArgs(dapiName, dataFeedId, roles.sponsorWallet.address, 1, 84600);
-      //TODO fetch registered value
+        .withArgs(dapiName, dataFeedId, roles.sponsorWallet.address, 1, 86400);
+
+      const dapisCount = await dapiDataRegistry.registeredDapisCount();
+      expect(dapisCount).to.equal(1);
+      const [dapiNameHashes, dataFeedIds, updateParameters] = await dapiDataRegistry.readDapis(0, dapisCount);
+      expect(dapiNameHashes).to.deep.equal([hre.ethers.utils.solidityKeccak256(['bytes32'], [dapiName])]);
+      expect(dataFeedIds).to.deep.equal([dataFeedId]);
+      expect(updateParameters[0].deviationThreshold).to.deep.equal(hre.ethers.BigNumber.from(1));
+      expect(updateParameters[0].heartbeatInterval).to.deep.equal(hre.ethers.BigNumber.from(86400));
     });
   });
 });

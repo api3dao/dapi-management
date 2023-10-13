@@ -72,14 +72,14 @@ contract DapiDataRegistry is
     }
 
     // This is updated using the API management merkle tree
-    mapping(address => SignedApi) airnodeToSignedApi;
+    mapping(address => SignedApi) public airnodeToSignedApi;
 
     // The value should be a single value or an array of them
     // This needs to be encoded so we can determine if it's a beacon
     // or a beaconSet based on the lenght
     // It can be udpated by anyone because the contract will hash the data and derive it
     // Airseeker will need to multicall to read all data using a single RPC call
-    mapping(bytes32 => bytes) dataFeedIdToDataFeedData;
+    mapping(bytes32 => bytes) public dataFeedIdToDataFeedData;
 
     // This is the list of dAPIs AirseekerV2 will need to update
     // Api3Market contract will have a role to update this after a purchase
@@ -177,7 +177,7 @@ contract DapiDataRegistry is
         bytes32 dapiName,
         bytes32 dataFeedId,
         address sponsorWallet,
-        uint256 deviationThreshold,
+        uint256 deviationThreshold, // TODO: how to represent this? basis points? 0.25% == 25
         uint256 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
