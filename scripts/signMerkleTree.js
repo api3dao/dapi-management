@@ -1,0 +1,94 @@
+const { StandardMerkleTree } = require('@openzeppelin/merkle-tree');
+const { ethers } = require('ethers');
+const fs = require('fs');
+const path = require('path');
+require('dotenv').config();
+
+const mnemonic = process.env.MNEMONIC;
+const wallet = ethers.Wallet.fromMnemonic(mnemonic);
+
+// Define the domain structure for EIP-712 signing
+const domain = {
+  name: 'TimestampedHashRegistry',
+  version: '1.0.0',
+  chainId: 1,
+  verifyingContract: '0x0000000000000000000000000000000000000000',
+};
+
+// Define the data structure of the message to be signed
+const types = {
+  SignedHash: [
+    { name: 'hashType', type: 'bytes32' },
+    { name: 'hash', type: 'bytes32' },
+    { name: 'timestamp', type: 'uint256' },
+  ],
+};
+
+// Function to sign an EIP-712 compliant message
+async function signEIP712Message(hashType, hash, timestamp) {
+  const message = {
+    hashType: hashType,
+    hash: hash,
+    timestamp: timestamp,
+  };
+
+  const signature = await wallet._signTypedData(domain, types, message);
+  return signature;
+}
+
+// Function to construct a Merkle tree from provided values and data types
+function constructMerkleTree(values, dataTypes) {
+  return StandardMerkleTree.of(values, dataTypes);
+}
+
+// Function to sign a specific Merkle tree defined by its name
+async function signMerkleTree(merkleTreeName) {
+  // Define path and read metadata.json
+  const metadataPath = path.join(__dirname, '..', 'data', 'metadata.json');
+  const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+
+  // Extract relevant data for the specified Merkle tree
+  const treeData = metadata.merkleTrees[merkleTreeName];
+  const values = treeData.values;
+
+  // Construct the Merkle tree and derive its root
+  const tree = constructMerkleTree(values, treeData.dataTypes);
+  const merkleRoot = tree.root;
+
+  // Derive hashType from the merkle tree's name
+  const hashType = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(merkleTreeName));
+
+  // Get the timestamp from metadata.json
+  const timestamp = treeData.timestamp;
+
+  // Validate timestamp existence
+  if (!timestamp) {
+    throw new Error('Timestamp not provided in metadata');
+  }
+
+  // Generate the signature for the tree
+  const signature = await signEIP712Message(hashType, merkleRoot, timestamp);
+  const signerAddress = ethers.Wallet.fromMnemonic(process.env.MNEMONIC).address;
+
+  // Update the metadata file with the signature and merkle root
+  treeData.merkleRoot = merkleRoot;
+  treeData.signatures = treeData.signatures || {};
+  treeData.signatures[signerAddress] = signature;
+
+  // Write the updated metadata back to the file
+  fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 4));
+}
+
+// Fetch the specified Merkle tree type from the command line arguments
+const merkleType = process.argv[2];
+
+// Validate the provided Merkle type
+if (!merkleType || !['priceMT', 'dapiManagementMT', 'dapiFallbackMT', 'apiIntegrationMT'].includes(merkleType)) {
+  console.error('You must provide a valid Merkle type as an argument!');
+  process.exit(1);
+}
+
+// Sign the Merkle tree
+signMerkleTree(merkleType).catch((error) => {
+  console.error(`Error processing ${merkleType}:`, error);
+});

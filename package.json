@@ -22,10 +22,7 @@
     "test": "hardhat test",
     "test:coverage": "hardhat coverage",
     "write-env-example": "node scripts/write-env-example.js",
-    "sign:integration": "node scripts/merkle/apiIntegrationMT.js",
-    "sign:fallback": "node scripts/merkle/dapiFallbackMT.js",
-    "sign:management": "node scripts/merkle/dapiManagementMT.js",
-    "sign:price": "node scripts/merkle/priceMT.js"
+    "sign": "node scripts/signMerkleTree.js"
   },
   "devDependencies": {
     "@api3/chains": "^3.5.1",
@@ -52,8 +49,6 @@
     "typescript": ">=4.5.0"
   },
   "dependencies": {
-    "@api3/airnode-protocol-v1": "^2.10.0",
-    "@openzeppelin/contracts": "4.9.3",
     "@openzeppelin/merkle-tree": "^1.0.5"
   }
 }
