@@ -7,7 +7,7 @@ const ethers = require('ethers');
 const inputData = JSON.parse(fs.readFileSync(path.join(__dirname, 'treeValues', 'dapiManagementMT.json'), 'utf8'));
 const values = inputData.values;
 
-const tree = constructMerkleTree(values, ['string', 'bytes32', 'address']);
+const tree = constructMerkleTree(values, ['bytes32', 'bytes32', 'address']);
 const merkleRoot = tree.root;
 
 // Derive hashType from the merkle tree's name
