@@ -61,7 +61,7 @@ The `metadata.json` file contains various Merkle trees, each with its unique set
 ### 1. Price Merkle Tree
 
 - **Values**:
-  - **dAPI Name (string)**: The name of the dAPI.
+  - **dAPI Name (bytes32)**: The name of the dAPI, hashed.
   - **Chain ID (uint256)**: Identifier for the blockchain network.
   - **dAPI Update Parameters (bytes32)**: Parameters associated with the dAPI update.
   - **Duration (uint256)**: The duration for which the price is valid.
@@ -70,14 +70,14 @@ The `metadata.json` file contains various Merkle trees, each with its unique set
 ### 2. dapiManagement Merkle Tree
 
 - **Values**:
-  - **dAPI Name (bytes32)**: The name of the dAPI.
+  - **dAPI Name (bytes32)**: The name of the dAPI, hashed.
   - **Beacon Set ID (bytes32)**: Identifier for the beacon set.
   - **dAPI Sponsor Wallet Address (address)**: Wallet address of the dAPI sponsor wallet.
 
 ### 3. dapiFallback Merkle Tree
 
 - **Values**:
-  - **dAPI Name (string)**: The name of the dAPI.
+  - **dAPI Name (bytes32)**: The name of the dAPI, hashed.
   - **Nodary Beacon ID (bytes32)**: Identifier for the Nodary Beacon.
   - **Nodary Sponsor Wallet Address (address)**: Wallet address of the Nodary sponsor wallet.
 
@@ -86,6 +86,6 @@ The `metadata.json` file contains various Merkle trees, each with its unique set
 - **Values**:
   - **Airnode Address (address)**: The contract address of the Airnode.
   - **OIS Title (bytes32)**: Title of the OIS.
-  - **Signed API URL (string)**: The signed URL of the API, verified by referring to the DNS records of the base URL.
+  - **Signed API URL (bytes32)**: The signed URL of the API, hashed. Verified by referring to the DNS records of the base URL.
 
 Make sure to structure the `metadata.json` file appropriately, keeping in mind the specific values and their purposes for each Merkle tree.
