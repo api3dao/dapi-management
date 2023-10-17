@@ -39,11 +39,6 @@ contract DapiDataRegistry is
         uint256 heartbeatInterval
     );
 
-    struct Beacon {
-        address airnode;
-        bytes32 templateId;
-    }
-
     // TODO: use uint128 to pack both in a single 32 bytes slot?
     struct UpdateParameters {
         uint256 deviationThreshold;
@@ -132,37 +127,34 @@ contract DapiDataRegistry is
         emit RegisteredSignedApiUrl(airnode, url);
     }
 
-    // TODO1: Should anyone really be able to call this?
-    // TODO2: Wouldn't it be simpler to register using an array of Beacon[]?
-    //        It would have a single element when beacon and multiple when beaconSet
     function registerDatafeed(
         bytes calldata dataFeedData
     ) external returns (bytes32 dataFeedId) {
         require(dataFeedData.length > 0, "Data feed data is empty");
-        // console.log(dataFeedData.length);
         if (dataFeedData.length == 64) {
             // DataFeedId maps to a beacon
-            Beacon memory beacon = abi.decode(dataFeedData, (Beacon));
-            // console.log(beacon.airnode);
-            // console.logBytes32(beacon.templateId);
-            // Derive beacon ID
-            dataFeedId = keccak256(
-                abi.encode(beacon.airnode, beacon.templateId)
+            (address airnode, bytes32 templateId) = abi.decode(
+                dataFeedData,
+                (address, bytes32)
             );
+            // Derive beacon ID
+            // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L87
+            dataFeedId = keccak256(abi.encodePacked(airnode, templateId));
         } else {
             // DataFeedId maps to a beaconSet
-            bytes[] memory beacons = abi.decode(dataFeedData, (bytes[]));
-            bytes32[] memory beaconIds = new bytes32[](beacons.length);
-            for (uint256 ind = 0; ind < beacons.length; ind++) {
-                Beacon memory beacon = abi.decode(beacons[ind], (Beacon));
-                // console.log(beacon.airnode);
-                // console.logBytes32(beacon.templateId);
+            (address[] memory airnodes, bytes32[] memory templateIds) = abi
+                .decode(dataFeedData, (address[], bytes32[]));
+            require(airnodes.length == templateIds.length, "Length mismatch");
+            bytes32[] memory beaconIds = new bytes32[](airnodes.length);
+            for (uint256 ind = 0; ind < airnodes.length; ind++) {
                 // Derive beacon ID
+                // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L87
                 beaconIds[ind] = keccak256(
-                    abi.encode(beacon.airnode, beacon.templateId)
+                    abi.encodePacked(airnodes[ind], templateIds[ind])
                 );
             }
             // Derive beacon set ID
+            // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L98
             dataFeedId = keccak256(abi.encode(beaconIds));
         }
 
