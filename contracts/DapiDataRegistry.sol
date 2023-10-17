@@ -29,11 +29,7 @@ contract DapiDataRegistry is
     // IApi3ServerV1 public immutable override api3ServerV1;
     IApi3ServerV1 public immutable api3ServerV1;
 
-    event RegisteredSignedApiUrl(
-        address indexed airnode,
-        bytes32 oisTitle,
-        string url
-    );
+    event RegisteredSignedApiUrl(address indexed airnode, string url);
     event RegisteredDataFeed(bytes32 indexed dataFeedId, bytes dataFeedData);
     event RegisteredDapi(
         bytes32 indexed dapiName,
@@ -47,10 +43,6 @@ contract DapiDataRegistry is
         address airnode;
         bytes32 templateId;
     }
-    struct SignedApi {
-        bytes32 oisTitle;
-        string url;
-    }
 
     // TODO: use uint128 to pack both in a single 32 bytes slot?
     struct UpdateParameters {
@@ -60,7 +52,7 @@ contract DapiDataRegistry is
     }
 
     // This is updated using the API management merkle tree
-    mapping(address => SignedApi) public airnodeToSignedApi;
+    mapping(address => string) public airnodeToSignedApiUrl;
 
     // The value should be a single value or an array of them
     // This needs to be encoded so we can determine if it's a beacon
@@ -113,7 +105,6 @@ contract DapiDataRegistry is
     function registerAirnodeSignedApiUrl(
         bytes32 hashType,
         address airnode,
-        bytes32 oisTitle,
         string calldata url,
         bytes32 root,
         bytes32[] calldata proof
@@ -132,13 +123,13 @@ contract DapiDataRegistry is
 
         // Verify proof
         bytes32 leaf = keccak256(
-            bytes.concat(keccak256(abi.encode(airnode, oisTitle, url)))
+            bytes.concat(keccak256(abi.encode(airnode, url)))
         );
         require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
 
-        airnodeToSignedApi[airnode] = SignedApi(oisTitle, url);
+        airnodeToSignedApiUrl[airnode] = url;
 
-        emit RegisteredSignedApiUrl(airnode, oisTitle, url);
+        emit RegisteredSignedApiUrl(airnode, url);
     }
 
     // TODO1: Should anyone really be able to call this?

@@ -104,19 +104,18 @@ describe('DapiDataRegistry', function () {
       ],
     };
 
-    const oisTitle = generateRandomBytes32();
     const baseUrl = 'https://example.com/';
     const url = baseUrl + generateRandomString(10);
 
-    const apiTreeEntry = [roles.airnode.address, oisTitle, url];
+    const apiTreeEntry = [roles.airnode.address, url];
     const apiTreeValues = [
-      [generateRandomAddress(), generateRandomBytes32(), baseUrl + generateRandomString(10)],
-      [generateRandomAddress(), generateRandomBytes32(), baseUrl + generateRandomString(15)],
+      [generateRandomAddress(), baseUrl + generateRandomString(10)],
+      [generateRandomAddress(), baseUrl + generateRandomString(15)],
       apiTreeEntry,
-      [generateRandomAddress(), generateRandomBytes32(), baseUrl + generateRandomString(5)],
-      [generateRandomAddress(), generateRandomBytes32(), baseUrl + generateRandomString(20)],
+      [generateRandomAddress(), baseUrl + generateRandomString(5)],
+      [generateRandomAddress(), baseUrl + generateRandomString(20)],
     ];
-    const apiTree = StandardMerkleTree.of(apiTreeValues, ['address', 'bytes32', 'string']);
+    const apiTree = StandardMerkleTree.of(apiTreeValues, ['address', 'string']);
     const apiTreeRoot = apiTree.root;
     const apiHashType = hre.ethers.utils.solidityKeccak256(['string'], ['Signed API URL root']);
     const rootSigners = [roles.rootSigner1, roles.rootSigner2, roles.rootSigner3];
@@ -193,7 +192,6 @@ describe('DapiDataRegistry', function () {
       timestampedHashRegistry,
       api3ServerV1,
       dapiDataRegistryAdminRoleDescription,
-      oisTitle,
       url,
       apiHashType,
       apiTreeRoot,
@@ -229,17 +227,18 @@ describe('DapiDataRegistry', function () {
 
   describe('registerAirnodeSignedApiUrl', function () {
     it('registers an Airnode signed API URL', async function () {
-      const { roles, dapiDataRegistry, oisTitle, url, apiHashType, apiTreeRoot, apiTreeProof } =
-        await helpers.loadFixture(deploy);
+      const { roles, dapiDataRegistry, url, apiHashType, apiTreeRoot, apiTreeProof } = await helpers.loadFixture(
+        deploy
+      );
 
       await expect(
         dapiDataRegistry
           .connect(roles.api3MarketContract)
-          .registerAirnodeSignedApiUrl(apiHashType, roles.airnode.address, oisTitle, url, apiTreeRoot, apiTreeProof)
+          .registerAirnodeSignedApiUrl(apiHashType, roles.airnode.address, url, apiTreeRoot, apiTreeProof)
       )
         .to.emit(dapiDataRegistry, 'RegisteredSignedApiUrl')
-        .withArgs(roles.airnode.address, oisTitle, url);
-      expect(await dapiDataRegistry.airnodeToSignedApi(roles.airnode.address)).to.deep.equal([oisTitle, url]);
+        .withArgs(roles.airnode.address, url);
+      expect(await dapiDataRegistry.airnodeToSignedApiUrl(roles.airnode.address)).to.equal(url);
     });
   });
 
