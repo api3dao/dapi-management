@@ -43,10 +43,10 @@ function constructMerkleTree(values, dataTypes) {
 
 // Predefined data types for each Merkle tree
 const MERKLE_TREE_DATATYPES = {
-  priceMT: ["bytes32", "uint256", "bytes32", "uint256", "uint256"],
-  dapiManagementMT: ["bytes32", "bytes32", "address"],
-  dapiFallbackMT: ["bytes32", "bytes32", "address"],
-  apiIntegrationMT: ["address", "bytes32", "bytes32"],
+  priceMT: ['bytes32', 'uint256', 'bytes32', 'uint256', 'uint256'],
+  dapiManagementMT: ['bytes32', 'bytes32', 'address'],
+  dapiFallbackMT: ['bytes32', 'bytes32', 'address'],
+  apiIntegrationMT: ['address', 'bytes32', 'bytes32'],
 };
 
 // Function to sign a specific Merkle tree defined by its name
