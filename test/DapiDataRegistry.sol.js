@@ -253,7 +253,7 @@ describe('DapiDataRegistry', function () {
       await expect(dapiDataRegistry.connect(roles.randomPerson).registerDatafeed(encodedBeacon))
         .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
         .withArgs(dataFeedId, encodedBeacon);
-      expect(await dapiDataRegistry.dataFeedIdToDataFeedData(dataFeedId)).to.deep.equal(encodedBeacon);
+      expect(await dapiDataRegistry.dataFeedIdToData(dataFeedId)).to.deep.equal(encodedBeacon);
     });
     it('registers beaconSet datafeed', async function () {
       const { roles, dapiDataRegistry, dataFeedId, encodedBeacons } = await helpers.loadFixture(deploy);
@@ -263,7 +263,7 @@ describe('DapiDataRegistry', function () {
       await expect(dapiDataRegistry.connect(roles.randomPerson).registerDatafeed(dataFeedData))
         .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
         .withArgs(dataFeedId, dataFeedData);
-      expect(await dapiDataRegistry.dataFeedIdToDataFeedData(dataFeedId)).to.deep.equal(dataFeedData);
+      expect(await dapiDataRegistry.dataFeedIdToData(dataFeedId)).to.deep.equal(dataFeedData);
     });
   });
 

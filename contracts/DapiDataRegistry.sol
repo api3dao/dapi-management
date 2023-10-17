@@ -67,7 +67,7 @@ contract DapiDataRegistry is
     // or a beaconSet based on the lenght
     // It can be udpated by anyone because the contract will hash the data and derive it
     // Airseeker will need to multicall to read all data using a single RPC call
-    mapping(bytes32 => bytes) public dataFeedIdToDataFeedData;
+    mapping(bytes32 => bytes) public dataFeedIdToData;
 
     // This is the list of dAPIs AirseekerV2 will need to update
     // Api3Market contract will have a role to update this after a purchase
@@ -175,7 +175,7 @@ contract DapiDataRegistry is
             dataFeedId = keccak256(abi.encode(beaconIds));
         }
 
-        dataFeedIdToDataFeedData[dataFeedId] = dataFeedData;
+        dataFeedIdToData[dataFeedId] = dataFeedData;
 
         emit RegisteredDataFeed(dataFeedId, dataFeedData);
     }
@@ -203,7 +203,7 @@ contract DapiDataRegistry is
         );
         // Check datafeedId has been registered
         require(
-            dataFeedIdToDataFeedData[dataFeedId].length > 0,
+            dataFeedIdToData[dataFeedId].length > 0,
             "dataFeedId has not been registered"
         );
 
