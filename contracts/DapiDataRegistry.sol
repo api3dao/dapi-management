@@ -16,26 +16,13 @@ contract DapiDataRegistry is
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
-    /// @notice Register data role description
-    // string public constant override REGISTER_DATA_ROLE_DESCRIPTION = "dAPI data setter role";
-    string public constant REGISTER_DATA_ROLE_DESCRIPTION =
-        "Register dAPI data role";
+    /// @notice Registrar role description
+    // string public constant override REGISTRAR_ROLE_DESCRIPTION = "Registrar";
+    string public constant REGISTRAR_ROLE_DESCRIPTION = "Registrar";
 
-    /// @notice Register dAPI data role
-    // bytes32 public immutable override registerDataRole;
-    bytes32 public immutable registerDataRole;
-
-    modifier onlyRegisterDataRole() {
-        require(
-            msg.sender == manager ||
-                IAccessControlRegistry(accessControlRegistry).hasRole(
-                    registerDataRole,
-                    msg.sender
-                ),
-            "Sender is not manager or needs role"
-        );
-        _;
-    }
+    /// @notice Registrar role
+    // bytes32 public immutable override registrarRole;
+    bytes32 public immutable registrarRole;
 
     // ITimestampedHashRegistry public immutable override timestampedHashRegistry;
     ITimestampedHashRegistry public immutable timestampedHashRegistry;
@@ -64,6 +51,7 @@ contract DapiDataRegistry is
         bytes32 oisTitle;
         string url;
     }
+
     // TODO: use uint128 to pack both in a single 32 bytes slot?
     struct UpdateParameters {
         uint256 deviationThreshold;
@@ -100,12 +88,26 @@ contract DapiDataRegistry is
             _manager
         )
     {
-        registerDataRole = _deriveRole(
+        registrarRole = _deriveRole(
             _deriveAdminRole(manager),
-            REGISTER_DATA_ROLE_DESCRIPTION
+            REGISTRAR_ROLE_DESCRIPTION
         );
         timestampedHashRegistry = _timestampedHashRegistry;
         api3ServerV1 = _api3ServerV1;
+    }
+
+    /// @dev Returns if the account has the Registrar role or is the manager
+    /// @param account Account address
+    /// @return If the account has the Registrar role or is the manager
+    function hasRegistrarRoleOrIsManager(
+        address account
+    ) internal view returns (bool) {
+        return
+            manager == account ||
+            IAccessControlRegistry(accessControlRegistry).hasRole(
+                registrarRole,
+                account
+            );
     }
 
     function registerAirnodeSignedApiUrl(
@@ -115,7 +117,13 @@ contract DapiDataRegistry is
         string calldata url,
         bytes32 root,
         bytes32[] calldata proof
-    ) external onlyRegisterDataRole {
+    ) external {
+        require(
+            hasRegistrarRoleOrIsManager(msg.sender),
+            "Sender is not manager or needs Registrar role"
+        );
+        require(root != bytes32(0), "Root zero");
+        require(proof.length != 0, "Proof empty");
         // Check root exists in TimestampedHashRegistry
         require(
             timestampedHashRegistry.hashTypeToHash(hashType) == root,
@@ -181,19 +189,22 @@ contract DapiDataRegistry is
         uint256 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
-    ) external onlyRegisterDataRole {
-        // TODO: add more checks
-
-        // Check datafeedId has been registered
+    ) external {
         require(
-            dataFeedIdToDataFeedData[dataFeedId].length > 0,
-            "dataFeedId has not been registered"
+            hasRegistrarRoleOrIsManager(msg.sender),
+            "Sender is not manager or needs Registrar role"
         );
-
+        require(root != bytes32(0), "Root zero");
+        require(proof.length != 0, "Proof empty");
         // Check root exists in TimestampedHashRegistry
         require(
             timestampedHashRegistry.hashTypeToHash(hashType) == root,
             "Invalid root"
+        );
+        // Check datafeedId has been registered
+        require(
+            dataFeedIdToDataFeedData[dataFeedId].length > 0,
+            "dataFeedId has not been registered"
         );
 
         // Verify proof
@@ -227,6 +238,10 @@ contract DapiDataRegistry is
     }
 
     function removeDapi(bytes32 dapiName) external {
+        require(
+            hasRegistrarRoleOrIsManager(msg.sender),
+            "Sender is not manager or needs Registrar role"
+        );
         require(dapiName != bytes32(0), "dAPI name is empty");
         require(activeDapis.contains(dapiName), "dAPI name is not registered");
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));

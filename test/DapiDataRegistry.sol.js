@@ -68,17 +68,17 @@ describe('DapiDataRegistry', function () {
 
     const rootRole = deriveRootRole(roles.manager.address);
     const dapiDataRegistryAdminRole = deriveRole(rootRole, dapiDataRegistryAdminRoleDescription);
-    const registerDataRoleDescription = await dapiDataRegistry.REGISTER_DATA_ROLE_DESCRIPTION();
-    const registerDataRole = deriveRole(dapiDataRegistryAdminRole, registerDataRoleDescription);
+    const registrarRoleDescription = await dapiDataRegistry.REGISTRAR_ROLE_DESCRIPTION();
+    const registrarRole = deriveRole(dapiDataRegistryAdminRole, registrarRoleDescription);
 
     await accessControlRegistry
       .connect(roles.manager)
       .initializeRoleAndGrantToSender(rootRole, dapiDataRegistryAdminRoleDescription);
     await accessControlRegistry
       .connect(roles.manager)
-      .initializeRoleAndGrantToSender(dapiDataRegistryAdminRole, registerDataRoleDescription);
+      .initializeRoleAndGrantToSender(dapiDataRegistryAdminRole, registrarRoleDescription);
 
-    await accessControlRegistry.connect(roles.manager).grantRole(registerDataRole, roles.api3MarketContract.address);
+    await accessControlRegistry.connect(roles.manager).grantRole(registrarRole, roles.api3MarketContract.address);
 
     await accessControlRegistry
       .connect(roles.manager)
@@ -187,7 +187,7 @@ describe('DapiDataRegistry', function () {
     return {
       roles,
       dapiDataRegistryAdminRole,
-      registerDataRole,
+      registrarRole,
       accessControlRegistry,
       dapiDataRegistry,
       timestampedHashRegistry,
@@ -211,7 +211,7 @@ describe('DapiDataRegistry', function () {
     it('constructs', async function () {
       const {
         roles,
-        registerDataRole,
+        registrarRole,
         accessControlRegistry,
         dapiDataRegistry,
         timestampedHashRegistry,
@@ -221,7 +221,7 @@ describe('DapiDataRegistry', function () {
       expect(await dapiDataRegistry.accessControlRegistry()).to.equal(accessControlRegistry.address);
       expect(await dapiDataRegistry.adminRoleDescription()).to.equal(dapiDataRegistryAdminRoleDescription);
       expect(await dapiDataRegistry.manager()).to.equal(roles.manager.address);
-      expect(await dapiDataRegistry.registerDataRole()).to.equal(registerDataRole);
+      expect(await dapiDataRegistry.registrarRole()).to.equal(registrarRole);
       expect(await dapiDataRegistry.timestampedHashRegistry()).to.equal(timestampedHashRegistry.address);
       expect(await dapiDataRegistry.api3ServerV1()).to.equal(api3ServerV1.address);
     });
