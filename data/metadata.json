@@ -14,7 +14,6 @@
   "merkleTrees": {
     "priceMT": {
       "timestamp": 1676940000,
-      "dataTypes": ["bytes32", "uint256", "bytes32", "uint256", "uint256"],
       "values": [
         [
           "0x1234567890123456789012345678901234567890123456789012345678901234",
@@ -36,7 +35,6 @@
     },
     "dapiManagementMT": {
       "timestamp": 1676940000,
-      "dataTypes": ["bytes32", "bytes32", "address"],
       "values": [
         [
           "0x1234567890123456789012345678901234567890123456789012345678901234",
@@ -54,7 +52,6 @@
     },
     "dapiFallbackMT": {
       "timestamp": 1676940000,
-      "dataTypes": ["bytes32", "bytes32", "address"],
       "values": [
         [
           "0x1234567890123456789012345678901234567890123456789012345678901234",
@@ -72,7 +69,6 @@
     },
     "apiIntegrationMT": {
       "timestamp": 1676940000,
-      "dataTypes": ["address", "bytes32", "bytes32"],
       "values": [
         [
           "0x1DA48273Fc2ACd6f40b629538aE150Bea08cC7bB",

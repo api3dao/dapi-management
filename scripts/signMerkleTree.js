@@ -41,6 +41,14 @@ function constructMerkleTree(values, dataTypes) {
   return StandardMerkleTree.of(values, dataTypes);
 }
 
+// Predefined data types for each Merkle tree
+const MERKLE_TREE_DATATYPES = {
+  priceMT: ["bytes32", "uint256", "bytes32", "uint256", "uint256"],
+  dapiManagementMT: ["bytes32", "bytes32", "address"],
+  dapiFallbackMT: ["bytes32", "bytes32", "address"],
+  apiIntegrationMT: ["address", "bytes32", "bytes32"],
+};
+
 // Function to sign a specific Merkle tree defined by its name
 async function signMerkleTree(merkleTreeName) {
   // Define path and read metadata.json
@@ -51,8 +59,13 @@ async function signMerkleTree(merkleTreeName) {
   const treeData = metadata.merkleTrees[merkleTreeName];
   const values = treeData.values;
 
+  const dataTypes = MERKLE_TREE_DATATYPES[merkleTreeName];
+  if (!dataTypes) {
+    throw new Error(`Data types for ${merkleTreeName} not found`);
+  }
+
   // Construct the Merkle tree and derive its root
-  const tree = constructMerkleTree(values, treeData.dataTypes);
+  const tree = constructMerkleTree(values, dataTypes);
   const merkleRoot = tree.root;
 
   // Derive hashType from the merkle tree's name
