@@ -34,6 +34,7 @@ contract DapiDataRegistry is
     IApi3ServerV1 public immutable api3ServerV1;
 
     event RegisteredSignedApiUrl(address indexed airnode, string url);
+    event UnregisteredSignedApiUrl(address indexed airnode);
     event RegisteredDataFeed(bytes32 indexed dataFeedId, bytes dataFeedData);
     event RegisteredDapi(
         bytes32 indexed dapiName,
@@ -43,6 +44,7 @@ contract DapiDataRegistry is
         int224 deviationReference,
         uint32 heartbeatInterval
     );
+    event UnregisteredDapi(bytes32 indexed dapiName);
 
     struct UpdateParameters {
         uint256 deviationThresholdInPercentage;
@@ -62,9 +64,10 @@ contract DapiDataRegistry is
 
     // This is the list of dAPIs AirseekerV2 will need to update
     // Api3Market contract will have a role to update this after a purchase
+    // Dapi names are expected to be unique bytes32 strings
     EnumerableSet.Bytes32Set private activeDapis;
 
-    mapping(bytes32 => UpdateParameters) private dapiToUpdateParameters;
+    mapping(bytes32 => UpdateParameters) private dapiNameHashToUpdateParameters;
 
     constructor(
         address _accessControlRegistry,
@@ -135,7 +138,7 @@ contract DapiDataRegistry is
         require(airnode != address(0));
         airnodeToSignedApiUrl[airnode] = "";
 
-        // TODO: emit event
+        emit UnregisteredSignedApiUrl(airnode); // TODO: add msg.sender?
     }
 
     function registerDataFeed(
@@ -210,12 +213,9 @@ contract DapiDataRegistry is
         );
         require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
 
+        activeDapis.add(dapiName); // TODO: Not checking if already exists in set to allow for update parameters override
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
-
-        // TODO: do we also need a dapiNameHashToDapiName mapping?
-        //       or refactor UpdateParameters to also include dapiName?
-        activeDapis.add(dapiNameHash);
-        dapiToUpdateParameters[dapiNameHash] = UpdateParameters(
+        dapiNameHashToUpdateParameters[dapiNameHash] = UpdateParameters(
             deviationThresholdInPercentage, // TODO: can this be 0? should we check against any low/high boundary based on HUNDRED_PERCENT constant?
             deviationReference,
             heartbeatInterval // TODO: can this be 0?
@@ -240,12 +240,11 @@ contract DapiDataRegistry is
             "Sender is not manager or needs Registrar role"
         );
         require(dapiName != bytes32(0), "dAPI name is empty");
-        require(activeDapis.contains(dapiName), "dAPI name is not registered");
+        require(activeDapis.remove(dapiName), "dAPI name is not registered");
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
-        activeDapis.remove(dapiNameHash);
-        delete dapiToUpdateParameters[dapiNameHash];
+        delete dapiNameHashToUpdateParameters[dapiNameHash];
 
-        // TODO: emit event
+        emit UnregisteredDapi(dapiName); // TODO: add msg.sender?
     }
 
     function registeredDapisCount() public view returns (uint256 count) {
@@ -259,7 +258,7 @@ contract DapiDataRegistry is
         external
         view
         returns (
-            bytes32[] memory dapiNameHashes,
+            bytes32[] memory dapiNames,
             bytes32[] memory dataFeedIds,
             UpdateParameters[] memory updateParameters
         )
@@ -267,16 +266,19 @@ contract DapiDataRegistry is
         uint256 count = registeredDapisCount();
         require(offset < count, "Invalid offset");
         uint256 limitAdjusted = offset + limit > count ? count - offset : limit;
-        dapiNameHashes = new bytes32[](limitAdjusted);
+        dapiNames = new bytes32[](limitAdjusted);
         dataFeedIds = new bytes32[](limitAdjusted);
         updateParameters = new UpdateParameters[](limitAdjusted);
         for (uint256 ind = 0; ind < offset + limitAdjusted; ind++) {
-            bytes32 dapiNameHash = activeDapis.at(ind);
-            dapiNameHashes[ind] = dapiNameHash;
+            bytes32 dapiName = activeDapis.at(ind);
+            dapiNames[ind] = dapiName;
+            bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
             dataFeedIds[ind] = api3ServerV1.dapiNameHashToDataFeedId(
                 dapiNameHash
             );
-            updateParameters[ind] = dapiToUpdateParameters[dapiNameHash];
+            updateParameters[ind] = dapiNameHashToUpdateParameters[
+                dapiNameHash
+            ];
         }
         // TODO: should this function also return the Signed API URLs for each Airnode in the UpdateParameters?
     }

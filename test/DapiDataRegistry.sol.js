@@ -326,8 +326,8 @@ describe('DapiDataRegistry', function () {
 
       const dapisCount = await dapiDataRegistry.registeredDapisCount();
       expect(dapisCount).to.equal(1);
-      const [dapiNameHashes, dataFeedIds, updateParameters] = await dapiDataRegistry.readDapis(0, dapisCount);
-      expect(dapiNameHashes).to.deep.equal([hre.ethers.utils.solidityKeccak256(['bytes32'], [dapiName])]);
+      const [dapiNames, dataFeedIds, updateParameters] = await dapiDataRegistry.readDapis(0, dapisCount);
+      expect(dapiNames).to.deep.equal([dapiName]);
       expect(dataFeedIds).to.deep.equal([beaconSetId]);
       expect(updateParameters[0].deviationThresholdInPercentage).to.deep.equal(
         hre.ethers.BigNumber.from(HUNDRED_PERCENT / 50)
