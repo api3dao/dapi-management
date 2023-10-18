@@ -41,13 +41,13 @@ contract DapiDataRegistry is
         address sponsorWallet,
         uint256 deviationThresholdInPercentage,
         int224 deviationReference,
-        uint256 heartbeatInterval
+        uint32 heartbeatInterval
     );
 
     struct UpdateParameters {
         uint256 deviationThresholdInPercentage;
         int224 deviationReference;
-        uint256 heartbeatInterval;
+        uint32 heartbeatInterval;
     }
 
     // This is updated using the API management merkle tree
@@ -181,7 +181,7 @@ contract DapiDataRegistry is
         address sponsorWallet,
         uint256 deviationThresholdInPercentage,
         int224 deviationReference,
-        uint256 heartbeatInterval,
+        uint32 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
     ) external {
