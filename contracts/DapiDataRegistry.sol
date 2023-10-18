@@ -20,6 +20,20 @@ contract DapiDataRegistry is
     // uint256 public constant override HUNDRED_PERCENT = 1e8;
     uint256 public constant HUNDRED_PERCENT = 1e8;
 
+    // string public constant PRICE_MANAGEMENT_HASH_TYPE_DESCRIPTION =
+    //     "Price management merkle tree root";
+    string public constant DAPI_MANAGEMENT_HASH_TYPE_DESCRIPTION =
+        "dAPI management merkle tree root";
+    string public constant API_INTEGRATION_HASH_TYPE_DESCRIPTION =
+        "API integration merkle tree root";
+
+    // bytes32 private constant _PRICE_MANAGEMENT_HASH_TYPE =
+    //     keccak256(abi.encodePacked(PRICE_MANAGEMENT_HASH_TYPE_DESCRIPTION));
+    bytes32 private constant _DAPI_MANAGEMENT_HASH_TYPE =
+        keccak256(abi.encodePacked(DAPI_MANAGEMENT_HASH_TYPE_DESCRIPTION));
+    bytes32 private constant _API_INTEGRATION_HASH_TYPE =
+        keccak256(abi.encodePacked(API_INTEGRATION_HASH_TYPE_DESCRIPTION));
+
     /// @notice Registrar role description
     // string public constant override REGISTRAR_ROLE_DESCRIPTION = "Registrar";
     string public constant REGISTRAR_ROLE_DESCRIPTION = "Registrar";
@@ -105,7 +119,6 @@ contract DapiDataRegistry is
     }
 
     function registerAirnodeSignedApiUrl(
-        bytes32 hashType,
         address airnode,
         string calldata url,
         bytes32 root,
@@ -115,7 +128,9 @@ contract DapiDataRegistry is
         require(proof.length != 0, "Proof empty");
         // Check root exists in TimestampedHashRegistry
         require(
-            timestampedHashRegistry.hashTypeToHash(hashType) == root,
+            timestampedHashRegistry.hashTypeToHash(
+                _API_INTEGRATION_HASH_TYPE
+            ) == root,
             "Invalid root"
         );
 
@@ -178,7 +193,6 @@ contract DapiDataRegistry is
     }
 
     function registerDapi(
-        bytes32 hashType,
         bytes32 dapiName,
         bytes32 dataFeedId,
         address sponsorWallet,
@@ -196,7 +210,9 @@ contract DapiDataRegistry is
         require(proof.length != 0, "Proof empty");
         // Check root exists in TimestampedHashRegistry
         require(
-            timestampedHashRegistry.hashTypeToHash(hashType) == root,
+            timestampedHashRegistry.hashTypeToHash(
+                _DAPI_MANAGEMENT_HASH_TYPE
+            ) == root,
             "Invalid root"
         );
         // Check dataFeedId has been registered

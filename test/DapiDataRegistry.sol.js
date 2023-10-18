@@ -119,7 +119,10 @@ describe('DapiDataRegistry', function () {
     ];
     const apiTree = StandardMerkleTree.of(apiTreeValues, ['address', 'string']);
     const apiTreeRoot = apiTree.root;
-    const apiHashType = hre.ethers.utils.solidityKeccak256(['string'], ['Signed API URL root']);
+    const apiHashType = hre.ethers.utils.solidityKeccak256(
+      ['string'],
+      [await dapiDataRegistry.API_INTEGRATION_HASH_TYPE_DESCRIPTION()]
+    );
     const rootSigners = [roles.rootSigner1, roles.rootSigner2, roles.rootSigner3];
     const apiTreeRootSignatures = await Promise.all(
       rootSigners.map(
@@ -163,7 +166,10 @@ describe('DapiDataRegistry', function () {
     ];
     const dapiTree = StandardMerkleTree.of(dapiTreeValues, ['bytes32', 'bytes32', 'address']);
     const dapiTreeRoot = dapiTree.root;
-    const dapiHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI management root']);
+    const dapiHashType = hre.ethers.utils.solidityKeccak256(
+      ['string'],
+      [await dapiDataRegistry.DAPI_MANAGEMENT_HASH_TYPE_DESCRIPTION()]
+    );
     // TODO: should I use a different set of signer addresses here?
     const dapiTreeRootSignatures = await Promise.all(
       rootSigners.map(
@@ -193,13 +199,11 @@ describe('DapiDataRegistry', function () {
       api3ServerV1,
       dapiDataRegistryAdminRoleDescription,
       url,
-      apiHashType,
       apiTreeRoot,
       apiTreeProof,
       dataFeedData,
       dapiName,
       beaconSetId,
-      dapiHashType,
       dapiTreeRoot,
       dapiTreeProof,
     };
@@ -227,14 +231,12 @@ describe('DapiDataRegistry', function () {
 
   describe('registerAirnodeSignedApiUrl', function () {
     it('registers an Airnode signed API URL', async function () {
-      const { roles, dapiDataRegistry, url, apiHashType, apiTreeRoot, apiTreeProof } = await helpers.loadFixture(
-        deploy
-      );
+      const { roles, dapiDataRegistry, url, apiTreeRoot, apiTreeProof } = await helpers.loadFixture(deploy);
 
       await expect(
         dapiDataRegistry
           .connect(roles.api3MarketContract)
-          .registerAirnodeSignedApiUrl(apiHashType, roles.airnode.address, url, apiTreeRoot, apiTreeProof)
+          .registerAirnodeSignedApiUrl(roles.airnode.address, url, apiTreeRoot, apiTreeProof)
       )
         .to.emit(dapiDataRegistry, 'RegisteredSignedApiUrl')
         .withArgs(roles.airnode.address, url);
@@ -284,16 +286,8 @@ describe('DapiDataRegistry', function () {
 
   describe('registerDapi', function () {
     it('registers a dAPI', async function () {
-      const {
-        roles,
-        dapiDataRegistry,
-        dataFeedData,
-        dapiName,
-        beaconSetId,
-        dapiHashType,
-        dapiTreeRoot,
-        dapiTreeProof,
-      } = await helpers.loadFixture(deploy);
+      const { roles, dapiDataRegistry, dataFeedData, dapiName, beaconSetId, dapiTreeRoot, dapiTreeProof } =
+        await helpers.loadFixture(deploy);
 
       const { airnodes, templateIds } = dataFeedData.reduce(
         (acc, { airnode, templateId }) => ({
@@ -310,7 +304,6 @@ describe('DapiDataRegistry', function () {
 
       await expect(
         dapiDataRegistry.connect(roles.api3MarketContract).registerDapi(
-          dapiHashType,
           dapiName,
           beaconSetId,
           roles.sponsorWallet.address,
