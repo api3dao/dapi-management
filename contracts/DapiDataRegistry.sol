@@ -104,10 +104,6 @@ contract DapiDataRegistry is
         bytes32 root,
         bytes32[] calldata proof
     ) external {
-        require(
-            hasRegistrarRoleOrIsManager(msg.sender),
-            "Sender is not manager or needs Registrar role"
-        );
         require(root != bytes32(0), "Root zero");
         require(proof.length != 0, "Proof empty");
         // Check root exists in TimestampedHashRegistry
@@ -127,7 +123,18 @@ contract DapiDataRegistry is
         emit RegisteredSignedApiUrl(airnode, url);
     }
 
-    function registerDatafeed(
+    function unregisterAirnodeSignedApiUrl(address airnode) external {
+        require(
+            hasRegistrarRoleOrIsManager(msg.sender),
+            "Sender is not manager or needs Registrar role"
+        );
+        require(airnode != address(0));
+        airnodeToSignedApiUrl[airnode] = "";
+
+        // TODO: emit event
+    }
+
+    function registerDataFeed(
         bytes calldata dataFeedData
     ) external returns (bytes32 dataFeedId) {
         require(dataFeedData.length > 0, "Data feed data is empty");
@@ -184,7 +191,7 @@ contract DapiDataRegistry is
             timestampedHashRegistry.hashTypeToHash(hashType) == root,
             "Invalid root"
         );
-        // Check datafeedId has been registered
+        // Check dataFeedId has been registered
         require(
             dataFeedIdToData[dataFeedId].length > 0,
             "dataFeedId has not been registered"
@@ -220,7 +227,7 @@ contract DapiDataRegistry is
         );
     }
 
-    function removeDapi(bytes32 dapiName) external {
+    function unregisterDapi(bytes32 dapiName) external {
         require(
             hasRegistrarRoleOrIsManager(msg.sender),
             "Sender is not manager or needs Registrar role"
@@ -230,6 +237,8 @@ contract DapiDataRegistry is
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         activeDapis.remove(dapiNameHash);
         delete dapiToUpdateParameters[dapiNameHash];
+
+        // TODO: emit event
     }
 
     function registeredDapisCount() public view returns (uint256 count) {

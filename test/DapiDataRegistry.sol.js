@@ -240,8 +240,8 @@ describe('DapiDataRegistry', function () {
     });
   });
 
-  describe('registerDatafeed', function () {
-    it('registers beacon datafeed', async function () {
+  describe('registerDataFeed', function () {
+    it('registers beacon data feed', async function () {
       const { roles, dapiDataRegistry, dataFeedData } = await helpers.loadFixture(deploy);
 
       const encodedBeaconData = hre.ethers.utils.defaultAbiCoder.encode(
@@ -253,12 +253,12 @@ describe('DapiDataRegistry', function () {
         [dataFeedData[0].airnode, dataFeedData[0].templateId]
       );
 
-      await expect(dapiDataRegistry.connect(roles.randomPerson).registerDatafeed(encodedBeaconData))
+      await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconData))
         .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
         .withArgs(dataFeedId, encodedBeaconData);
       expect(await dapiDataRegistry.dataFeedIdToData(dataFeedId)).to.equal(encodedBeaconData);
     });
-    it('registers beaconSet datafeed', async function () {
+    it('registers beaconSet data feed', async function () {
       const { roles, dapiDataRegistry, dataFeedData, beaconSetId } = await helpers.loadFixture(deploy);
 
       const { airnodes, templateIds } = dataFeedData.reduce(
@@ -273,7 +273,7 @@ describe('DapiDataRegistry', function () {
         [airnodes, templateIds]
       );
 
-      await expect(dapiDataRegistry.connect(roles.randomPerson).registerDatafeed(encodedBeaconSetData))
+      await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData))
         .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
         .withArgs(beaconSetId, encodedBeaconSetData);
       expect(await dapiDataRegistry.dataFeedIdToData(beaconSetId)).to.deep.equal(encodedBeaconSetData);
@@ -304,7 +304,7 @@ describe('DapiDataRegistry', function () {
         ['address[]', 'bytes32[]'],
         [airnodes, templateIds]
       );
-      await dapiDataRegistry.connect(roles.randomPerson).registerDatafeed(encodedBeaconSetData);
+      await dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData);
 
       await expect(
         dapiDataRegistry.connect(roles.api3MarketContract).registerDapi(
