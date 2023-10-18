@@ -11,6 +11,8 @@ const {
 } = require('./test-utils');
 
 describe('DapiDataRegistry', function () {
+  const HUNDRED_PERCENT = 1e8;
+
   function generateRandomString(length) {
     const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
@@ -312,21 +314,25 @@ describe('DapiDataRegistry', function () {
           dapiName,
           beaconSetId,
           roles.sponsorWallet.address,
-          1, //deviationThreshold,
-          86400, //heartbeatInterval,
+          HUNDRED_PERCENT / 50, // 2% deviationThresholdInPercentage,
+          0, // deviationReference
+          86400, // 24hr heartbeatInterval,
           dapiTreeRoot,
           dapiTreeProof
         )
       )
         .to.emit(dapiDataRegistry, 'RegisteredDapi')
-        .withArgs(dapiName, beaconSetId, roles.sponsorWallet.address, 1, 86400);
+        .withArgs(dapiName, beaconSetId, roles.sponsorWallet.address, HUNDRED_PERCENT / 50, 0, 86400);
 
       const dapisCount = await dapiDataRegistry.registeredDapisCount();
       expect(dapisCount).to.equal(1);
       const [dapiNameHashes, dataFeedIds, updateParameters] = await dapiDataRegistry.readDapis(0, dapisCount);
       expect(dapiNameHashes).to.deep.equal([hre.ethers.utils.solidityKeccak256(['bytes32'], [dapiName])]);
       expect(dataFeedIds).to.deep.equal([beaconSetId]);
-      expect(updateParameters[0].deviationThreshold).to.deep.equal(hre.ethers.BigNumber.from(1));
+      expect(updateParameters[0].deviationThresholdInPercentage).to.deep.equal(
+        hre.ethers.BigNumber.from(HUNDRED_PERCENT / 50)
+      );
+      expect(updateParameters[0].deviationReference).to.deep.equal(hre.ethers.constants.Zero);
       expect(updateParameters[0].heartbeatInterval).to.deep.equal(hre.ethers.BigNumber.from(86400));
     });
   });

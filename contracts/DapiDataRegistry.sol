@@ -16,6 +16,10 @@ contract DapiDataRegistry is
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
+    /// @notice Number that represents 100%
+    // uint256 public constant override HUNDRED_PERCENT = 1e8;
+    uint256 public constant HUNDRED_PERCENT = 1e8;
+
     /// @notice Registrar role description
     // string public constant override REGISTRAR_ROLE_DESCRIPTION = "Registrar";
     string public constant REGISTRAR_ROLE_DESCRIPTION = "Registrar";
@@ -35,15 +39,15 @@ contract DapiDataRegistry is
         bytes32 indexed dapiName,
         bytes32 indexed dataFeedId,
         address sponsorWallet,
-        uint256 deviationThreshold,
+        uint256 deviationThresholdInPercentage,
+        int224 deviationReference,
         uint256 heartbeatInterval
     );
 
-    // TODO: use uint128 to pack both in a single 32 bytes slot?
     struct UpdateParameters {
-        uint256 deviationThreshold;
+        uint256 deviationThresholdInPercentage;
+        int224 deviationReference;
         uint256 heartbeatInterval;
-        // int224 deviationReference; Currently not used by Airseeker v1
     }
 
     // This is updated using the API management merkle tree
@@ -175,7 +179,8 @@ contract DapiDataRegistry is
         bytes32 dapiName,
         bytes32 dataFeedId,
         address sponsorWallet,
-        uint256 deviationThreshold, // TODO: how to represent this? basis points? 0.25% == 25
+        uint256 deviationThresholdInPercentage,
+        int224 deviationReference,
         uint256 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
@@ -211,8 +216,9 @@ contract DapiDataRegistry is
         //       or refactor UpdateParameters to also include dapiName?
         activeDapis.add(dapiNameHash);
         dapiToUpdateParameters[dapiNameHash] = UpdateParameters(
-            deviationThreshold,
-            heartbeatInterval
+            deviationThresholdInPercentage, // TODO: can this be 0? should we check against any low/high boundary based on HUNDRED_PERCENT constant?
+            deviationReference,
+            heartbeatInterval // TODO: can this be 0?
         );
 
         // Set dapiName to dataFeedId (this contract needs to be granted the dapi name setter role)
@@ -222,7 +228,8 @@ contract DapiDataRegistry is
             dapiName,
             dataFeedId,
             sponsorWallet,
-            deviationThreshold,
+            deviationThresholdInPercentage,
+            deviationReference,
             heartbeatInterval
         );
     }
