@@ -295,18 +295,19 @@ contract DapiDataRegistry is
         dataFeedIds = new bytes32[](limitAdjusted);
         dataFeedDatas = new bytes[](limitAdjusted);
         updateParameters = new UpdateParameters[](limitAdjusted);
-        for (uint256 ind = 0; ind < offset + limitAdjusted; ind++) {
+        for (uint256 ind = offset; ind < offset + limitAdjusted; ind++) {
             bytes32 dapiName = activeDapis.at(ind);
-            dapiNames[ind] = dapiName;
+            uint256 currentIndex = ind - offset;
+            dapiNames[currentIndex] = dapiName;
             bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
             bytes32 dataFeedId = api3ServerV1.dapiNameHashToDataFeedId(
                 dapiNameHash
             );
-            dataFeedIds[ind] = dataFeedId;
+            dataFeedIds[currentIndex] = dataFeedId;
             updateParameters[ind] = dapiNameHashToUpdateParameters[
                 dapiNameHash
             ];
-            dataFeedDatas[ind] = dataFeedIdToData[dataFeedId];
+            dataFeedDatas[currentIndex] = dataFeedIdToData[dataFeedId];
         }
     }
 }
