@@ -9,7 +9,7 @@ const wallet = ethers.Wallet.fromMnemonic(mnemonic);
 
 // Define the domain structure for EIP-712 signing
 const domain = {
-  name: 'TimestampedHashRegistry',
+  name: 'HashRegistry',
   version: '1.0.0',
   chainId: 1,
   verifyingContract: '0x0000000000000000000000000000000000000000',
