@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "./interfaces/ITimestampedHashRegistry.sol";
+import "./interfaces/IHashRegistry.sol";
 
 /// @title Contract that allows users to manage hashes by type which have been
 /// signed by a set of pre-defined signer accounts
@@ -20,12 +20,7 @@ import "./interfaces/ITimestampedHashRegistry.sol";
 /// @dev This contract inherits SelfMulticall meaning that all external functions
 /// can be called via multicall() or tryMulticall(). Hashes are expected to be
 /// signed following the EIP-712 signature specification.
-contract TimestampedHashRegistry is
-    Ownable,
-    EIP712,
-    SelfMulticall,
-    ITimestampedHashRegistry
-{
+contract HashRegistry is Ownable, EIP712, SelfMulticall, IHashRegistry {
     using ECDSA for bytes32;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -41,7 +36,7 @@ contract TimestampedHashRegistry is
             "SignedHash(bytes32 hashType,bytes32 hash,uint256 timestamp)"
         );
 
-    constructor() EIP712("TimestampedHashRegistry", "1.0.0") {}
+    constructor() EIP712("HashRegistry", "1.0.0") {}
 
     /// @notice Called by the owner to set the hash signers
     /// @param hashType Hash representing a hash type

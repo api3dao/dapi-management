@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-interface ITimestampedHashRegistry {
+interface IHashRegistry {
     event SetupSigners(bytes32 indexed hashType, address[] signers);
 
     event AddedSigner(bytes32 indexed hashType, address signer);
