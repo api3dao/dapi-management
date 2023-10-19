@@ -43,9 +43,9 @@ describe('DapiDataRegistry', function () {
       return { ...acc, [roleName]: accounts[index] };
     }, {});
 
-    const TimestampedHashRegistry = await hre.ethers.getContractFactory('TimestampedHashRegistry', roles.deployer);
-    const timestampedHashRegistry = await TimestampedHashRegistry.deploy();
-    await timestampedHashRegistry.connect(roles.deployer).transferOwnership(roles.owner.address);
+    const HashRegistry = await hre.ethers.getContractFactory('HashRegistry', roles.deployer);
+    const hashRegistry = await HashRegistry.deploy();
+    await hashRegistry.connect(roles.deployer).transferOwnership(roles.owner.address);
 
     const AccessControlRegistry = await hre.ethers.getContractFactory('AccessControlRegistry', roles.deployer);
     const accessControlRegistry = await AccessControlRegistry.deploy();
@@ -64,7 +64,7 @@ describe('DapiDataRegistry', function () {
       accessControlRegistry.address,
       dapiDataRegistryAdminRoleDescription,
       roles.manager.address,
-      timestampedHashRegistry.address,
+      hashRegistry.address,
       api3ServerV1.address
     );
 
@@ -96,8 +96,8 @@ describe('DapiDataRegistry', function () {
       .grantRole(await api3ServerV1.dapiNameSetterRole(), dapiDataRegistry.address);
 
     const timestamp = Math.floor(Date.now() / 1000);
-    const chainId = (await timestampedHashRegistry.provider.getNetwork()).chainId;
-    const domain = buildEIP712Domain('TimestampedHashRegistry', chainId, timestampedHashRegistry.address);
+    const chainId = (await hashRegistry.provider.getNetwork()).chainId;
+    const domain = buildEIP712Domain('HashRegistry', chainId, hashRegistry.address);
     const types = {
       SignedHash: [
         { name: 'hashType', type: 'bytes32' },
@@ -136,11 +136,11 @@ describe('DapiDataRegistry', function () {
     );
     const apiTreeProof = apiTree.getProof(apiTreeEntry);
 
-    await timestampedHashRegistry.connect(roles.owner).setupSigners(
+    await hashRegistry.connect(roles.owner).setupSigners(
       apiHashType,
       rootSigners.map((rootSigner) => rootSigner.address)
     );
-    await timestampedHashRegistry.registerHash(apiHashType, apiTreeRoot, timestamp, apiTreeRootSignatures);
+    await hashRegistry.registerHash(apiHashType, apiTreeRoot, timestamp, apiTreeRootSignatures);
 
     const dapiName = hre.ethers.utils.formatBytes32String('API3/USD');
     const dataFeedData = Array(5)
@@ -183,11 +183,11 @@ describe('DapiDataRegistry', function () {
     );
     const dapiTreeProof = dapiTree.getProof(dapiTreeEntry);
 
-    await timestampedHashRegistry.connect(roles.owner).setupSigners(
+    await hashRegistry.connect(roles.owner).setupSigners(
       dapiHashType,
       rootSigners.map((rootSigner) => rootSigner.address)
     );
-    await timestampedHashRegistry.registerHash(dapiHashType, dapiTreeRoot, timestamp, dapiTreeRootSignatures);
+    await hashRegistry.registerHash(dapiHashType, dapiTreeRoot, timestamp, dapiTreeRootSignatures);
 
     return {
       roles,
@@ -195,7 +195,7 @@ describe('DapiDataRegistry', function () {
       registrarRole,
       accessControlRegistry,
       dapiDataRegistry,
-      timestampedHashRegistry,
+      hashRegistry,
       api3ServerV1,
       dapiDataRegistryAdminRoleDescription,
       url,
@@ -216,7 +216,7 @@ describe('DapiDataRegistry', function () {
         registrarRole,
         accessControlRegistry,
         dapiDataRegistry,
-        timestampedHashRegistry,
+        hashRegistry,
         api3ServerV1,
         dapiDataRegistryAdminRoleDescription,
       } = await helpers.loadFixture(deploy);
@@ -224,7 +224,7 @@ describe('DapiDataRegistry', function () {
       expect(await dapiDataRegistry.adminRoleDescription()).to.equal(dapiDataRegistryAdminRoleDescription);
       expect(await dapiDataRegistry.manager()).to.equal(roles.manager.address);
       expect(await dapiDataRegistry.registrarRole()).to.equal(registrarRole);
-      expect(await dapiDataRegistry.timestampedHashRegistry()).to.equal(timestampedHashRegistry.address);
+      expect(await dapiDataRegistry.hashRegistry()).to.equal(hashRegistry.address);
       expect(await dapiDataRegistry.api3ServerV1()).to.equal(api3ServerV1.address);
     });
   });

@@ -6,7 +6,7 @@ import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3Serve
 import "@api3/airnode-protocol-v1/contracts/utils/SelfMulticall.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "./interfaces/ITimestampedHashRegistry.sol";
+import "./interfaces/IHashRegistry.sol";
 
 import "hardhat/console.sol";
 
@@ -42,8 +42,8 @@ contract DapiDataRegistry is
     // bytes32 public immutable override registrarRole;
     bytes32 public immutable registrarRole;
 
-    // ITimestampedHashRegistry public immutable override timestampedHashRegistry;
-    ITimestampedHashRegistry public immutable timestampedHashRegistry;
+    // IHashRegistry public immutable override hashRegistry;
+    IHashRegistry public immutable hashRegistry;
     // IApi3ServerV1 public immutable override api3ServerV1;
     IApi3ServerV1 public immutable api3ServerV1;
 
@@ -87,7 +87,7 @@ contract DapiDataRegistry is
         address _accessControlRegistry,
         string memory _adminRoleDescription,
         address _manager,
-        ITimestampedHashRegistry _timestampedHashRegistry,
+        IHashRegistry _hashRegistry,
         IApi3ServerV1 _api3ServerV1
     )
         AccessControlRegistryAdminnedWithManager(
@@ -100,7 +100,7 @@ contract DapiDataRegistry is
             _deriveAdminRole(manager),
             REGISTRAR_ROLE_DESCRIPTION
         );
-        timestampedHashRegistry = _timestampedHashRegistry;
+        hashRegistry = _hashRegistry;
         api3ServerV1 = _api3ServerV1;
     }
 
@@ -126,11 +126,9 @@ contract DapiDataRegistry is
     ) external {
         require(root != bytes32(0), "Root zero");
         require(proof.length != 0, "Proof empty");
-        // Check root exists in TimestampedHashRegistry
+        // Check root exists in HashRegistry
         require(
-            timestampedHashRegistry.hashTypeToHash(
-                _API_INTEGRATION_HASH_TYPE
-            ) == root,
+            hashRegistry.hashTypeToHash(_API_INTEGRATION_HASH_TYPE) == root,
             "Invalid root"
         );
 
@@ -210,9 +208,7 @@ contract DapiDataRegistry is
         require(proof.length != 0, "Proof empty");
         // Check root exists in TimestampedHashRegistry
         require(
-            timestampedHashRegistry.hashTypeToHash(
-                _DAPI_MANAGEMENT_HASH_TYPE
-            ) == root,
+            hashRegistry.hashTypeToHash(_DAPI_MANAGEMENT_HASH_TYPE) == root,
             "Invalid root"
         );
         // Check dataFeedId has been registered
