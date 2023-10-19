@@ -302,31 +302,43 @@ describe('DapiDataRegistry', function () {
       );
       await dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData);
 
+      const deviationThresholdInPercentage = hre.ethers.BigNumber.from(HUNDRED_PERCENT / 50); // 2%
+      const deviationReference = hre.ethers.constants.Zero; // Not used in Airseeker V1
+      const heartbeatInterval = hre.ethers.BigNumber.from(86400); // 24 hrs
+
       await expect(
-        dapiDataRegistry.connect(roles.api3MarketContract).registerDapi(
+        dapiDataRegistry
+          .connect(roles.api3MarketContract)
+          .registerDapi(
+            dapiName,
+            beaconSetId,
+            roles.sponsorWallet.address,
+            deviationThresholdInPercentage,
+            deviationReference,
+            heartbeatInterval,
+            dapiTreeRoot,
+            dapiTreeProof
+          )
+      )
+        .to.emit(dapiDataRegistry, 'RegisteredDapi')
+        .withArgs(
           dapiName,
           beaconSetId,
           roles.sponsorWallet.address,
-          HUNDRED_PERCENT / 50, // 2% deviationThresholdInPercentage,
-          0, // deviationReference
-          86400, // 24hr heartbeatInterval,
-          dapiTreeRoot,
-          dapiTreeProof
-        )
-      )
-        .to.emit(dapiDataRegistry, 'RegisteredDapi')
-        .withArgs(dapiName, beaconSetId, roles.sponsorWallet.address, HUNDRED_PERCENT / 50, 0, 86400);
+          deviationThresholdInPercentage,
+          deviationReference,
+          heartbeatInterval
+        );
 
       const dapisCount = await dapiDataRegistry.registeredDapisCount();
       expect(dapisCount).to.equal(1);
-      const [dapiNames, dataFeedIds, updateParameters] = await dapiDataRegistry.readDapis(0, dapisCount);
+      const [dapiNames, dataFeedIds, updateParameters, dataFeedDatas] = await dapiDataRegistry.readDapis(0, dapisCount);
       expect(dapiNames).to.deep.equal([dapiName]);
       expect(dataFeedIds).to.deep.equal([beaconSetId]);
-      expect(updateParameters[0].deviationThresholdInPercentage).to.deep.equal(
-        hre.ethers.BigNumber.from(HUNDRED_PERCENT / 50)
-      );
-      expect(updateParameters[0].deviationReference).to.deep.equal(hre.ethers.constants.Zero);
-      expect(updateParameters[0].heartbeatInterval).to.deep.equal(hre.ethers.BigNumber.from(86400));
+      expect(updateParameters[0].deviationThresholdInPercentage).to.deep.equal(deviationThresholdInPercentage);
+      expect(updateParameters[0].deviationReference).to.deep.equal(deviationReference);
+      expect(updateParameters[0].heartbeatInterval).to.deep.equal(heartbeatInterval);
+      expect(dataFeedDatas).to.deep.equal([encodedBeaconSetData]);
     });
   });
 });

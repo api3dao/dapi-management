@@ -206,7 +206,7 @@ contract DapiDataRegistry is
         );
         require(root != bytes32(0), "Root zero");
         require(proof.length != 0, "Proof empty");
-        // Check root exists in TimestampedHashRegistry
+        // Check root exists in HashRegistry
         require(
             hashRegistry.hashTypeToHash(_DAPI_MANAGEMENT_HASH_TYPE) == root,
             "Invalid root"
@@ -272,7 +272,8 @@ contract DapiDataRegistry is
         returns (
             bytes32[] memory dapiNames,
             bytes32[] memory dataFeedIds,
-            UpdateParameters[] memory updateParameters
+            UpdateParameters[] memory updateParameters,
+            bytes[] memory dataFeedDatas
         )
     {
         uint256 count = registeredDapisCount();
@@ -280,18 +281,20 @@ contract DapiDataRegistry is
         uint256 limitAdjusted = offset + limit > count ? count - offset : limit;
         dapiNames = new bytes32[](limitAdjusted);
         dataFeedIds = new bytes32[](limitAdjusted);
+        dataFeedDatas = new bytes[](limitAdjusted);
         updateParameters = new UpdateParameters[](limitAdjusted);
         for (uint256 ind = 0; ind < offset + limitAdjusted; ind++) {
             bytes32 dapiName = activeDapis.at(ind);
             dapiNames[ind] = dapiName;
             bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
-            dataFeedIds[ind] = api3ServerV1.dapiNameHashToDataFeedId(
+            bytes32 dataFeedId = api3ServerV1.dapiNameHashToDataFeedId(
                 dapiNameHash
             );
+            dataFeedIds[ind] = dataFeedId;
             updateParameters[ind] = dapiNameHashToUpdateParameters[
                 dapiNameHash
             ];
+            dataFeedDatas[ind] = dataFeedIdToData[dataFeedId];
         }
-        // TODO: should this function also return the Signed API URLs for each Airnode in the UpdateParameters?
     }
 }
