@@ -158,6 +158,7 @@ contract DapiDataRegistry is
         bytes calldata dataFeedData
     ) external returns (bytes32 dataFeedId) {
         require(dataFeedData.length > 0, "Data feed data is empty");
+        bytes memory newDataFeedData;
         if (dataFeedData.length == 64) {
             // DataFeedId maps to a beacon
             (address airnode, bytes32 templateId) = abi.decode(
@@ -167,7 +168,13 @@ contract DapiDataRegistry is
             // Derive beacon ID
             // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L87
             dataFeedId = keccak256(abi.encodePacked(airnode, templateId));
+            newDataFeedData = dataFeedData;
         } else {
+            // dataFeedData must have an even number of bytes32 pairs
+            require(
+                (dataFeedData.length / 2) % 32 == 0,
+                "Invalid data feed data"
+            );
             // DataFeedId maps to a beaconSet
             (address[] memory airnodes, bytes32[] memory templateIds) = abi
                 .decode(dataFeedData, (address[], bytes32[]));
@@ -179,15 +186,20 @@ contract DapiDataRegistry is
                 beaconIds[ind] = keccak256(
                     abi.encodePacked(airnodes[ind], templateIds[ind])
                 );
+                // console.log("Airnode: %s", airnodes[ind]);
+                // console.logBytes32(templateIds[ind]);
+                // console.logBytes32(beaconIds[ind]);
             }
             // Derive beacon set ID
             // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L98
             dataFeedId = keccak256(abi.encode(beaconIds));
+
+            newDataFeedData = abi.encode(airnodes, templateIds);
         }
 
-        dataFeedIdToData[dataFeedId] = dataFeedData;
+        dataFeedIdToData[dataFeedId] = newDataFeedData;
 
-        emit RegisteredDataFeed(dataFeedId, dataFeedData);
+        emit RegisteredDataFeed(dataFeedId, newDataFeedData);
     }
 
     function registerDapi(
