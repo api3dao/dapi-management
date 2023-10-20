@@ -122,12 +122,12 @@ contract DapiDataRegistry is
         bytes32 root,
         bytes32[] calldata proof
     ) external {
-        require(root != bytes32(0), "Root zero");
-        require(proof.length != 0, "Proof empty");
+        require(root != bytes32(0), "Root is zero");
+        require(proof.length != 0, "Proof is empty");
         // Check root exists in HashRegistry
         require(
             hashRegistry.hashTypeToHash(_API_INTEGRATION_HASH_TYPE) == root,
-            "Invalid root"
+            "Root has not been registered"
         );
 
         // Verify proof
@@ -142,15 +142,15 @@ contract DapiDataRegistry is
     }
 
     function unregisterAirnodeSignedApiUrl(address airnode) external {
+        require(airnode != address(0), "Airnode is zero");
         require(
             hasRegistrarRoleOrIsManager(msg.sender),
             "Sender is not manager or needs Registrar role"
         );
-        require(airnode != address(0));
 
         // TODO: check if signed API URL is not being mappaed to an Airnode in dataFeedIdToData?
 
-        airnodeToSignedApiUrl[airnode] = "";
+        delete airnodeToSignedApiUrl[airnode];
 
         emit UnregisteredSignedApiUrl(airnode); // TODO: add msg.sender?
     }
@@ -184,13 +184,13 @@ contract DapiDataRegistry is
                 .decode(dataFeedData, (address[], bytes32[]));
             require(airnodes.length == templateIds.length, "Length mismatch");
             bytes32[] memory beaconIds = new bytes32[](airnodes.length);
-            for (uint256 ind = 0; ind < airnodes.length; ind++) {
+            for (uint256 i = 0; i < airnodes.length; i++) {
                 // TODO: check if signed API URL exists for Airnode?
 
                 // Derive beacon ID
                 // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L87
-                beaconIds[ind] = keccak256(
-                    abi.encodePacked(airnodes[ind], templateIds[ind])
+                beaconIds[i] = keccak256(
+                    abi.encodePacked(airnodes[i], templateIds[i])
                 );
             }
             // Derive beacon set ID
@@ -215,21 +215,21 @@ contract DapiDataRegistry is
         bytes32 root,
         bytes32[] calldata proof
     ) external {
+        require(root != bytes32(0), "Root is zero");
+        require(proof.length != 0, "Proof is empty");
         require(
             hasRegistrarRoleOrIsManager(msg.sender),
             "Sender is not manager or needs Registrar role"
         );
-        require(root != bytes32(0), "Root zero");
-        require(proof.length != 0, "Proof empty");
         // Check root exists in HashRegistry
         require(
             hashRegistry.hashTypeToHash(_DAPI_MANAGEMENT_HASH_TYPE) == root,
-            "Invalid root"
+            "Root has not been registered"
         );
         // Check dataFeedId has been registered
         require(
             dataFeedIdToData[dataFeedId].length > 0,
-            "dataFeedId has not been registered"
+            "Data feed ID has not been registered"
         );
 
         // Verify proof
@@ -240,7 +240,7 @@ contract DapiDataRegistry is
         );
         require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
 
-        activeDapis.add(dapiName); // TODO: Not checking if already exists in set to allow for update parameters override
+        activeDapis.add(dapiName); // TODO: Not checking if already exists in set to allow for update parameters override (downgrade/upgrade)
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         dapiNameHashToUpdateParameters[dapiNameHash] = UpdateParameters(
             deviationThresholdInPercentage, // TODO: can this be 0? should we check against any low/high boundary based on HUNDRED_PERCENT constant?
@@ -262,11 +262,11 @@ contract DapiDataRegistry is
     }
 
     function unregisterDapi(bytes32 dapiName) external {
+        require(dapiName != bytes32(0), "dAPI name is zero");
         require(
             hasRegistrarRoleOrIsManager(msg.sender),
             "Sender is not manager or needs Registrar role"
         );
-        require(dapiName != bytes32(0), "dAPI name is empty");
         require(activeDapis.remove(dapiName), "dAPI name is not registered");
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         delete dapiNameHashToUpdateParameters[dapiNameHash];
@@ -314,7 +314,6 @@ contract DapiDataRegistry is
             ];
             bytes memory dataFeedData = dataFeedIdToData[dataFeedId];
             dataFeedDatas[currentIndex] = dataFeedData;
-
             if (dataFeedData.length == 64) {
                 (address airnode, ) = abi.decode(
                     dataFeedData,

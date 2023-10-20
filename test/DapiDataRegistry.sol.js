@@ -8,6 +8,7 @@ const {
   deriveRootRole,
   deriveRole,
   buildEIP712Domain,
+  generateRandomBytes,
 } = require('./test-utils');
 
 describe('DapiDataRegistry', function () {
@@ -231,212 +232,631 @@ describe('DapiDataRegistry', function () {
   });
 
   describe('registerAirnodeSignedApiUrl', function () {
-    it('registers an Airnode signed API URL', async function () {
-      const { roles, dapiDataRegistry, apiTree, apiTreeValues } = await helpers.loadFixture(deploy);
+    context('Root is not zero', function () {
+      context('Proof is not empty', function () {
+        context('Root has been registered', function () {
+          context('Proof is valid', function () {
+            it('registers an Airnode signed API URL', async function () {
+              const { roles, dapiDataRegistry, apiTree, apiTreeValues } = await helpers.loadFixture(deploy);
 
-      const apiTreeRoot = apiTree.root;
-      const [airnode, url] = apiTreeValues[2];
-      const apiTreeProof = apiTree.getProof([airnode, url]);
+              const apiTreeRoot = apiTree.root;
+              const [airnode, url] = apiTreeValues[2];
+              const apiTreeProof = apiTree.getProof([airnode, url]);
 
-      await expect(
-        dapiDataRegistry
-          .connect(roles.api3MarketContract)
-          .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof)
-      )
-        .to.emit(dapiDataRegistry, 'RegisteredSignedApiUrl')
-        .withArgs(airnode, url);
-      expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
+              await expect(
+                dapiDataRegistry
+                  .connect(roles.api3MarketContract)
+                  .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof)
+              )
+                .to.emit(dapiDataRegistry, 'RegisteredSignedApiUrl')
+                .withArgs(airnode, url);
+              expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
+            });
+          });
+          context('Proof is not valid', function () {
+            it('reverts', async function () {
+              const { roles, dapiDataRegistry, apiTree, apiTreeValues } = await helpers.loadFixture(deploy);
+
+              const apiTreeRoot = apiTree.root;
+              const [airnode, url] = apiTreeValues[2];
+
+              await expect(
+                dapiDataRegistry
+                  .connect(roles.api3MarketContract)
+                  .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, [
+                    generateRandomBytes32(),
+                    generateRandomBytes32(),
+                  ])
+              ).to.be.revertedWith('Invalid proof');
+            });
+          });
+        });
+        context('Root has not been registered', function () {
+          it('reverts', async function () {
+            const { roles, dapiDataRegistry, apiTree, apiTreeValues } = await helpers.loadFixture(deploy);
+
+            const [airnode, url] = apiTreeValues[2];
+            const apiTreeProof = apiTree.getProof([airnode, url]);
+
+            await expect(
+              dapiDataRegistry
+                .connect(roles.api3MarketContract)
+                .registerAirnodeSignedApiUrl(airnode, url, generateRandomBytes32(), apiTreeProof)
+            ).to.be.revertedWith('Root has not been registered');
+          });
+        });
+      });
+      context('Proof is empty', function () {
+        it('reverts', async function () {
+          const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
+
+          await expect(
+            dapiDataRegistry
+              .connect(roles.api3MarketContract)
+              .registerAirnodeSignedApiUrl(
+                generateRandomAddress(),
+                generateRandomBytes(20),
+                generateRandomBytes32(),
+                []
+              )
+          ).to.be.revertedWith('Proof is empty');
+        });
+      });
+    });
+    context('Root is zero', function () {
+      it('reverts', async function () {
+        const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
+
+        await expect(
+          dapiDataRegistry
+            .connect(roles.api3MarketContract)
+            .registerAirnodeSignedApiUrl(
+              generateRandomAddress(),
+              generateRandomBytes(20),
+              hre.ethers.constants.HashZero,
+              [generateRandomBytes32(), generateRandomBytes32()]
+            )
+        ).to.be.revertedWith('Root is zero');
+      });
+    });
+  });
+
+  describe('unregisterAirnodeSignedApiUrl', function () {
+    context('Airnode is not zero', function () {
+      context('Sender is manager or needs Registrar role', function () {
+        it('unregisters an Airnode signed API URL', async function () {
+          const { roles, dapiDataRegistry, apiTree, apiTreeValues } = await helpers.loadFixture(deploy);
+
+          const apiTreeRoot = apiTree.root;
+          const [airnode, url] = apiTreeValues[2];
+          const apiTreeProof = apiTree.getProof([airnode, url]);
+
+          expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal('');
+          await dapiDataRegistry
+            .connect(roles.api3MarketContract)
+            .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof);
+          expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
+          await expect(dapiDataRegistry.connect(roles.api3MarketContract).unregisterAirnodeSignedApiUrl(airnode))
+            .to.emit(dapiDataRegistry, 'UnregisteredSignedApiUrl')
+            .withArgs(airnode);
+          expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal('');
+        });
+      });
+      context('Sender is not manager or needs Registrar role', function () {
+        it('reverts', async function () {
+          const { roles, dapiDataRegistry, apiTree, apiTreeValues } = await helpers.loadFixture(deploy);
+
+          const apiTreeRoot = apiTree.root;
+          const [airnode, url] = apiTreeValues[2];
+          const apiTreeProof = apiTree.getProof([airnode, url]);
+
+          expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal('');
+          await dapiDataRegistry
+            .connect(roles.api3MarketContract)
+            .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof);
+          expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
+          await expect(
+            dapiDataRegistry.connect(roles.randomPerson).unregisterAirnodeSignedApiUrl(airnode)
+          ).to.be.revertedWith('Sender is not manager or needs Registrar role');
+          expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
+        });
+      });
+    });
+    context('Airnode is zero', function () {
+      it('reverts', async function () {
+        const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
+
+        await expect(
+          dapiDataRegistry
+            .connect(roles.api3MarketContract)
+            .unregisterAirnodeSignedApiUrl(hre.ethers.constants.AddressZero)
+        ).to.be.revertedWith('Airnode is zero');
+      });
     });
   });
 
   describe('registerDataFeed', function () {
-    context('Encoded data feed data is valid 32 bytes pairs', function () {
-      it('registers beacon data feed', async function () {
-        const { roles, dapiDataRegistry, dataFeedData } = await helpers.loadFixture(deploy);
+    context('Data feed data is not empty', function () {
+      context('Encoded data feed data is valid address and bytes32 pairs', function () {
+        context('Encoded data feed data is valid 32 bytes pairs', function () {
+          it('registers beacon data feed', async function () {
+            const { roles, dapiDataRegistry, dataFeedData } = await helpers.loadFixture(deploy);
 
-        const encodedBeaconData = hre.ethers.utils.defaultAbiCoder.encode(
-          ['address', 'bytes32'],
-          [dataFeedData[0].airnode, dataFeedData[0].templateId]
-        );
-        const dataFeedId = hre.ethers.utils.solidityKeccak256(
-          ['address', 'bytes32'],
-          [dataFeedData[0].airnode, dataFeedData[0].templateId]
-        );
+            const encodedBeaconData = hre.ethers.utils.defaultAbiCoder.encode(
+              ['address', 'bytes32'],
+              [dataFeedData[0].airnode, dataFeedData[0].templateId]
+            );
+            const dataFeedId = hre.ethers.utils.solidityKeccak256(
+              ['address', 'bytes32'],
+              [dataFeedData[0].airnode, dataFeedData[0].templateId]
+            );
 
-        await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconData))
-          .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
-          .withArgs(dataFeedId, encodedBeaconData);
-        expect(await dapiDataRegistry.dataFeedIdToData(dataFeedId)).to.equal(encodedBeaconData);
+            await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconData))
+              .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
+              .withArgs(dataFeedId, encodedBeaconData);
+            expect(await dapiDataRegistry.dataFeedIdToData(dataFeedId)).to.equal(encodedBeaconData);
+          });
+          it('registers beaconSet data feed', async function () {
+            const { roles, dapiDataRegistry, dataFeedData, beaconSetId } = await helpers.loadFixture(deploy);
+
+            const { airnodes, templateIds } = dataFeedData.reduce(
+              (acc, { airnode, templateId }) => ({
+                airnodes: [...acc.airnodes, airnode],
+                templateIds: [...acc.templateIds, templateId],
+              }),
+              { airnodes: [], templateIds: [] }
+            );
+            const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+              ['address[]', 'bytes32[]'],
+              [airnodes, templateIds]
+            );
+
+            await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData))
+              .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
+              .withArgs(beaconSetId, encodedBeaconSetData);
+            expect(await dapiDataRegistry.dataFeedIdToData(beaconSetId)).to.deep.equal(encodedBeaconSetData);
+          });
+          it('registers beaconSet data feed dropping trailing data', async function () {
+            const { roles, dapiDataRegistry, dataFeedData, beaconSetId } = await helpers.loadFixture(deploy);
+
+            const { airnodes, templateIds } = dataFeedData.reduce(
+              (acc, { airnode, templateId }) => ({
+                airnodes: [...acc.airnodes, airnode],
+                templateIds: [...acc.templateIds, templateId],
+              }),
+              { airnodes: [], templateIds: [] }
+            );
+            const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+              ['address[]', 'bytes32[]'],
+              [airnodes, templateIds]
+            );
+            const extraBytes32 = generateRandomBytes32();
+            const extraAddress = generateRandomAddress();
+            const encodedBeaconSetDataWithEvenNumberOfExtraBytes32 = hre.ethers.utils.hexConcat([
+              encodedBeaconSetData,
+              extraBytes32,
+              extraBytes32,
+              extraBytes32,
+              hre.ethers.utils.hexZeroPad(extraAddress, 32),
+            ]);
+            await expect(
+              dapiDataRegistry
+                .connect(roles.randomPerson)
+                .registerDataFeed(encodedBeaconSetDataWithEvenNumberOfExtraBytes32)
+            )
+              .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
+              .withArgs(beaconSetId, encodedBeaconSetData);
+            expect(await dapiDataRegistry.dataFeedIdToData(beaconSetId)).to.deep.equal(encodedBeaconSetData);
+          });
+        });
+        context('Encoded data feed data is not valid 32 bytes pairs', function () {
+          it('reverts', async function () {
+            const { roles, dapiDataRegistry, dataFeedData, beaconSetId } = await helpers.loadFixture(deploy);
+
+            const { airnodes, templateIds } = dataFeedData.reduce(
+              (acc, { airnode, templateId }) => ({
+                airnodes: [...acc.airnodes, airnode],
+                templateIds: [...acc.templateIds, templateId],
+              }),
+              { airnodes: [], templateIds: [] }
+            );
+            const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+              ['address[]', 'bytes32[]'],
+              [airnodes, templateIds]
+            );
+            const extraBytes32 = generateRandomBytes32();
+            const encodedBeaconSetDataWithEvenNumberOfExtraBytes32 = hre.ethers.utils.hexConcat([
+              encodedBeaconSetData,
+              extraBytes32,
+              extraBytes32,
+              extraBytes32,
+            ]);
+            await expect(
+              dapiDataRegistry
+                .connect(roles.randomPerson)
+                .registerDataFeed(encodedBeaconSetDataWithEvenNumberOfExtraBytes32)
+            ).to.have.been.revertedWith('Invalid data feed data');
+            const extraAddress = generateRandomAddress();
+            const encodedBeaconSetDataWithExtraAddress = hre.ethers.utils.hexConcat([
+              encodedBeaconSetData,
+              extraAddress,
+            ]);
+            await expect(
+              dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetDataWithExtraAddress)
+            ).to.have.been.revertedWith('Invalid data feed data');
+            expect(await dapiDataRegistry.dataFeedIdToData(beaconSetId)).to.deep.equal('0x');
+          });
+        });
       });
-      it('registers beaconSet data feed', async function () {
-        const { roles, dapiDataRegistry, dataFeedData, beaconSetId } = await helpers.loadFixture(deploy);
+      context('Encoded data feed data is not valid address and bytes32 pairs', function () {
+        it('reverts', async function () {
+          const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
-        const { airnodes, templateIds } = dataFeedData.reduce(
-          (acc, { airnode, templateId }) => ({
-            airnodes: [...acc.airnodes, airnode],
-            templateIds: [...acc.templateIds, templateId],
-          }),
-          { airnodes: [], templateIds: [] }
-        );
-        const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
-          ['address[]', 'bytes32[]'],
-          [airnodes, templateIds]
-        );
+          const invalidDataFeedData1 = hre.ethers.utils.defaultAbiCoder.encode(
+            ['bytes32', 'address'],
+            [generateRandomBytes32(), generateRandomAddress()]
+          );
+          const invalidDataFeedData2 = hre.ethers.utils.defaultAbiCoder.encode(
+            ['address', 'string'],
+            [generateRandomAddress(), generateRandomBytes(32)]
+          );
+          const invalidDataFeedData3 = hre.ethers.utils.defaultAbiCoder.encode(
+            ['bytes32[]', 'bytes32[]'],
+            [
+              [generateRandomBytes32(), generateRandomBytes32()],
+              [generateRandomBytes32(), generateRandomBytes32()],
+            ]
+          );
 
-        await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData))
-          .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
-          .withArgs(beaconSetId, encodedBeaconSetData);
-        expect(await dapiDataRegistry.dataFeedIdToData(beaconSetId)).to.deep.equal(encodedBeaconSetData);
-      });
-      it('registers beaconSet data feed dropping trailing data', async function () {
-        const { roles, dapiDataRegistry, dataFeedData, beaconSetId } = await helpers.loadFixture(deploy);
-
-        const { airnodes, templateIds } = dataFeedData.reduce(
-          (acc, { airnode, templateId }) => ({
-            airnodes: [...acc.airnodes, airnode],
-            templateIds: [...acc.templateIds, templateId],
-          }),
-          { airnodes: [], templateIds: [] }
-        );
-        const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
-          ['address[]', 'bytes32[]'],
-          [airnodes, templateIds]
-        );
-        const extraBytes32 = generateRandomBytes32();
-        const extraAddress = generateRandomAddress();
-        const encodedBeaconSetDataWithEvenNumberOfExtraBytes32 = hre.ethers.utils.hexConcat([
-          encodedBeaconSetData,
-          extraBytes32,
-          extraBytes32,
-          extraBytes32,
-          hre.ethers.utils.hexZeroPad(extraAddress, 32),
-        ]);
-        await expect(
-          dapiDataRegistry
-            .connect(roles.randomPerson)
-            .registerDataFeed(encodedBeaconSetDataWithEvenNumberOfExtraBytes32)
-        )
-          .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
-          .withArgs(beaconSetId, encodedBeaconSetData);
-        expect(await dapiDataRegistry.dataFeedIdToData(beaconSetId)).to.deep.equal(encodedBeaconSetData);
+          await expect(
+            dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeedData1)
+          ).to.be.revertedWithoutReason();
+          await expect(
+            dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeedData2)
+          ).to.be.revertedWithoutReason();
+          await expect(
+            dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeedData3)
+          ).to.be.revertedWithoutReason();
+        });
       });
     });
-    context('Encoded data feed data is not valid 32 bytes pairs', function () {
+    context('Data feed data is empty', function () {
       it('reverts', async function () {
-        const { roles, dapiDataRegistry, dataFeedData, beaconSetId } = await helpers.loadFixture(deploy);
+        const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
-        const { airnodes, templateIds } = dataFeedData.reduce(
-          (acc, { airnode, templateId }) => ({
-            airnodes: [...acc.airnodes, airnode],
-            templateIds: [...acc.templateIds, templateId],
-          }),
-          { airnodes: [], templateIds: [] }
+        await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed('0x')).to.be.revertedWith(
+          'Data feed data is empty'
         );
-        const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
-          ['address[]', 'bytes32[]'],
-          [airnodes, templateIds]
-        );
-        const extraBytes32 = generateRandomBytes32();
-        const encodedBeaconSetDataWithEvenNumberOfExtraBytes32 = hre.ethers.utils.hexConcat([
-          encodedBeaconSetData,
-          extraBytes32,
-          extraBytes32,
-          extraBytes32,
-        ]);
-        await expect(
-          dapiDataRegistry
-            .connect(roles.randomPerson)
-            .registerDataFeed(encodedBeaconSetDataWithEvenNumberOfExtraBytes32)
-        ).to.have.been.revertedWith('Invalid data feed data');
-        const extraAddress = generateRandomAddress();
-        const encodedBeaconSetDataWithExtraAddress = hre.ethers.utils.hexConcat([encodedBeaconSetData, extraAddress]);
-        await expect(
-          dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetDataWithExtraAddress)
-        ).to.have.been.revertedWith('Invalid data feed data');
-        expect(await dapiDataRegistry.dataFeedIdToData(beaconSetId)).to.deep.equal('0x');
       });
     });
   });
 
   describe('registerDapi', function () {
-    it.only('registers a dAPI', async function () {
-      const {
-        roles,
-        dapiDataRegistry,
-        dataFeedData,
-        dapiName,
-        beaconSetId,
-        dapiTreeRoot,
-        dapiTreeProof,
-        apiTree,
-        apiTreeValues,
-      } = await helpers.loadFixture(deploy);
+    context('Root is not zero', function () {
+      context('Proof is not empty', function () {
+        context('Sender is manager or needs Registrar role', function () {
+          context('Root has been registered', function () {
+            context('Data feed ID has been registered', function () {
+              context('Proof is valid', function () {
+                it('registers a dAPI', async function () {
+                  const {
+                    roles,
+                    dapiDataRegistry,
+                    dataFeedData,
+                    dapiName,
+                    beaconSetId,
+                    dapiTreeRoot,
+                    dapiTreeProof,
+                    apiTree,
+                    apiTreeValues,
+                  } = await helpers.loadFixture(deploy);
 
-      const { airnodes, templateIds } = dataFeedData.reduce(
-        (acc, { airnode, templateId }) => ({
-          airnodes: [...acc.airnodes, airnode],
-          templateIds: [...acc.templateIds, templateId],
-        }),
-        { airnodes: [], templateIds: [] }
-      );
+                  const apiTreeRoot = apiTree.root;
+                  await Promise.all(
+                    apiTreeValues.map(([airnode, url]) => {
+                      const apiTreeProof = apiTree.getProof([airnode, url]);
+                      return dapiDataRegistry
+                        .connect(roles.api3MarketContract)
+                        .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof);
+                    })
+                  );
 
-      const apiTreeRoot = apiTree.root;
-      await Promise.all(
-        apiTreeValues.map(([airnode, url]) => {
-          const apiTreeProof = apiTree.getProof([airnode, url]);
-          return dapiDataRegistry
+                  const { airnodes, templateIds } = dataFeedData.reduce(
+                    (acc, { airnode, templateId }) => ({
+                      airnodes: [...acc.airnodes, airnode],
+                      templateIds: [...acc.templateIds, templateId],
+                    }),
+                    { airnodes: [], templateIds: [] }
+                  );
+                  const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+                    ['address[]', 'bytes32[]'],
+                    [airnodes, templateIds]
+                  );
+                  await dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData);
+
+                  const deviationThresholdInPercentage = hre.ethers.BigNumber.from(HUNDRED_PERCENT / 50); // 2%
+                  const deviationReference = hre.ethers.constants.Zero; // Not used in Airseeker V1
+                  const heartbeatInterval = hre.ethers.BigNumber.from(86400); // 24 hrs
+
+                  await expect(
+                    dapiDataRegistry
+                      .connect(roles.api3MarketContract)
+                      .registerDapi(
+                        dapiName,
+                        beaconSetId,
+                        roles.sponsorWallet.address,
+                        deviationThresholdInPercentage,
+                        deviationReference,
+                        heartbeatInterval,
+                        dapiTreeRoot,
+                        dapiTreeProof
+                      )
+                  )
+                    .to.emit(dapiDataRegistry, 'RegisteredDapi')
+                    .withArgs(
+                      dapiName,
+                      beaconSetId,
+                      roles.sponsorWallet.address,
+                      deviationThresholdInPercentage,
+                      deviationReference,
+                      heartbeatInterval
+                    );
+
+                  const dapisCount = await dapiDataRegistry.registeredDapisCount();
+                  expect(dapisCount).to.equal(1);
+                  const [dapiNames, dataFeedIds, updateParameters, dataFeedDatas, signedApiUrls] =
+                    await dapiDataRegistry.readDapis(0, dapisCount);
+                  expect(dapiNames).to.deep.equal([dapiName]);
+                  expect(dataFeedIds).to.deep.equal([beaconSetId]);
+                  expect(updateParameters[0].deviationThresholdInPercentage).to.deep.equal(
+                    deviationThresholdInPercentage
+                  );
+                  expect(updateParameters[0].deviationReference).to.deep.equal(deviationReference);
+                  expect(updateParameters[0].heartbeatInterval).to.deep.equal(heartbeatInterval);
+                  expect(dataFeedDatas).to.deep.equal([encodedBeaconSetData]);
+                  expect(signedApiUrls).to.deep.equal([apiTreeValues.map(([, url]) => url)]);
+                });
+              });
+              context('Proof is not valid', function () {
+                it('reverts', async function () {
+                  const { roles, dapiDataRegistry, dataFeedData, dapiName, beaconSetId, dapiTreeRoot } =
+                    await helpers.loadFixture(deploy);
+
+                  const { airnodes, templateIds } = dataFeedData.reduce(
+                    (acc, { airnode, templateId }) => ({
+                      airnodes: [...acc.airnodes, airnode],
+                      templateIds: [...acc.templateIds, templateId],
+                    }),
+                    { airnodes: [], templateIds: [] }
+                  );
+                  const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+                    ['address[]', 'bytes32[]'],
+                    [airnodes, templateIds]
+                  );
+                  await dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData);
+
+                  const deviationThresholdInPercentage = hre.ethers.BigNumber.from(HUNDRED_PERCENT / 50); // 2%
+                  const deviationReference = hre.ethers.constants.Zero; // Not used in Airseeker V1
+                  const heartbeatInterval = hre.ethers.BigNumber.from(86400); // 24 hrs
+
+                  await expect(
+                    dapiDataRegistry
+                      .connect(roles.api3MarketContract)
+                      .registerDapi(
+                        dapiName,
+                        beaconSetId,
+                        roles.sponsorWallet.address,
+                        deviationThresholdInPercentage,
+                        deviationReference,
+                        heartbeatInterval,
+                        dapiTreeRoot,
+                        [generateRandomBytes32(), generateRandomBytes32(), generateRandomBytes32()]
+                      )
+                  ).to.be.revertedWith('Invalid proof');
+                });
+              });
+            });
+            context('Data feed ID has not been registered', function () {
+              it('reverts', async function () {
+                const { roles, dapiDataRegistry, dapiName, beaconSetId, dapiTreeRoot, dapiTreeProof } =
+                  await helpers.loadFixture(deploy);
+
+                const deviationThresholdInPercentage = hre.ethers.BigNumber.from(HUNDRED_PERCENT / 50); // 2%
+                const deviationReference = hre.ethers.constants.Zero; // Not used in Airseeker V1
+                const heartbeatInterval = hre.ethers.BigNumber.from(86400); // 24 hrs
+
+                await expect(
+                  dapiDataRegistry.connect(roles.api3MarketContract).registerDapi(
+                    dapiName,
+                    beaconSetId, // registerDataFeed() has not been called yet (dataFeedIdToData() returns empty string)
+                    roles.sponsorWallet.address,
+                    deviationThresholdInPercentage,
+                    deviationReference,
+                    heartbeatInterval,
+                    dapiTreeRoot,
+                    dapiTreeProof
+                  )
+                ).to.be.revertedWith('Data feed ID has not been registered');
+              });
+            });
+          });
+          context('Root has not been registered', function () {
+            it('reverts', async function () {
+              const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
+
+              await expect(
+                dapiDataRegistry
+                  .connect(roles.api3MarketContract)
+                  .registerDapi(
+                    generateRandomBytes32(),
+                    generateRandomBytes32(),
+                    generateRandomAddress(),
+                    hre.ethers.constants.Zero,
+                    hre.ethers.constants.Zero,
+                    hre.ethers.constants.Zero,
+                    generateRandomBytes32(),
+                    [generateRandomBytes32(), generateRandomBytes32(), generateRandomBytes32()]
+                  )
+              ).to.be.revertedWith('Root has not been registered');
+            });
+          });
+        });
+        context('Sender is manager or needs Registrar role', function () {
+          it('reverts', async function () {
+            const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
+
+            await expect(
+              dapiDataRegistry
+                .connect(roles.randomPerson)
+                .registerDapi(
+                  generateRandomBytes32(),
+                  generateRandomBytes32(),
+                  generateRandomAddress(),
+                  hre.ethers.constants.Zero,
+                  hre.ethers.constants.Zero,
+                  hre.ethers.constants.Zero,
+                  generateRandomBytes32(),
+                  [generateRandomBytes32(), generateRandomBytes32(), generateRandomBytes32()]
+                )
+            ).to.be.revertedWith('Sender is not manager or needs Registrar role');
+          });
+        });
+      });
+      context('Proof is empty', function () {
+        it('reverts', async function () {
+          const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
+
+          await expect(
+            dapiDataRegistry
+              .connect(roles.api3MarketContract)
+              .registerDapi(
+                generateRandomBytes32(),
+                generateRandomBytes32(),
+                generateRandomAddress(),
+                hre.ethers.constants.Zero,
+                hre.ethers.constants.Zero,
+                hre.ethers.constants.Zero,
+                generateRandomBytes32(),
+                []
+              )
+          ).to.be.revertedWith('Proof is empty');
+        });
+      });
+    });
+    context('Root is not zero', function () {
+      it('reverts', async function () {
+        const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
+
+        await expect(
+          dapiDataRegistry
             .connect(roles.api3MarketContract)
-            .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof);
-        })
-      );
-
-      const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
-        ['address[]', 'bytes32[]'],
-        [airnodes, templateIds]
-      );
-      await dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData);
-
-      const deviationThresholdInPercentage = hre.ethers.BigNumber.from(HUNDRED_PERCENT / 50); // 2%
-      const deviationReference = hre.ethers.constants.Zero; // Not used in Airseeker V1
-      const heartbeatInterval = hre.ethers.BigNumber.from(86400); // 24 hrs
-
-      await expect(
-        dapiDataRegistry
-          .connect(roles.api3MarketContract)
-          .registerDapi(
-            dapiName,
-            beaconSetId,
-            roles.sponsorWallet.address,
-            deviationThresholdInPercentage,
-            deviationReference,
-            heartbeatInterval,
-            dapiTreeRoot,
-            dapiTreeProof
-          )
-      )
-        .to.emit(dapiDataRegistry, 'RegisteredDapi')
-        .withArgs(
-          dapiName,
-          beaconSetId,
-          roles.sponsorWallet.address,
-          deviationThresholdInPercentage,
-          deviationReference,
-          heartbeatInterval
-        );
-
-      const dapisCount = await dapiDataRegistry.registeredDapisCount();
-      expect(dapisCount).to.equal(1);
-      const [dapiNames, dataFeedIds, updateParameters, dataFeedDatas, signedApiUrls] = await dapiDataRegistry.readDapis(
-        0,
-        dapisCount
-      );
-      expect(dapiNames).to.deep.equal([dapiName]);
-      expect(dataFeedIds).to.deep.equal([beaconSetId]);
-      expect(updateParameters[0].deviationThresholdInPercentage).to.deep.equal(deviationThresholdInPercentage);
-      expect(updateParameters[0].deviationReference).to.deep.equal(deviationReference);
-      expect(updateParameters[0].heartbeatInterval).to.deep.equal(heartbeatInterval);
-      expect(dataFeedDatas).to.deep.equal([encodedBeaconSetData]);
-      expect(signedApiUrls).to.deep.equal([apiTreeValues.map(([, url]) => url)]);
+            .registerDapi(
+              generateRandomBytes32(),
+              generateRandomBytes32(),
+              generateRandomAddress(),
+              hre.ethers.constants.Zero,
+              hre.ethers.constants.Zero,
+              hre.ethers.constants.Zero,
+              hre.ethers.constants.HashZero,
+              []
+            )
+        ).to.be.revertedWith('Root is zero');
+      });
     });
   });
+
+  describe('unregisterDapi', function () {
+    context('dAPI name is not zero', function () {
+      context('Sender is manager or needs Registrar role', function () {
+        context('dAPI name is registered', function () {
+          it('unregisters dAPI', async function () {
+            const {
+              roles,
+              dapiDataRegistry,
+              dataFeedData,
+              dapiName,
+              beaconSetId,
+              dapiTreeRoot,
+              dapiTreeProof,
+              apiTree,
+              apiTreeValues,
+            } = await helpers.loadFixture(deploy);
+
+            const apiTreeRoot = apiTree.root;
+            await Promise.all(
+              apiTreeValues.map(([airnode, url]) => {
+                const apiTreeProof = apiTree.getProof([airnode, url]);
+                return dapiDataRegistry
+                  .connect(roles.api3MarketContract)
+                  .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof);
+              })
+            );
+
+            const { airnodes, templateIds } = dataFeedData.reduce(
+              (acc, { airnode, templateId }) => ({
+                airnodes: [...acc.airnodes, airnode],
+                templateIds: [...acc.templateIds, templateId],
+              }),
+              { airnodes: [], templateIds: [] }
+            );
+            const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+              ['address[]', 'bytes32[]'],
+              [airnodes, templateIds]
+            );
+            await dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData);
+
+            const deviationThresholdInPercentage = hre.ethers.BigNumber.from(HUNDRED_PERCENT / 50); // 2%
+            const deviationReference = hre.ethers.constants.Zero; // Not used in Airseeker V1
+            const heartbeatInterval = hre.ethers.BigNumber.from(86400); // 24 hrs
+
+            await dapiDataRegistry
+              .connect(roles.api3MarketContract)
+              .registerDapi(
+                dapiName,
+                beaconSetId,
+                roles.sponsorWallet.address,
+                deviationThresholdInPercentage,
+                deviationReference,
+                heartbeatInterval,
+                dapiTreeRoot,
+                dapiTreeProof
+              );
+
+            await expect(dapiDataRegistry.connect(roles.api3MarketContract).unregisterDapi(dapiName))
+              .to.emit(dapiDataRegistry, 'UnregisteredDapi')
+              .withArgs(dapiName);
+          });
+        });
+        context('dAPI name is not registered', function () {
+          it('reverts', async function () {
+            const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
+
+            await expect(
+              dapiDataRegistry.connect(roles.api3MarketContract).unregisterDapi(generateRandomBytes32())
+            ).to.be.revertedWith('dAPI name is not registered');
+          });
+        });
+      });
+      context('Sender is not manager or needs Registrar role', function () {
+        it('reverts', async function () {
+          const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
+
+          await expect(
+            dapiDataRegistry.connect(roles.randomPerson).unregisterDapi(generateRandomBytes32())
+          ).to.be.revertedWith('Sender is not manager or needs Registrar role');
+        });
+      });
+    });
+    context('dAPI name is zero', function () {
+      it('reverts', async function () {
+        const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
+
+        await expect(
+          dapiDataRegistry.connect(roles.api3MarketContract).unregisterDapi(hre.ethers.constants.HashZero)
+        ).to.be.revertedWith('dAPI name is zero');
+      });
+    });
+  });
+
+  describe('readDapis', function () {});
 });
