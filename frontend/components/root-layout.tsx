@@ -6,9 +6,13 @@ import { useRouter } from 'next/router';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export default function RootLayout(props: { children: ReactNode }) {
+interface Props {
+  children: ReactNode;
+}
+
+export default function RootLayout(props: Props) {
   return (
-    <div className={`flex min-h-screen flex-row text-gray-800 ${inter.className}`}>
+    <div className={`flex min-h-screen text-gray-800 ${inter.className}`}>
       <aside className="w-full max-w-[200px] bg-gray-100">
         <div className="sticky top-0 w-full p-4">
           <nav className="flex flex-col text-gray-500">
@@ -32,7 +36,12 @@ export default function RootLayout(props: { children: ReactNode }) {
   );
 }
 
-function NavLink(props: { href: string; children: ReactNode }) {
+interface NavLinkProps {
+  href: string;
+  children: ReactNode;
+}
+
+function NavLink(props: NavLinkProps) {
   const router = useRouter();
   const isActive = router.pathname === props.href;
   return (
