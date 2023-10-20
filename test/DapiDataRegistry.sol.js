@@ -34,7 +34,11 @@ describe('DapiDataRegistry', function () {
       'rootSigner1',
       'rootSigner2',
       'rootSigner3',
-      'airnode',
+      'airnode1',
+      'airnode2',
+      'airnode3',
+      'airnode4',
+      'airnode5',
       'sponsorWallet',
       'randomPerson',
     ];
@@ -107,18 +111,14 @@ describe('DapiDataRegistry', function () {
     };
 
     const baseUrl = 'https://example.com/';
-    const url = baseUrl + generateRandomString(10);
-
-    const apiTreeEntry = [roles.airnode.address, url];
     const apiTreeValues = [
-      [generateRandomAddress(), baseUrl + generateRandomString(10)],
-      [generateRandomAddress(), baseUrl + generateRandomString(15)],
-      apiTreeEntry,
-      [generateRandomAddress(), baseUrl + generateRandomString(5)],
-      [generateRandomAddress(), baseUrl + generateRandomString(20)],
+      [roles.airnode1.address, baseUrl + generateRandomString(10)],
+      [roles.airnode2.address, baseUrl + generateRandomString(15)],
+      [roles.airnode3.address, baseUrl + generateRandomString(10)],
+      [roles.airnode4.address, baseUrl + generateRandomString(5)],
+      [roles.airnode5.address, baseUrl + generateRandomString(20)],
     ];
     const apiTree = StandardMerkleTree.of(apiTreeValues, ['address', 'string']);
-    const apiTreeRoot = apiTree.root;
     const apiHashType = hre.ethers.utils.solidityKeccak256(
       ['string'],
       [await dapiDataRegistry.API_INTEGRATION_HASH_TYPE_DESCRIPTION()]
@@ -129,28 +129,30 @@ describe('DapiDataRegistry', function () {
         async (rootSigner) =>
           await rootSigner._signTypedData(domain, types, {
             hashType: apiHashType,
-            hash: apiTreeRoot,
+            hash: apiTree.root,
             timestamp,
           })
       )
     );
-    const apiTreeProof = apiTree.getProof(apiTreeEntry);
-
     await hashRegistry.connect(roles.owner).setupSigners(
       apiHashType,
       rootSigners.map((rootSigner) => rootSigner.address)
     );
-    await hashRegistry.registerHash(apiHashType, apiTreeRoot, timestamp, apiTreeRootSignatures);
+    await hashRegistry.registerHash(apiHashType, apiTree.root, timestamp, apiTreeRootSignatures);
 
     const dapiName = hre.ethers.utils.formatBytes32String('API3/USD');
-    const dataFeedData = Array(5)
-      .fill()
-      .map(() => {
-        return {
-          airnode: generateRandomAddress(),
-          templateId: generateRandomBytes32(),
-        };
-      });
+    const dataFeedData = [
+      roles.airnode1.address,
+      roles.airnode2.address,
+      roles.airnode3.address,
+      roles.airnode4.address,
+      roles.airnode5.address,
+    ].map((airnode) => {
+      return {
+        airnode,
+        templateId: generateRandomBytes32(),
+      };
+    });
 
     const beaconIds = dataFeedData.map(({ airnode, templateId }) =>
       hre.ethers.utils.solidityKeccak256(['address', 'bytes32'], [airnode, templateId])
@@ -198,9 +200,8 @@ describe('DapiDataRegistry', function () {
       hashRegistry,
       api3ServerV1,
       dapiDataRegistryAdminRoleDescription,
-      url,
-      apiTreeRoot,
-      apiTreeProof,
+      apiTree,
+      apiTreeValues,
       dataFeedData,
       dapiName,
       beaconSetId,
@@ -231,16 +232,20 @@ describe('DapiDataRegistry', function () {
 
   describe('registerAirnodeSignedApiUrl', function () {
     it('registers an Airnode signed API URL', async function () {
-      const { roles, dapiDataRegistry, url, apiTreeRoot, apiTreeProof } = await helpers.loadFixture(deploy);
+      const { roles, dapiDataRegistry, apiTree, apiTreeValues } = await helpers.loadFixture(deploy);
+
+      const apiTreeRoot = apiTree.root;
+      const [airnode, url] = apiTreeValues[2];
+      const apiTreeProof = apiTree.getProof([airnode, url]);
 
       await expect(
         dapiDataRegistry
           .connect(roles.api3MarketContract)
-          .registerAirnodeSignedApiUrl(roles.airnode.address, url, apiTreeRoot, apiTreeProof)
+          .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof)
       )
         .to.emit(dapiDataRegistry, 'RegisteredSignedApiUrl')
-        .withArgs(roles.airnode.address, url);
-      expect(await dapiDataRegistry.airnodeToSignedApiUrl(roles.airnode.address)).to.equal(url);
+        .withArgs(airnode, url);
+      expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
     });
   });
 
@@ -354,9 +359,18 @@ describe('DapiDataRegistry', function () {
   });
 
   describe('registerDapi', function () {
-    it('registers a dAPI', async function () {
-      const { roles, dapiDataRegistry, dataFeedData, dapiName, beaconSetId, dapiTreeRoot, dapiTreeProof } =
-        await helpers.loadFixture(deploy);
+    it.only('registers a dAPI', async function () {
+      const {
+        roles,
+        dapiDataRegistry,
+        dataFeedData,
+        dapiName,
+        beaconSetId,
+        dapiTreeRoot,
+        dapiTreeProof,
+        apiTree,
+        apiTreeValues,
+      } = await helpers.loadFixture(deploy);
 
       const { airnodes, templateIds } = dataFeedData.reduce(
         (acc, { airnode, templateId }) => ({
@@ -365,6 +379,17 @@ describe('DapiDataRegistry', function () {
         }),
         { airnodes: [], templateIds: [] }
       );
+
+      const apiTreeRoot = apiTree.root;
+      await Promise.all(
+        apiTreeValues.map(([airnode, url]) => {
+          const apiTreeProof = apiTree.getProof([airnode, url]);
+          return dapiDataRegistry
+            .connect(roles.api3MarketContract)
+            .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof);
+        })
+      );
+
       const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
         ['address[]', 'bytes32[]'],
         [airnodes, templateIds]
@@ -401,13 +426,17 @@ describe('DapiDataRegistry', function () {
 
       const dapisCount = await dapiDataRegistry.registeredDapisCount();
       expect(dapisCount).to.equal(1);
-      const [dapiNames, dataFeedIds, updateParameters, dataFeedDatas] = await dapiDataRegistry.readDapis(0, dapisCount);
+      const [dapiNames, dataFeedIds, updateParameters, dataFeedDatas, signedApiUrls] = await dapiDataRegistry.readDapis(
+        0,
+        dapisCount
+      );
       expect(dapiNames).to.deep.equal([dapiName]);
       expect(dataFeedIds).to.deep.equal([beaconSetId]);
       expect(updateParameters[0].deviationThresholdInPercentage).to.deep.equal(deviationThresholdInPercentage);
       expect(updateParameters[0].deviationReference).to.deep.equal(deviationReference);
       expect(updateParameters[0].heartbeatInterval).to.deep.equal(heartbeatInterval);
       expect(dataFeedDatas).to.deep.equal([encodedBeaconSetData]);
+      expect(signedApiUrls).to.deep.equal([apiTreeValues.map(([, url]) => url)]);
     });
   });
 });

@@ -8,8 +8,6 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./interfaces/IHashRegistry.sol";
 
-import "hardhat/console.sol";
-
 contract DapiDataRegistry is
     SelfMulticall,
     AccessControlRegistryAdminnedWithManager
@@ -149,6 +147,9 @@ contract DapiDataRegistry is
             "Sender is not manager or needs Registrar role"
         );
         require(airnode != address(0));
+
+        // TODO: check if signed API URL is not being mappaed to an Airnode in dataFeedIdToData?
+
         airnodeToSignedApiUrl[airnode] = "";
 
         emit UnregisteredSignedApiUrl(airnode); // TODO: add msg.sender?
@@ -165,6 +166,9 @@ contract DapiDataRegistry is
                 dataFeedData,
                 (address, bytes32)
             );
+
+            // TODO: check if signed API URL exists for Airnode?
+
             // Derive beacon ID
             // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L87
             dataFeedId = keccak256(abi.encodePacked(airnode, templateId));
@@ -181,14 +185,13 @@ contract DapiDataRegistry is
             require(airnodes.length == templateIds.length, "Length mismatch");
             bytes32[] memory beaconIds = new bytes32[](airnodes.length);
             for (uint256 ind = 0; ind < airnodes.length; ind++) {
+                // TODO: check if signed API URL exists for Airnode?
+
                 // Derive beacon ID
                 // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L87
                 beaconIds[ind] = keccak256(
                     abi.encodePacked(airnodes[ind], templateIds[ind])
                 );
-                // console.log("Airnode: %s", airnodes[ind]);
-                // console.logBytes32(templateIds[ind]);
-                // console.logBytes32(beaconIds[ind]);
             }
             // Derive beacon set ID
             // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L98
@@ -285,7 +288,8 @@ contract DapiDataRegistry is
             bytes32[] memory dapiNames,
             bytes32[] memory dataFeedIds,
             UpdateParameters[] memory updateParameters,
-            bytes[] memory dataFeedDatas
+            bytes[] memory dataFeedDatas,
+            string[][] memory signedApiUrls
         )
     {
         uint256 count = registeredDapisCount();
@@ -295,9 +299,10 @@ contract DapiDataRegistry is
         dataFeedIds = new bytes32[](limitAdjusted);
         updateParameters = new UpdateParameters[](limitAdjusted);
         dataFeedDatas = new bytes[](limitAdjusted);
-        for (uint256 ind = offset; ind < offset + limitAdjusted; ind++) {
-            bytes32 dapiName = activeDapis.at(ind);
-            uint256 currentIndex = ind - offset;
+        signedApiUrls = new string[][](limitAdjusted);
+        for (uint256 i = offset; i < offset + limitAdjusted; i++) {
+            bytes32 dapiName = activeDapis.at(i);
+            uint256 currentIndex = i - offset;
             dapiNames[currentIndex] = dapiName;
             bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
             bytes32 dataFeedId = api3ServerV1.dapiNameHashToDataFeedId(
@@ -307,7 +312,28 @@ contract DapiDataRegistry is
             updateParameters[currentIndex] = dapiNameHashToUpdateParameters[
                 dapiNameHash
             ];
-            dataFeedDatas[currentIndex] = dataFeedIdToData[dataFeedId];
+            bytes memory dataFeedData = dataFeedIdToData[dataFeedId];
+            dataFeedDatas[currentIndex] = dataFeedData;
+
+            if (dataFeedData.length == 64) {
+                (address airnode, ) = abi.decode(
+                    dataFeedData,
+                    (address, bytes32)
+                );
+                string[] memory urls = new string[](1);
+                urls[0] = airnodeToSignedApiUrl[airnode];
+                signedApiUrls[currentIndex] = urls;
+            } else {
+                (address[] memory airnodes, ) = abi.decode(
+                    dataFeedData,
+                    (address[], bytes32[])
+                );
+                string[] memory urls = new string[](airnodes.length);
+                for (uint256 j = 0; j < airnodes.length; j++) {
+                    urls[j] = airnodeToSignedApiUrl[airnodes[j]];
+                }
+                signedApiUrls[currentIndex] = urls;
+            }
         }
     }
 }
