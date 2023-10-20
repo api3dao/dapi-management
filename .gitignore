@@ -11,3 +11,6 @@ artifacts
 
 # IDE files
 .idea
+
+# Misc
+.DS_Store
