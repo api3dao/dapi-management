@@ -293,8 +293,8 @@ contract DapiDataRegistry is
         uint256 limitAdjusted = offset + limit > count ? count - offset : limit;
         dapiNames = new bytes32[](limitAdjusted);
         dataFeedIds = new bytes32[](limitAdjusted);
-        dataFeedDatas = new bytes[](limitAdjusted);
         updateParameters = new UpdateParameters[](limitAdjusted);
+        dataFeedDatas = new bytes[](limitAdjusted);
         for (uint256 ind = offset; ind < offset + limitAdjusted; ind++) {
             bytes32 dapiName = activeDapis.at(ind);
             uint256 currentIndex = ind - offset;
@@ -304,7 +304,7 @@ contract DapiDataRegistry is
                 dapiNameHash
             );
             dataFeedIds[currentIndex] = dataFeedId;
-            updateParameters[ind] = dapiNameHashToUpdateParameters[
+            updateParameters[currentIndex] = dapiNameHashToUpdateParameters[
                 dapiNameHash
             ];
             dataFeedDatas[currentIndex] = dataFeedIdToData[dataFeedId];
