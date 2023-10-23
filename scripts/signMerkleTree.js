@@ -11,14 +11,17 @@ const merkleType = process.argv[2];
 const chainIdArg = process.argv[3];
 
 // Validate the provided Merkle type
-if (!merkleType || ![
-  "Price merkle tree root", 
-  "dAPI management merkle tree root", 
-  "dAPI fallback merkle tree root", 
-  "API integration merkle tree root"
-].includes(merkleType)) {
-console.error('You must provide a valid Merkle type as an argument!');
-process.exit(1);
+if (
+  !merkleType ||
+  ![
+    'Price merkle tree root',
+    'dAPI management merkle tree root',
+    'dAPI fallback merkle tree root',
+    'API integration merkle tree root',
+  ].includes(merkleType)
+) {
+  console.error('You must provide a valid Merkle type as an argument!');
+  process.exit(1);
 }
 
 // Validate and parse the provided chainId
@@ -64,10 +67,10 @@ function constructMerkleTree(values, dataTypes) {
 
 // Predefined data types for each Merkle tree
 const HASH_TYPE_DATA_TYPES = {
-  "Price merkle tree root": ['bytes32', 'uint256', 'bytes', 'uint256', 'uint256'],
-  "dAPI management merkle tree root": ['bytes32', 'bytes32', 'address'],
-  "dAPI fallback merkle tree root": ['bytes32', 'bytes32', 'address'],
-  "API integration merkle tree root": ['address', 'bytes32'],
+  'Price merkle tree root': ['bytes32', 'uint256', 'bytes', 'uint256', 'uint256'],
+  'dAPI management merkle tree root': ['bytes32', 'bytes32', 'address'],
+  'dAPI fallback merkle tree root': ['bytes32', 'bytes32', 'address'],
+  'API integration merkle tree root': ['address', 'bytes32'],
 };
 
 // Function to sign a specific Merkle tree defined by its name
