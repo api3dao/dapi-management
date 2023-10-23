@@ -54,10 +54,10 @@ Each Merkle tree inside the `merkleTrees` object should have a timestamp, values
 yarn sign [MerkleTreeName] [chainId]
 ```
 
-For instance, to sign the `priceMT` Merkle tree for a network with a `chainId` of 1, you would use:
+For instance, to sign the `Price merkle tree root` Merkle tree for a network with a `chainId` of 1, you would use:
 
 ```bash
-yarn sign priceMT 1
+yarn sign "Price merkle tree root" 1
 ```
 
 The script will construct the Merkle tree, sign it, and update the `metadata.json` file with the Merkle root and the signature.
@@ -77,24 +77,34 @@ The `metadata.json` file contains various Merkle trees, each with its unique set
   - **Duration (uint256)**: The duration for which the price is valid.
   - **Price (uint256)**: The cost in the native currency of the chain. There is no minimum USD price.
 
-### 2. dapiManagement Merkle Tree
+### 2. dAPI Management Merkle Tree
 
 - **Values**:
   - **dAPI Name (bytes32)**: The name of the dAPI, hashed.
   - **Beacon Set ID (bytes32)**: Identifier for the beacon set.
   - **dAPI Sponsor Wallet Address (address)**: Wallet address of the dAPI sponsor wallet.
 
-### 3. dapiFallback Merkle Tree
+### 3. dAPI Fallback Merkle Tree
 
 - **Values**:
   - **dAPI Name (bytes32)**: The name of the dAPI, hashed.
   - **Nodary Beacon ID (bytes32)**: Identifier for the Nodary Beacon.
   - **Nodary Sponsor Wallet Address (address)**: Wallet address of the Nodary sponsor wallet.
 
-### 4. apiIntegration Merkle Tree
+### 4. API Integration Merkle Tree
 
 - **Values**:
   - **Airnode Address (address)**: The contract address of the Airnode.
   - **Signed API URL (bytes32)**: The signed URL of the API, hashed. Verified by referring to the DNS records of the base URL.
 
 Make sure to structure the `metadata.json` file appropriately, keeping in mind the specific values and their purposes for each Merkle tree.
+
+## Merkle Tree Types
+
+In the context of this tool, each Merkle tree is associated with a unique type. This type is not arbitrarily assigned but is derived from the tree's identifiable name using a deterministic algorithm.
+
+The following code snippet shows how we derive the type of a API integration Merkle tree:
+
+```js
+keccak256(abi.encodePacked('API integration merkle tree root'));
+```
