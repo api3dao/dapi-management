@@ -33,75 +33,66 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         _withdraw(recipient, amount);
     }
 
-    function executeDapiFallback(
-        bytes32 dapiName,
-        bytes32 beaconId,
-        address payable sponsorWallet,
-        bytes32 fallbackRoot,
-        bytes32[] calldata fallbackProof,
-        bytes32 updateParams,
-        uint256 duration,
-        uint256 price,
-        bytes32 priceRoot,
-        bytes32[] calldata priceProof
-    ) external override {
+    function executeDapiFallback(ExecuteDapiFallbackArgs calldata args) external override {
         bytes32 currentBeaconId = api3ServerV1.dapiNameHashToDataFeedId(
-            dapiName
+            args.dapiName
         );
-        require(currentBeaconId != beaconId, "Beacon ID will not change");
-        require(fallbackRoot != bytes32(0), "Fallback root is zero");
-        require(priceRoot != bytes32(0), "Price root is zero");
-        require(fallbackProof.length != 0, "Fallback proof is empty");
-        require(priceProof.length != 0, "Price proof is empty");
-        require(
-            hashRegistry.hashTypeToHash(_DAPI_FALLBACK_HASH_TYPE) ==
-                fallbackRoot,
-            "Fallback root has not been registered"
-        );
-        require(
-            hashRegistry.hashTypeToHash(_PRICE_HASH_TYPE) == priceRoot,
-            "Price root has not been registered"
-        );
+        require(currentBeaconId != args.beaconId, "Beacon ID will not change");
 
         bytes32 fallbackLeaf = keccak256(
             bytes.concat(
-                keccak256(abi.encode(dapiName, beaconId, sponsorWallet))
+                keccak256(abi.encode(args.dapiName, args.beaconId, args.sponsorWallet))
             )
         );
-        require(
-            MerkleProof.verify(fallbackProof, fallbackRoot, fallbackLeaf),
-            "Invalid fallback proof"
+        _validateTree(
+            _DAPI_FALLBACK_HASH_TYPE,
+            args.fallbackProof,
+            args.fallbackRoot,
+            fallbackLeaf
         );
 
         bytes32 priceLeaf = keccak256(
             bytes.concat(
                 keccak256(
                     abi.encode(
-                        dapiName,
+                        args.dapiName,
                         block.chainid,
-                        updateParams,
-                        duration,
-                        price
+                        args.updateParams,
+                        args.duration,
+                        args.price
                     )
                 )
             )
         );
-        require(
-            MerkleProof.verify(priceProof, priceRoot, priceLeaf),
-            "Invalid price proof"
-        );
 
-        uint256 minSponsorWalletBalance = (price * 86400) / duration;
+        _validateTree(_PRICE_HASH_TYPE, args.priceProof, args.priceRoot, priceLeaf);
 
-        uint256 sponsorWalletBalance = sponsorWallet.balance;
+        uint256 minSponsorWalletBalance = (args.price * 86400) / args.duration;
+
+        uint256 sponsorWalletBalance = args.sponsorWallet.balance;
         if (sponsorWalletBalance < minSponsorWalletBalance) {
             _fundSponsorWallet(
-                sponsorWallet,
+                args.sponsorWallet,
                 minSponsorWalletBalance - sponsorWalletBalance
             );
         }
-        api3ServerV1.setDapiName(dapiName, beaconId);
-        emit ExecutedDapiFallback(dapiName, beaconId, msg.sender);
+        api3ServerV1.setDapiName(args.dapiName, args.beaconId);
+        emit ExecutedDapiFallback(args.dapiName, args.beaconId, msg.sender);
+    }
+
+    function _validateTree(
+        bytes32 treeType,
+        bytes32[] calldata proof,
+        bytes32 root,
+        bytes32 leaf
+    ) private view {
+        require(root != bytes32(0), "Root is zero");
+        require(proof.length != 0, "Fallback proof is empty");
+        require(
+            hashRegistry.hashTypeToHash(treeType) == root,
+            "Tree has not been registered"
+        );
+        require(MerkleProof.verify(proof, root, leaf), "Invalid tree proof");
     }
 
     function _withdraw(address payable recipient, uint256 amount) private {
