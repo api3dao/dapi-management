@@ -95,7 +95,6 @@ The `metadata.json` file contains various Merkle trees, each with its unique set
 
 - **Values**:
   - **Airnode Address (address)**: The contract address of the Airnode.
-  - **OIS Title (bytes32)**: Title of the OIS.
   - **Signed API URL (bytes32)**: The signed URL of the API, hashed. Verified by referring to the DNS records of the base URL.
 
 Make sure to structure the `metadata.json` file appropriately, keeping in mind the specific values and their purposes for each Merkle tree.
