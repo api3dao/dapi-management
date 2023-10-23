@@ -12,7 +12,7 @@
     "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720"
   ],
   "merkleTrees": {
-    "priceMT": {
+    "Price merkle tree root": {
       "timestamp": 1676940000,
       "values": [
         [
@@ -33,7 +33,7 @@
       "merkleRoot": "",
       "signatures": {}
     },
-    "dapiManagementMT": {
+    "dAPI management merkle tree root": {
       "timestamp": 1676940000,
       "values": [
         [
@@ -50,7 +50,7 @@
       "merkleRoot": "",
       "signatures": {}
     },
-    "dapiFallbackMT": {
+    "dAPI fallback merkle tree root": {
       "timestamp": 1676940000,
       "values": [
         [
@@ -67,7 +67,7 @@
       "merkleRoot": "",
       "signatures": {}
     },
-    "apiIntegrationMT": {
+    "API integration merkle tree root": {
       "timestamp": 1676940000,
       "values": [
         [

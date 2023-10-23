@@ -11,10 +11,16 @@ const merkleType = process.argv[2];
 const chainIdArg = process.argv[3];
 
 // Validate the provided Merkle type
-if (!merkleType || !['priceMT', 'dapiManagementMT', 'dapiFallbackMT', 'apiIntegrationMT'].includes(merkleType)) {
-  console.error('You must provide a valid Merkle type as an argument!');
-  process.exit(1);
+if (!merkleType || ![
+  "Price merkle tree root", 
+  "dAPI management merkle tree root", 
+  "dAPI fallback merkle tree root", 
+  "API integration merkle tree root"
+].includes(merkleType)) {
+console.error('You must provide a valid Merkle type as an argument!');
+process.exit(1);
 }
+
 // Validate and parse the provided chainId
 if (!chainIdArg || isNaN(parseInt(chainIdArg))) {
   console.error('You must provide a valid chainId as an argument!');
@@ -57,11 +63,11 @@ function constructMerkleTree(values, dataTypes) {
 }
 
 // Predefined data types for each Merkle tree
-const MERKLE_TREE_DATATYPES = {
-  priceMT: ['bytes32', 'uint256', 'bytes', 'uint256', 'uint256'],
-  dapiManagementMT: ['bytes32', 'bytes32', 'address'],
-  dapiFallbackMT: ['bytes32', 'bytes32', 'address'],
-  apiIntegrationMT: ['address', 'bytes32'],
+const HASH_TYPE_DATA_TYPES = {
+  "Price merkle tree root": ['bytes32', 'uint256', 'bytes', 'uint256', 'uint256'],
+  "dAPI management merkle tree root": ['bytes32', 'bytes32', 'address'],
+  "dAPI fallback merkle tree root": ['bytes32', 'bytes32', 'address'],
+  "API integration merkle tree root": ['address', 'bytes32'],
 };
 
 // Function to sign a specific Merkle tree defined by its name
@@ -74,9 +80,9 @@ async function signMerkleTree(merkleTreeName) {
   const treeData = metadata.merkleTrees[merkleTreeName];
   const values = treeData.values;
 
-  const dataTypes = MERKLE_TREE_DATATYPES[merkleTreeName];
+  const dataTypes = HASH_TYPE_DATA_TYPES[merkleTreeName];
   if (!dataTypes) {
-    throw new Error(`Data types for ${merkleTreeName} not found`);
+    throw new Error(`Data type for ${merkleTreeName} not found`);
   }
 
   // Construct the Merkle tree and derive its root
