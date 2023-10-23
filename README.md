@@ -73,7 +73,7 @@ The `metadata.json` file contains various Merkle trees, each with its unique set
 - **Values**:
   - **dAPI Name (bytes32)**: The name of the dAPI, hashed.
   - **Chain ID (uint256)**: Identifier for the blockchain network.
-  - **dAPI Update Parameters (bytes32)**: Parameters associated with the dAPI update.
+  - **dAPI Update Parameters (bytes)**: Parameters associated with the dAPI update.
   - **Duration (uint256)**: The duration for which the price is valid.
   - **Price (uint256)**: The cost in the native currency of the chain. There is no minimum USD price.
 
