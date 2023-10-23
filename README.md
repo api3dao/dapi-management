@@ -48,16 +48,16 @@ MNEMONIC=YOUR_MNEMONIC_HERE
 
 Each Merkle tree inside the `merkleTrees` object should have a timestamp, values array, merkleRoot, and signatures object.
 
-2. Run the script with the desired Merkle tree name:
+2. Run the script by specifying the Merkle tree's name and the `chainId` as follows:
 
 ```bash
-yarn sign [MerkleTreeName]
+yarn sign [MerkleTreeName] [chainId]
 ```
 
-For example, to sign the `priceMT` Merkle tree:
+For instance, to sign the `priceMT` Merkle tree for a network with a `chainId` of 1, you would use:
 
 ```bash
-yarn sign priceMT
+yarn sign priceMT 1
 ```
 
 The script will construct the Merkle tree, sign it, and update the `metadata.json` file with the Merkle root and the signature.

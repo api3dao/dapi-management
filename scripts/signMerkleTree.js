@@ -7,11 +7,26 @@ require('dotenv').config();
 const mnemonic = process.env.MNEMONIC;
 const wallet = ethers.Wallet.fromMnemonic(mnemonic);
 
+const merkleType = process.argv[2];
+const chainIdArg = process.argv[3];
+
+// Validate the provided Merkle type
+if (!merkleType || !['priceMT', 'dapiManagementMT', 'dapiFallbackMT', 'apiIntegrationMT'].includes(merkleType)) {
+  console.error('You must provide a valid Merkle type as an argument!');
+  process.exit(1);
+}
+// Validate and parse the provided chainId
+if (!chainIdArg || isNaN(parseInt(chainIdArg))) {
+  console.error('You must provide a valid chainId as an argument!');
+  process.exit(1);
+}
+const chainId = parseInt(chainIdArg);
+
 // Define the domain structure for EIP-712 signing
 const domain = {
   name: 'HashRegistry',
   version: '1.0.0',
-  chainId: 1,
+  chainId: chainId,
   verifyingContract: '0x0000000000000000000000000000000000000000',
 };
 
@@ -90,15 +105,6 @@ async function signMerkleTree(merkleTreeName) {
 
   // Write the updated metadata back to the file
   fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 4));
-}
-
-// Fetch the specified Merkle tree type from the command line arguments
-const merkleType = process.argv[2];
-
-// Validate the provided Merkle type
-if (!merkleType || !['priceMT', 'dapiManagementMT', 'dapiFallbackMT', 'apiIntegrationMT'].includes(merkleType)) {
-  console.error('You must provide a valid Merkle type as an argument!');
-  process.exit(1);
 }
 
 // Sign the Merkle tree
