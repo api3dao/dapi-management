@@ -16,13 +16,17 @@
     "build": "hardhat compile",
     "lint": "yarn run prettier:check && yarn run lint:eslint && yarn run lint:solhint",
     "lint:solhint": "solhint ./contracts/**/*.sol",
-    "lint:eslint": "eslint . --ext .js,.ts",
-    "prettier:check": "prettier --check \"./**/*.{js,ts,md,json,sol}\"",
-    "prettier": "prettier --write \"./**/*.{js,ts,md,json,sol}\"",
+    "lint:eslint": "eslint . --ext .js,.ts,.tsx",
+    "prettier:check": "prettier --check \"./**/*.{js,ts,tsx,css,md,json,sol}\"",
+    "prettier": "prettier --write \"./**/*.{js,ts,tsx,css,md,json,sol}\"",
     "test": "hardhat test",
     "test:coverage": "hardhat coverage",
     "write-env-example": "node scripts/write-env-example.js",
-    "sign": "node scripts/signMerkleTree.js"
+    "sign": "node scripts/signMerkleTree.js",
+    "frontend:dev": "cd frontend && next dev",
+    "frontend:build": "cd frontend && next build",
+    "frontend:start": "cd frontend && next start",
+    "frontend:type-check": "yarn tsc --project ./frontend/tsconfig.json"
   },
   "devDependencies": {
     "@api3/chains": "^3.5.1",
@@ -35,15 +39,26 @@
     "@typechain/hardhat": "^6.1.2",
     "@types/chai": "^4.2.0",
     "@types/mocha": ">=9.1.0",
+    "@types/node": "^20.8.7",
+    "@types/react": "^18.2.29",
+    "@types/react-dom": "^18.2.14",
+    "@typescript-eslint/eslint-plugin": "^6.8.0",
+    "@typescript-eslint/parser": "^6.8.0",
+    "autoprefixer": "^10.4.16",
     "chai": "^4.2.0",
     "dotenv": "^16.3.1",
     "eslint": "^8.44.0",
+    "eslint-config-next": "13.5.6",
+    "eslint-config-prettier": "^9.0.0",
     "hardhat": "^2.16.1",
     "hardhat-gas-reporter": "^1.0.8",
+    "postcss": "^8.4.31",
     "prettier": "^2.8.8",
     "prettier-plugin-solidity": "^1.1.3",
+    "prettier-plugin-tailwindcss": "0.4.1",
     "solhint": "^3.4.1",
     "solidity-coverage": "^0.8.1",
+    "tailwindcss": "^3.3.3",
     "ts-node": ">=8.0.0",
     "typechain": "^8.1.0",
     "typescript": ">=4.5.0"
@@ -51,6 +66,10 @@
   "dependencies": {
     "@api3/airnode-protocol-v1": "^2.10.0",
     "@openzeppelin/contracts": "4.9.3",
-    "@openzeppelin/merkle-tree": "^1.0.5"
+    "@openzeppelin/merkle-tree": "^1.0.5",
+    "ethers": "^5.7.2",
+    "next": "13.5.6",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   }
 }

@@ -8,3 +8,9 @@ typechain-types
 # Hardhat files
 cache
 artifacts
+
+# IDE files
+.idea
+
+# Misc
+.DS_Store
