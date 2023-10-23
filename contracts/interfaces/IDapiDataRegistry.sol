@@ -35,15 +35,9 @@ interface IDapiDataRegistry is
 
     function HUNDRED_PERCENT() external view returns (uint256);
 
-    function DAPI_MANAGEMENT_HASH_TYPE_DESCRIPTION()
-        external
-        view
-        returns (string memory);
+    function DAPI_MANAGEMENT_HASH_TYPE() external view returns (bytes32);
 
-    function API_INTEGRATION_HASH_TYPE_DESCRIPTION()
-        external
-        view
-        returns (string memory);
+    function API_INTEGRATION_HASH_TYPE() external view returns (bytes32);
 
     function REGISTRAR_ROLE_DESCRIPTION() external view returns (string memory);
 

@@ -19,19 +19,12 @@ contract DapiDataRegistry is
     /// @notice Number that represents 100%
     uint256 public constant override HUNDRED_PERCENT = 1e8;
 
-    // string public constant override PRICE_MANAGEMENT_HASH_TYPE_DESCRIPTION =
-    //     "Price management merkle tree root";
-    string public constant override DAPI_MANAGEMENT_HASH_TYPE_DESCRIPTION =
-        "dAPI management merkle tree root";
-    string public constant override API_INTEGRATION_HASH_TYPE_DESCRIPTION =
-        "API integration merkle tree root";
-
-    // bytes32 private constant _PRICE_MANAGEMENT_HASH_TYPE =
-    //     keccak256(abi.encodePacked(PRICE_MANAGEMENT_HASH_TYPE_DESCRIPTION));
-    bytes32 private constant _DAPI_MANAGEMENT_HASH_TYPE =
-        keccak256(abi.encodePacked(DAPI_MANAGEMENT_HASH_TYPE_DESCRIPTION));
-    bytes32 private constant _API_INTEGRATION_HASH_TYPE =
-        keccak256(abi.encodePacked(API_INTEGRATION_HASH_TYPE_DESCRIPTION));
+    // dAPI management merkle tree root
+    bytes32 public constant override DAPI_MANAGEMENT_HASH_TYPE =
+        0x712570292038af5b32abe8cf88dee0abd7dcd5dd759c6f133dd781e3a0f7e53d;
+    // API integration merkle tree root
+    bytes32 public constant override API_INTEGRATION_HASH_TYPE =
+        0xf607eab1a0e1d5843e97cc3768147f5f15420188755ebc3a685ddcefe6d79d63;
 
     /// @notice Registrar role description
     string public constant override REGISTRAR_ROLE_DESCRIPTION = "Registrar";
@@ -106,7 +99,7 @@ contract DapiDataRegistry is
         require(proof.length != 0, "Proof is empty");
         // Check root exists in HashRegistry
         require(
-            hashRegistry.hashTypeToHash(_API_INTEGRATION_HASH_TYPE) == root,
+            hashRegistry.hashTypeToHash(API_INTEGRATION_HASH_TYPE) == root,
             "Root has not been registered"
         );
 
@@ -203,7 +196,7 @@ contract DapiDataRegistry is
         );
         // Check root exists in HashRegistry
         require(
-            hashRegistry.hashTypeToHash(_DAPI_MANAGEMENT_HASH_TYPE) == root,
+            hashRegistry.hashTypeToHash(DAPI_MANAGEMENT_HASH_TYPE) == root,
             "Root has not been registered"
         );
         // Check dataFeedId has been registered

@@ -120,10 +120,7 @@ describe('DapiDataRegistry', function () {
       [roles.airnode5.address, baseUrl + generateRandomString(20)],
     ];
     const apiTree = StandardMerkleTree.of(apiTreeValues, ['address', 'string']);
-    const apiHashType = hre.ethers.utils.solidityKeccak256(
-      ['string'],
-      [await dapiDataRegistry.API_INTEGRATION_HASH_TYPE_DESCRIPTION()]
-    );
+    const apiHashType = await dapiDataRegistry.API_INTEGRATION_HASH_TYPE();
     const rootSigners = [roles.rootSigner1, roles.rootSigner2, roles.rootSigner3];
     const apiTreeRootSignatures = await Promise.all(
       rootSigners.map(
@@ -169,10 +166,7 @@ describe('DapiDataRegistry', function () {
     ];
     const dapiTree = StandardMerkleTree.of(dapiTreeValues, ['bytes32', 'bytes32', 'address']);
     const dapiTreeRoot = dapiTree.root;
-    const dapiHashType = hre.ethers.utils.solidityKeccak256(
-      ['string'],
-      [await dapiDataRegistry.DAPI_MANAGEMENT_HASH_TYPE_DESCRIPTION()]
-    );
+    const dapiHashType = await dapiDataRegistry.DAPI_MANAGEMENT_HASH_TYPE();
     // TODO: should I use a different set of signer addresses here?
     const dapiTreeRootSignatures = await Promise.all(
       rootSigners.map(
@@ -222,6 +216,12 @@ describe('DapiDataRegistry', function () {
         api3ServerV1,
         dapiDataRegistryAdminRoleDescription,
       } = await helpers.loadFixture(deploy);
+      expect(await dapiDataRegistry.DAPI_MANAGEMENT_HASH_TYPE()).to.equal(
+        hre.ethers.utils.solidityKeccak256(['string'], ['dAPI management merkle tree root'])
+      );
+      expect(await dapiDataRegistry.API_INTEGRATION_HASH_TYPE()).to.equal(
+        hre.ethers.utils.solidityKeccak256(['string'], ['API integration merkle tree root'])
+      );
       expect(await dapiDataRegistry.accessControlRegistry()).to.equal(accessControlRegistry.address);
       expect(await dapiDataRegistry.adminRoleDescription()).to.equal(dapiDataRegistryAdminRoleDescription);
       expect(await dapiDataRegistry.manager()).to.equal(roles.manager.address);
