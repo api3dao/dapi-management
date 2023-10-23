@@ -120,3 +120,5 @@ async function signMerkleTree(merkleTreeName) {
 signMerkleTree(merkleType).catch((error) => {
   console.error(`Error processing ${merkleType}:`, error);
 });
+
+module.exports = { signEIP712Message, constructMerkleTree };
