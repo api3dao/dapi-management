@@ -6,23 +6,24 @@ import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3Serve
 import "@api3/airnode-protocol-v1/contracts/utils/SelfMulticall.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "./interfaces/IDapiDataRegistry.sol";
 import "./interfaces/IHashRegistry.sol";
 
 contract DapiDataRegistry is
     SelfMulticall,
-    AccessControlRegistryAdminnedWithManager
+    AccessControlRegistryAdminnedWithManager,
+    IDapiDataRegistry
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     /// @notice Number that represents 100%
-    // uint256 public constant override HUNDRED_PERCENT = 1e8;
-    uint256 public constant HUNDRED_PERCENT = 1e8;
+    uint256 public constant override HUNDRED_PERCENT = 1e8;
 
-    // string public constant PRICE_MANAGEMENT_HASH_TYPE_DESCRIPTION =
+    // string public constant override PRICE_MANAGEMENT_HASH_TYPE_DESCRIPTION =
     //     "Price management merkle tree root";
-    string public constant DAPI_MANAGEMENT_HASH_TYPE_DESCRIPTION =
+    string public constant override DAPI_MANAGEMENT_HASH_TYPE_DESCRIPTION =
         "dAPI management merkle tree root";
-    string public constant API_INTEGRATION_HASH_TYPE_DESCRIPTION =
+    string public constant override API_INTEGRATION_HASH_TYPE_DESCRIPTION =
         "API integration merkle tree root";
 
     // bytes32 private constant _PRICE_MANAGEMENT_HASH_TYPE =
@@ -33,46 +34,25 @@ contract DapiDataRegistry is
         keccak256(abi.encodePacked(API_INTEGRATION_HASH_TYPE_DESCRIPTION));
 
     /// @notice Registrar role description
-    // string public constant override REGISTRAR_ROLE_DESCRIPTION = "Registrar";
-    string public constant REGISTRAR_ROLE_DESCRIPTION = "Registrar";
+    string public constant override REGISTRAR_ROLE_DESCRIPTION = "Registrar";
 
     /// @notice Registrar role
-    // bytes32 public immutable override registrarRole;
-    bytes32 public immutable registrarRole;
+    bytes32 public immutable override registrarRole;
 
-    // IHashRegistry public immutable override hashRegistry;
-    IHashRegistry public immutable hashRegistry;
-    // IApi3ServerV1 public immutable override api3ServerV1;
-    IApi3ServerV1 public immutable api3ServerV1;
-
-    event RegisteredSignedApiUrl(address indexed airnode, string url);
-    event UnregisteredSignedApiUrl(address indexed airnode);
-    event RegisteredDataFeed(bytes32 indexed dataFeedId, bytes dataFeedData);
-    event RegisteredDapi(
-        bytes32 indexed dapiName,
-        bytes32 indexed dataFeedId,
-        address sponsorWallet,
-        uint256 deviationThresholdInPercentage,
-        int224 deviationReference,
-        uint32 heartbeatInterval
-    );
-    event UnregisteredDapi(bytes32 indexed dapiName);
-
-    struct UpdateParameters {
-        uint256 deviationThresholdInPercentage;
-        int224 deviationReference;
-        uint32 heartbeatInterval;
-    }
+    IHashRegistry public immutable override hashRegistry;
+    IApi3ServerV1 public immutable override api3ServerV1;
 
     // This is updated using the API management merkle tree
-    mapping(address => string) public airnodeToSignedApiUrl;
+    // TODO: should this mapping be private now that we are returning these valuse via readDapis()
+    mapping(address => string) public override airnodeToSignedApiUrl;
 
     // The value should be a single value or an array of them
     // This needs to be encoded so we can determine if it's a beacon
     // or a beaconSet based on the lenght
     // It can be udpated by anyone because the contract will hash the data and derive it
     // Airseeker will need to multicall to read all data using a single RPC call
-    mapping(bytes32 => bytes) public dataFeedIdToData;
+    // TODO: should this mapping be private now that we are returning these valuse via readDapis()
+    mapping(bytes32 => bytes) public override dataFeedIdToData;
 
     // This is the list of dAPIs AirseekerV2 will need to update
     // Api3Market contract will have a role to update this after a purchase
@@ -121,7 +101,7 @@ contract DapiDataRegistry is
         string calldata url,
         bytes32 root,
         bytes32[] calldata proof
-    ) external {
+    ) external override {
         require(root != bytes32(0), "Root is zero");
         require(proof.length != 0, "Proof is empty");
         // Check root exists in HashRegistry
@@ -141,7 +121,7 @@ contract DapiDataRegistry is
         emit RegisteredSignedApiUrl(airnode, url);
     }
 
-    function unregisterAirnodeSignedApiUrl(address airnode) external {
+    function unregisterAirnodeSignedApiUrl(address airnode) external override {
         require(airnode != address(0), "Airnode is zero");
         require(
             hasRegistrarRoleOrIsManager(msg.sender),
@@ -157,7 +137,7 @@ contract DapiDataRegistry is
 
     function registerDataFeed(
         bytes calldata dataFeedData
-    ) external returns (bytes32 dataFeedId) {
+    ) external override returns (bytes32 dataFeedId) {
         require(dataFeedData.length > 0, "Data feed data is empty");
         bytes memory newDataFeedData;
         if (dataFeedData.length == 64) {
@@ -214,7 +194,7 @@ contract DapiDataRegistry is
         uint32 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
-    ) external {
+    ) external override {
         require(root != bytes32(0), "Root is zero");
         require(proof.length != 0, "Proof is empty");
         require(
@@ -261,7 +241,7 @@ contract DapiDataRegistry is
         );
     }
 
-    function unregisterDapi(bytes32 dapiName) external {
+    function unregisterDapi(bytes32 dapiName) external override {
         require(dapiName != bytes32(0), "dAPI name is zero");
         require(
             hasRegistrarRoleOrIsManager(msg.sender),
@@ -274,7 +254,12 @@ contract DapiDataRegistry is
         emit UnregisteredDapi(dapiName); // TODO: add msg.sender?
     }
 
-    function registeredDapisCount() public view returns (uint256 count) {
+    function registeredDapisCount()
+        public
+        view
+        override
+        returns (uint256 count)
+    {
         count = activeDapis.length();
     }
 
@@ -284,6 +269,7 @@ contract DapiDataRegistry is
     )
         external
         view
+        override
         returns (
             bytes32[] memory dapiNames,
             bytes32[] memory dataFeedIds,
