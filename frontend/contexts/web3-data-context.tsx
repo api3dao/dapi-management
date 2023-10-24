@@ -1,13 +1,15 @@
 import { ethers } from 'ethers';
 import { useState, useEffect, useCallback, createContext, useContext, useMemo, ReactNode } from 'react';
 
+type ConnectStatus = 'pending' | 'connected' | 'disconnected';
+
 const Web3DataContext = createContext<{
   provider: null | ethers.providers.Web3Provider;
   signer: null | ethers.Signer;
   address: string;
   chainId: null | number;
   chainName: string;
-  connectStatus: 'pending' | 'connected' | 'disconnected';
+  connectStatus: ConnectStatus;
   connect: () => void;
 }>({
   provider: null,
@@ -26,32 +28,44 @@ export function Web3DataContextProvider(props: { children: ReactNode }) {
       : null;
   }, []);
 
-  const [signer, setSigner] = useState<ethers.Signer | null>(null);
-  const [address, setAddress] = useState<string>('');
-  const [chainId, setChainId] = useState<number | null>(null);
-  const [chainName, setChainName] = useState<string>('');
-  const [connectStatus, setConnectStatus] = useState<'pending' | 'connected' | 'disconnected'>('pending');
+  const [web3State, setWeb3State] = useState<{
+    signer: null | ethers.Signer;
+    address: string;
+    chainId: null | number;
+    chainName: string;
+    connectStatus: ConnectStatus;
+  }>({
+    signer: null,
+    address: '',
+    chainId: null,
+    chainName: '',
+    connectStatus: 'pending',
+  });
 
-  const refreshData = useCallback(async () => {
-    if (provider === null) return;
+  const syncWeb3State = useCallback(async () => {
+    if (!provider) return;
 
     const clearState = () => {
-      setSigner(null);
-      setChainId(null);
-      setChainName('');
-      setAddress('');
-      setConnectStatus('disconnected');
+      setWeb3State({
+        signer: null,
+        address: '',
+        chainId: null,
+        chainName: '',
+        connectStatus: 'disconnected',
+      });
     };
 
     try {
       const accounts = await provider.send('eth_accounts', []);
       if (accounts.length > 0) {
         const network = await provider.getNetwork();
-        setSigner(provider.getSigner());
-        setChainId(network.chainId);
-        setChainName(network.name);
-        setAddress(await provider.getSigner().getAddress());
-        setConnectStatus('connected');
+        setWeb3State({
+          signer: provider.getSigner(),
+          address: await provider.getSigner().getAddress(),
+          chainId: network.chainId,
+          chainName: network.name,
+          connectStatus: 'connected',
+        });
       } else {
         clearState();
       }
@@ -61,36 +75,33 @@ export function Web3DataContextProvider(props: { children: ReactNode }) {
     }
   }, [provider]);
 
+  // Sync state on page load
+  useEffect(() => {
+    syncWeb3State();
+  }, [syncWeb3State]);
+
   const connect = useCallback(async () => {
     if (provider) {
       await provider.send('eth_requestAccounts', []);
-      refreshData();
+      await syncWeb3State();
     }
-  }, [provider, refreshData]);
-
-  // Get data on page load
-  useEffect(() => {
-    if (!window.ethereum) return;
-
-    if (window.ethereum.isConnected()) {
-      refreshData();
-    }
-  }, [refreshData]);
+  }, [provider, syncWeb3State]);
 
   useEffect(() => {
     if (!window.ethereum) return;
 
-    window.ethereum.on('accountsChanged', refreshData);
-    window.ethereum.on('chainChanged', refreshData);
-    window.ethereum.on('disconnect', refreshData);
+    window.ethereum.on('accountsChanged', syncWeb3State);
+    window.ethereum.on('chainChanged', syncWeb3State);
+    window.ethereum.on('disconnect', syncWeb3State);
 
     return () => {
-      window.ethereum!.removeListener('accountsChanged', refreshData);
-      window.ethereum!.removeListener('chainChanged', refreshData);
-      window.ethereum!.removeListener('disconnect', refreshData);
+      window.ethereum!.removeListener('accountsChanged', syncWeb3State);
+      window.ethereum!.removeListener('chainChanged', syncWeb3State);
+      window.ethereum!.removeListener('disconnect', syncWeb3State);
     };
-  }, [refreshData]);
+  }, [syncWeb3State]);
 
+  const { signer, address, chainId, chainName, connectStatus } = web3State;
   return (
     <Web3DataContext.Provider
       value={{
