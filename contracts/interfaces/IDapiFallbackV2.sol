@@ -47,5 +47,7 @@ interface IDapiFallbackV2 {
 
     function withdraw(address payable recipient, uint256 amount) external;
 
-    function executeDapiFallback(ExecuteDapiFallbackArgs calldata args) external;
+    function executeDapiFallback(
+        ExecuteDapiFallbackArgs calldata args
+    ) external;
 }

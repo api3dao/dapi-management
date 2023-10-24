@@ -32,7 +32,9 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         _withdraw(recipient, amount);
     }
 
-    function executeDapiFallback(ExecuteDapiFallbackArgs calldata args) external override {
+    function executeDapiFallback(
+        ExecuteDapiFallbackArgs calldata args
+    ) external override {
         bytes32 currentBeaconId = api3ServerV1.dapiNameHashToDataFeedId(
             args.dapiName
         );
@@ -40,7 +42,9 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
 
         bytes32 fallbackLeaf = keccak256(
             bytes.concat(
-                keccak256(abi.encode(args.dapiName, args.beaconId, args.sponsorWallet))
+                keccak256(
+                    abi.encode(args.dapiName, args.beaconId, args.sponsorWallet)
+                )
             )
         );
         _validateTree(
@@ -64,7 +68,12 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
             )
         );
 
-        _validateTree(PRICE_HASH_TYPE, args.priceProof, args.priceRoot, priceLeaf);
+        _validateTree(
+            PRICE_HASH_TYPE,
+            args.priceProof,
+            args.priceRoot,
+            priceLeaf
+        );
 
         uint256 minSponsorWalletBalance = (args.price * 86400) / args.duration;
 
