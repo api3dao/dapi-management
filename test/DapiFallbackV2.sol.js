@@ -7,7 +7,6 @@ const {
   generateRandomAddress,
   buildEIP712Domain,
   generateRandomBytes,
-  deriveRootRole,
 } = require('./test-utils');
 
 describe.only('DapiFallbackV2', function () {
@@ -242,7 +241,7 @@ describe.only('DapiFallbackV2', function () {
         });
         context('Amount is zero', function () {
           it('reverts', async function () {
-            const { roles, dapiFallbackV2, accessControlRegistry } = await helpers.loadFixture(deploy);
+            const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
             await roles.randomPerson.sendTransaction({
               to: dapiFallbackV2.address,
               value: hre.ethers.utils.parseEther('33'),
@@ -263,7 +262,7 @@ describe.only('DapiFallbackV2', function () {
           await expect(
             dapiFallbackV2
               .connect(roles.dapiFallbackV2Owner)
-              .withdraw(ethers.constants.AddressZero, hre.ethers.utils.parseEther('33'))
+              .withdraw(hre.ethers.constants.AddressZero, hre.ethers.utils.parseEther('33'))
           ).to.be.revertedWith('Recipient address zero');
         });
       });
