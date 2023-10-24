@@ -15,8 +15,8 @@ interface Props {
 
 export default function RootLayout(props: Props) {
   return (
-    <div className={`flex min-h-screen text-gray-800 ${inter.className}`}>
-      <aside className="w-full max-w-[200px] flex-grow bg-gray-100">
+    <div className={`flex text-gray-800 ${inter.className}`}>
+      <aside className="w-full max-w-[200px] bg-gray-100">
         <div className="sticky top-0 w-full">
           <nav className="flex min-h-screen flex-col p-4 text-gray-500">
             <Link href="/" className="mb-5">
@@ -71,7 +71,7 @@ function Account() {
       return (
         <div>
           <div className="flex items-center gap-2">
-            <span className="h-4 w-4 rounded-full bg-gradient-to-br from-green-400 to-green-600"></span>
+            <span className="h-4 w-4 rounded-full bg-gradient-to-br from-green-400 to-green-600" />
             <div className="text-sm">{shortenAddress(address)}</div>
           </div>
           <Popover>
@@ -80,8 +80,8 @@ function Account() {
                 How to disconnect?
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="max-w-[190px]">
-              <div className="text-sm">You can disconnect your wallet via MetaMask.</div>
+            <PopoverContent className="max-w-[190px] text-sm">
+              You can disconnect your wallet via MetaMask.
             </PopoverContent>
           </Popover>
         </div>
