@@ -3,21 +3,20 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "@api3/airnode-protocol-v1/contracts/utils/SelfMulticall.sol";
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3ServerV1.sol";
 import "./interfaces/IHashRegistry.sol";
 import "./interfaces/IDapiFallbackV2.sol";
 
-contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
-    IApi3ServerV1 public immutable api3ServerV1;
-    IHashRegistry public immutable hashRegistry;
+contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
+    IApi3ServerV1 public immutable override api3ServerV1;
+    IHashRegistry public immutable override hashRegistry;
 
-    // keccak256(abi.encodePacked("dAPI Fallback MT"));
-    bytes32 private constant _DAPI_FALLBACK_HASH_TYPE =
-        0xa1f152b75fab21ed39ef9fa127cf2464bd0724362a2216706751dc25c1aa7b32;
-    // keccak256(abi.encodePacked("Price MT"));
-    bytes32 private constant _PRICE_HASH_TYPE =
-        0x9122813f1a7419dafd01165e545b04d2a3104a5e0076fe088ecd4f999697ecf8;
+    // keccak256(abi.encodePacked("dAPI fallback merkle tree root"));
+    bytes32 public constant override DAPI_FALLBACK_HASH_TYPE =
+        0x9abf68c65165db40997b7281172ee53d4fdf09977459c7d590cd8f7df6d8f966;
+    // keccak256(abi.encodePacked("Price merkle tree root"));
+    bytes32 public constant override PRICE_HASH_TYPE =
+        0x749ebf36df1b524d3282fd33252feb0a23f304bb2aab84d0a58bf1341953b233;
 
     constructor(IApi3ServerV1 _api3ServerV1, IHashRegistry _hashRegistry) {
         api3ServerV1 = _api3ServerV1;
@@ -45,7 +44,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
             )
         );
         _validateTree(
-            _DAPI_FALLBACK_HASH_TYPE,
+            DAPI_FALLBACK_HASH_TYPE,
             args.fallbackProof,
             args.fallbackRoot,
             fallbackLeaf
@@ -65,7 +64,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
             )
         );
 
-        _validateTree(_PRICE_HASH_TYPE, args.priceProof, args.priceRoot, priceLeaf);
+        _validateTree(PRICE_HASH_TYPE, args.priceProof, args.priceRoot, priceLeaf);
 
         uint256 minSponsorWalletBalance = (args.price * 86400) / args.duration;
 
