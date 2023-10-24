@@ -121,7 +121,7 @@ contract DapiDataRegistry is
             "Sender is not manager or needs Registrar role"
         );
 
-        // TODO: check if signed API URL is not being mappaed to an Airnode in dataFeedIdToData?
+        // TODO: check if signed API URL is not being mapped to an Airnode in dataFeedIdToData?
 
         delete airnodeToSignedApiUrl[airnode];
 

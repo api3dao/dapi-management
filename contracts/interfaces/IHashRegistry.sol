@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-interface IHashRegistry {
+import "@api3/airnode-protocol-v1/contracts/utils/interfaces/ISelfMulticall.sol";
+import "@openzeppelin/contracts/interfaces/IERC5267.sol";
+
+interface IHashRegistry is IERC5267, ISelfMulticall {
     event SetupSigners(bytes32 indexed hashType, address[] signers);
 
     event AddedSigner(bytes32 indexed hashType, address signer);
