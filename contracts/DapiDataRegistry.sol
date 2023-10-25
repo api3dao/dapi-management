@@ -137,8 +137,6 @@ contract DapiDataRegistry is
             require(airnodes.length == templateIds.length, "Length mismatch");
             bytes32[] memory beaconIds = new bytes32[](airnodes.length);
             for (uint256 i = 0; i < airnodes.length; i++) {
-                // TODO: check if signed API URL exists for Airnode?
-
                 // Derive beacon ID
                 // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L87
                 beaconIds[i] = keccak256(
