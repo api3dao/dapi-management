@@ -46,7 +46,9 @@ contract DapiDataRegistry is
     // Dapi names are expected to be unique bytes32 strings
     EnumerableSet.Bytes32Set private _dapis;
 
-    mapping(bytes32 => UpdateParameters) private dapiNameHashToUpdateParameters;
+    mapping(bytes32 => UpdateParameters)
+        public
+        override dapiNameToUpdateParameters;
 
     constructor(
         address _accessControlRegistry,
@@ -196,7 +198,7 @@ contract DapiDataRegistry is
 
         _dapis.add(dapiName); // TODO: Not checking if already exists in set to allow for update parameters override (downgrade/upgrade)
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
-        dapiNameHashToUpdateParameters[dapiNameHash] = UpdateParameters(
+        dapiNameToUpdateParameters[dapiNameHash] = UpdateParameters(
             deviationThresholdInPercentage, // TODO: can this be 0? should we check against any low/high boundary based on HUNDRED_PERCENT constant?
             deviationReference,
             heartbeatInterval // TODO: can this be 0?
@@ -223,7 +225,7 @@ contract DapiDataRegistry is
         );
         require(_dapis.remove(dapiName), "dAPI name has not been added");
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
-        delete dapiNameHashToUpdateParameters[dapiNameHash];
+        delete dapiNameToUpdateParameters[dapiNameHash];
 
         emit RemovedDapi(dapiName); // TODO: add msg.sender?
     }
@@ -263,7 +265,7 @@ contract DapiDataRegistry is
             bytes32 dataFeedId = IApi3ServerV1(api3ServerV1)
                 .dapiNameHashToDataFeedId(dapiNameHash);
             dataFeedIds[currentIndex] = dataFeedId;
-            updateParameters[currentIndex] = dapiNameHashToUpdateParameters[
+            updateParameters[currentIndex] = dapiNameToUpdateParameters[
                 dapiNameHash
             ];
             bytes memory dataFeed = dataFeeds[dataFeedId];

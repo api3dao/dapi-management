@@ -41,6 +41,10 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
 
     function dataFeeds(bytes32) external view returns (bytes memory);
 
+    function dapiNameToUpdateParameters(
+        bytes32
+    ) external view returns (uint256, int224, uint32);
+
     function registerAirnodeSignedApiUrl(
         address airnode,
         string calldata url,
