@@ -547,7 +547,7 @@ describe('DapiDataRegistry', function () {
                       heartbeatInterval
                     );
 
-                  const dapisCount = await dapiDataRegistry.registeredDapisCount();
+                  const dapisCount = await dapiDataRegistry.dapisCount();
                   expect(dapisCount).to.equal(1);
                   const [dapiNames, dataFeedIds, updateParameters, encodedDataFeedsdataFeeds, signedApiUrls] =
                     await dapiDataRegistry.readDapis(0, dapisCount);
@@ -858,7 +858,7 @@ describe('DapiDataRegistry', function () {
         })
       );
 
-      const dapisCount = await dapiDataRegistry.registeredDapisCount();
+      const dapisCount = await dapiDataRegistry.dapisCount();
       const [dapiNames, dataFeedIds, updateParameters, encodedDataFeedsdataFeeds, signedApiUrls] =
         await dapiDataRegistry.readDapis(0, dapisCount);
 
@@ -919,7 +919,7 @@ describe('DapiDataRegistry', function () {
       });
       await dapiDataRegistry.connect(roles.api3MarketContract).multicall(calldatas);
 
-      const dapisCount = await dapiDataRegistry.registeredDapisCount();
+      const dapisCount = await dapiDataRegistry.dapisCount();
       for (let i = 0; i < dapisCount; i += 2) {
         const chunkSize = Math.min(2, dapisCount - i);
         const [dapiNames, dataFeedIds, updateParameters, encodedDataFeedsdataFeeds, signedApiUrls] =

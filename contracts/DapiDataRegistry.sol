@@ -44,7 +44,7 @@ contract DapiDataRegistry is
     // This is the list of dAPIs AirseekerV2 will need to update
     // Api3Market contract will have a role to update this after a purchase
     // Dapi names are expected to be unique bytes32 strings
-    EnumerableSet.Bytes32Set private activeDapis;
+    EnumerableSet.Bytes32Set private _dapis;
 
     mapping(bytes32 => UpdateParameters) private dapiNameHashToUpdateParameters;
 
@@ -194,7 +194,7 @@ contract DapiDataRegistry is
         );
         require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
 
-        activeDapis.add(dapiName); // TODO: Not checking if already exists in set to allow for update parameters override (downgrade/upgrade)
+        _dapis.add(dapiName); // TODO: Not checking if already exists in set to allow for update parameters override (downgrade/upgrade)
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         dapiNameHashToUpdateParameters[dapiNameHash] = UpdateParameters(
             deviationThresholdInPercentage, // TODO: can this be 0? should we check against any low/high boundary based on HUNDRED_PERCENT constant?
@@ -221,20 +221,15 @@ contract DapiDataRegistry is
             hasRegistrarRoleOrIsManager(msg.sender),
             "Sender is not manager or needs Registrar role"
         );
-        require(activeDapis.remove(dapiName), "dAPI name has not been added");
+        require(_dapis.remove(dapiName), "dAPI name has not been added");
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         delete dapiNameHashToUpdateParameters[dapiNameHash];
 
         emit RemovedDapi(dapiName); // TODO: add msg.sender?
     }
 
-    function registeredDapisCount()
-        public
-        view
-        override
-        returns (uint256 count)
-    {
-        count = activeDapis.length();
+    function dapisCount() public view override returns (uint256 count) {
+        count = _dapis.length();
     }
 
     function readDapis(
@@ -252,7 +247,7 @@ contract DapiDataRegistry is
             string[][] memory signedApiUrls
         )
     {
-        uint256 count = registeredDapisCount();
+        uint256 count = dapisCount();
         require(offset < count, "Invalid offset");
         uint256 limitAdjusted = offset + limit > count ? count - offset : limit;
         dapiNames = new bytes32[](limitAdjusted);
@@ -261,7 +256,7 @@ contract DapiDataRegistry is
         dataFeeds_ = new bytes[](limitAdjusted);
         signedApiUrls = new string[][](limitAdjusted);
         for (uint256 i = offset; i < offset + limitAdjusted; i++) {
-            bytes32 dapiName = activeDapis.at(i);
+            bytes32 dapiName = _dapis.at(i);
             uint256 currentIndex = i - offset;
             dapiNames[currentIndex] = dapiName;
             bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));

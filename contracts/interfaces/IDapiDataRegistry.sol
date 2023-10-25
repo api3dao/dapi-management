@@ -65,7 +65,7 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
 
     function removeDapi(bytes32 dapiName) external;
 
-    function registeredDapisCount() external view returns (uint256 count);
+    function dapisCount() external view returns (uint256 count);
 
     function readDapis(
         uint256 offset,
