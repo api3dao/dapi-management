@@ -17,19 +17,10 @@ contract DapiDataRegistry is
     /// @notice Number that represents 100%
     uint256 public constant override HUNDRED_PERCENT = 1e8;
 
-    // string public constant override PRICE_MANAGEMENT_HASH_TYPE_DESCRIPTION =
-    //     "Price management merkle tree root";
-    string public constant override DAPI_MANAGEMENT_HASH_TYPE_DESCRIPTION =
-        "dAPI management merkle tree root";
-    string public constant override API_INTEGRATION_HASH_TYPE_DESCRIPTION =
-        "API integration merkle tree root";
-
-    // bytes32 private constant _PRICE_MANAGEMENT_HASH_TYPE =
-    //     keccak256(abi.encodePacked(PRICE_MANAGEMENT_HASH_TYPE_DESCRIPTION));
     bytes32 private constant _DAPI_MANAGEMENT_HASH_TYPE =
-        keccak256(abi.encodePacked(DAPI_MANAGEMENT_HASH_TYPE_DESCRIPTION));
-    bytes32 private constant _API_INTEGRATION_HASH_TYPE =
-        keccak256(abi.encodePacked(API_INTEGRATION_HASH_TYPE_DESCRIPTION));
+        keccak256(abi.encodePacked("dAPI management Merkle tree root"));
+    bytes32 private constant _SIGNED_API_URL_HASH_TYPE =
+        keccak256(abi.encodePacked("Signed API URL Merkle root"));
 
     /// @notice Registrar role description
     string public constant override REGISTRAR_ROLE_DESCRIPTION = "Registrar";
@@ -104,7 +95,7 @@ contract DapiDataRegistry is
         require(proof.length != 0, "Proof is empty");
         // Check root exists in HashRegistry
         require(
-            hashRegistry.hashTypeToHash(_API_INTEGRATION_HASH_TYPE) == root,
+            hashRegistry.hashTypeToHash(_SIGNED_API_URL_HASH_TYPE) == root,
             "Root has not been registered"
         );
 
