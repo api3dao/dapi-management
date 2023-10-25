@@ -324,60 +324,6 @@ describe('DapiDataRegistry', function () {
     });
   });
 
-  describe('unregisterAirnodeSignedApiUrl', function () {
-    context('Airnode is not zero', function () {
-      context('Sender is manager or needs Registrar role', function () {
-        it('unregisters an Airnode signed API URL', async function () {
-          const { roles, dapiDataRegistry, apiTree, apiTreeValues } = await helpers.loadFixture(deploy);
-
-          const apiTreeRoot = apiTree.root;
-          const [airnode, url] = apiTreeValues[2];
-          const apiTreeProof = apiTree.getProof([airnode, url]);
-
-          expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal('');
-          await dapiDataRegistry
-            .connect(roles.api3MarketContract)
-            .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof);
-          expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
-          await expect(dapiDataRegistry.connect(roles.api3MarketContract).unregisterAirnodeSignedApiUrl(airnode))
-            .to.emit(dapiDataRegistry, 'UnregisteredSignedApiUrl')
-            .withArgs(airnode);
-          expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal('');
-        });
-      });
-      context('Sender is not manager or needs Registrar role', function () {
-        it('reverts', async function () {
-          const { roles, dapiDataRegistry, apiTree, apiTreeValues } = await helpers.loadFixture(deploy);
-
-          const apiTreeRoot = apiTree.root;
-          const [airnode, url] = apiTreeValues[2];
-          const apiTreeProof = apiTree.getProof([airnode, url]);
-
-          expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal('');
-          await dapiDataRegistry
-            .connect(roles.api3MarketContract)
-            .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof);
-          expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
-          await expect(
-            dapiDataRegistry.connect(roles.randomPerson).unregisterAirnodeSignedApiUrl(airnode)
-          ).to.be.revertedWith('Sender is not manager or needs Registrar role');
-          expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
-        });
-      });
-    });
-    context('Airnode is zero', function () {
-      it('reverts', async function () {
-        const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
-
-        await expect(
-          dapiDataRegistry
-            .connect(roles.api3MarketContract)
-            .unregisterAirnodeSignedApiUrl(hre.ethers.constants.AddressZero)
-        ).to.be.revertedWith('Airnode is zero');
-      });
-    });
-  });
-
   describe('registerDataFeed', function () {
     context('Data feed data is not empty', function () {
       context('Encoded data feed data is valid address and bytes32 pairs', function () {

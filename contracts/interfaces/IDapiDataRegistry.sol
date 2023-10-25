@@ -8,8 +8,6 @@ import "./IHashRegistry.sol";
 interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
     event RegisteredSignedApiUrl(address indexed airnode, string url);
 
-    event UnregisteredSignedApiUrl(address indexed airnode);
-
     event RegisteredDataFeed(bytes32 indexed dataFeedId, bytes dataFeedData);
 
     event AddedDapi(
@@ -55,8 +53,6 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
         bytes32 root,
         bytes32[] calldata proof
     ) external;
-
-    function unregisterAirnodeSignedApiUrl(address airnode) external;
 
     function registerDataFeed(
         bytes calldata dataFeedData

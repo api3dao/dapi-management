@@ -112,20 +112,6 @@ contract DapiDataRegistry is
         emit RegisteredSignedApiUrl(airnode, url);
     }
 
-    function unregisterAirnodeSignedApiUrl(address airnode) external override {
-        require(airnode != address(0), "Airnode is zero");
-        require(
-            hasRegistrarRoleOrIsManager(msg.sender),
-            "Sender is not manager or needs Registrar role"
-        );
-
-        // TODO: check if signed API URL is not being mapped to an Airnode in dataFeedIdToData?
-
-        delete airnodeToSignedApiUrl[airnode];
-
-        emit UnregisteredSignedApiUrl(airnode); // TODO: add msg.sender?
-    }
-
     function registerDataFeed(
         bytes calldata dataFeedData
     ) external override returns (bytes32 dataFeedId) {
