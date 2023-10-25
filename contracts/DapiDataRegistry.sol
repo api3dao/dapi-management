@@ -237,41 +237,47 @@ contract DapiDataRegistry is
         )
     {
         uint256 count = dapisCount();
-        require(offset < count, "Invalid offset");
-        uint256 limitAdjusted = offset + limit > count ? count - offset : limit;
-        dapiNames = new bytes32[](limitAdjusted);
-        dataFeedIds = new bytes32[](limitAdjusted);
-        updateParameters = new UpdateParameters[](limitAdjusted);
-        dataFeeds_ = new bytes[](limitAdjusted);
-        signedApiUrls = new string[][](limitAdjusted);
-        for (uint256 i = offset; i < offset + limitAdjusted; i++) {
-            bytes32 dapiName = _dapis.at(i);
-            uint256 currentIndex = i - offset;
-            dapiNames[currentIndex] = dapiName;
-            bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
-            bytes32 dataFeedId = IApi3ServerV1(api3ServerV1)
-                .dapiNameHashToDataFeedId(dapiNameHash);
-            dataFeedIds[currentIndex] = dataFeedId;
-            updateParameters[currentIndex] = dapiNameToUpdateParameters[
-                dapiNameHash
-            ];
-            bytes memory dataFeed = dataFeeds[dataFeedId];
-            dataFeeds_[currentIndex] = dataFeed;
-            if (dataFeed.length == 64) {
-                (address airnode, ) = abi.decode(dataFeed, (address, bytes32));
-                string[] memory urls = new string[](1);
-                urls[0] = airnodeToSignedApiUrl[airnode];
-                signedApiUrls[currentIndex] = urls;
-            } else {
-                (address[] memory airnodes, ) = abi.decode(
-                    dataFeed,
-                    (address[], bytes32[])
-                );
-                string[] memory urls = new string[](airnodes.length);
-                for (uint256 j = 0; j < airnodes.length; j++) {
-                    urls[j] = airnodeToSignedApiUrl[airnodes[j]];
+        if (offset < count) {
+            uint256 limitAdjusted = offset + limit > count
+                ? count - offset
+                : limit;
+            dapiNames = new bytes32[](limitAdjusted);
+            dataFeedIds = new bytes32[](limitAdjusted);
+            updateParameters = new UpdateParameters[](limitAdjusted);
+            dataFeeds_ = new bytes[](limitAdjusted);
+            signedApiUrls = new string[][](limitAdjusted);
+            for (uint256 i = offset; i < offset + limitAdjusted; i++) {
+                bytes32 dapiName = _dapis.at(i);
+                uint256 currentIndex = i - offset;
+                dapiNames[currentIndex] = dapiName;
+                bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
+                bytes32 dataFeedId = IApi3ServerV1(api3ServerV1)
+                    .dapiNameHashToDataFeedId(dapiNameHash);
+                dataFeedIds[currentIndex] = dataFeedId;
+                updateParameters[currentIndex] = dapiNameToUpdateParameters[
+                    dapiNameHash
+                ];
+                bytes memory dataFeed = dataFeeds[dataFeedId];
+                dataFeeds_[currentIndex] = dataFeed;
+                if (dataFeed.length == 64) {
+                    (address airnode, ) = abi.decode(
+                        dataFeed,
+                        (address, bytes32)
+                    );
+                    string[] memory urls = new string[](1);
+                    urls[0] = airnodeToSignedApiUrl[airnode];
+                    signedApiUrls[currentIndex] = urls;
+                } else {
+                    (address[] memory airnodes, ) = abi.decode(
+                        dataFeed,
+                        (address[], bytes32[])
+                    );
+                    string[] memory urls = new string[](airnodes.length);
+                    for (uint256 j = 0; j < airnodes.length; j++) {
+                        urls[j] = airnodeToSignedApiUrl[airnodes[j]];
+                    }
+                    signedApiUrls[currentIndex] = urls;
                 }
-                signedApiUrls[currentIndex] = urls;
             }
         }
     }

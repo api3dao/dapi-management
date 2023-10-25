@@ -529,6 +529,19 @@ describe('DapiDataRegistry', function () {
                   expect(updateParameters[0].heartbeatInterval).to.deep.equal(heartbeatInterval);
                   expect(encodedDataFeedsdataFeeds).to.deep.equal([encodedBeaconSetData]);
                   expect(signedApiUrls).to.deep.equal([apiTreeValues.map(([, url]) => url)]);
+
+                  const [
+                    emptyDapiNames,
+                    emptyDataFeedIds,
+                    emptyUpdateParameters,
+                    emptyEncodedDataFeedsdataFeeds,
+                    emptySignedApiUrls,
+                  ] = await dapiDataRegistry.readDapis(dapisCount, dapisCount);
+                  expect(emptyDapiNames).to.deep.equal([]);
+                  expect(emptyDataFeedIds).to.deep.equal([]);
+                  expect(emptyUpdateParameters).to.deep.equal([]);
+                  expect(emptyEncodedDataFeedsdataFeeds).to.deep.equal([]);
+                  expect(emptySignedApiUrls).to.deep.equal([]);
                 });
               });
               context('Proof is not valid', function () {
