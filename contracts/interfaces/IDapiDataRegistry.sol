@@ -12,7 +12,7 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
 
     event RegisteredDataFeed(bytes32 indexed dataFeedId, bytes dataFeedData);
 
-    event RegisteredDapi(
+    event AddedDapi(
         bytes32 indexed dapiName,
         bytes32 indexed dataFeedId,
         address sponsorWallet,
@@ -21,7 +21,7 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
         uint32 heartbeatInterval
     );
 
-    event UnregisteredDapi(bytes32 indexed dapiName);
+    event RemovedDapi(bytes32 indexed dapiName);
 
     struct UpdateParameters {
         uint256 deviationThresholdInPercentage;
@@ -62,7 +62,7 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
         bytes calldata dataFeedData
     ) external returns (bytes32 dataFeedId);
 
-    function registerDapi(
+    function addDapi(
         bytes32 dapiName,
         bytes32 dataFeedId,
         address sponsorWallet,
@@ -73,7 +73,7 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
         bytes32[] calldata proof
     ) external;
 
-    function unregisterDapi(bytes32 dapiName) external;
+    function removeDapi(bytes32 dapiName) external;
 
     function registeredDapisCount() external view returns (uint256 count);
 

@@ -541,14 +541,14 @@ describe('DapiDataRegistry', function () {
     });
   });
 
-  describe('registerDapi', function () {
+  describe('addDapi', function () {
     context('Root is not zero', function () {
       context('Proof is not empty', function () {
         context('Sender is manager or needs Registrar role', function () {
           context('Root has been registered', function () {
             context('Data feed ID has been registered', function () {
               context('Proof is valid', function () {
-                it('registers a dAPI', async function () {
+                it('adds a dAPI', async function () {
                   const { roles, dapiDataRegistry, apiTree, apiTreeValues, dataFeedDatas, dapiTree, dapiTreeValues } =
                     await helpers.loadFixture(deploy);
 
@@ -586,7 +586,7 @@ describe('DapiDataRegistry', function () {
                   await expect(
                     dapiDataRegistry
                       .connect(roles.api3MarketContract)
-                      .registerDapi(
+                      .addDapi(
                         dapiName,
                         beaconSetId,
                         sponsorWallet,
@@ -597,7 +597,7 @@ describe('DapiDataRegistry', function () {
                         dapiTree.getProof(dapiTreeValue)
                       )
                   )
-                    .to.emit(dapiDataRegistry, 'RegisteredDapi')
+                    .to.emit(dapiDataRegistry, 'AddedDapi')
                     .withArgs(
                       dapiName,
                       beaconSetId,
@@ -651,7 +651,7 @@ describe('DapiDataRegistry', function () {
                   await expect(
                     dapiDataRegistry
                       .connect(roles.api3MarketContract)
-                      .registerDapi(
+                      .addDapi(
                         dapiName,
                         beaconSetId,
                         sponsorWallet,
@@ -677,7 +677,7 @@ describe('DapiDataRegistry', function () {
                 const [dapiName, beaconSetId, sponsorWallet] = dapiTreeValue;
 
                 await expect(
-                  dapiDataRegistry.connect(roles.api3MarketContract).registerDapi(
+                  dapiDataRegistry.connect(roles.api3MarketContract).addDapi(
                     dapiName,
                     beaconSetId, // registerDataFeed() has not been called yet (dataFeedIdToData() returns empty string)
                     sponsorWallet,
@@ -698,7 +698,7 @@ describe('DapiDataRegistry', function () {
               await expect(
                 dapiDataRegistry
                   .connect(roles.api3MarketContract)
-                  .registerDapi(
+                  .addDapi(
                     generateRandomBytes32(),
                     generateRandomBytes32(),
                     generateRandomAddress(),
@@ -719,7 +719,7 @@ describe('DapiDataRegistry', function () {
             await expect(
               dapiDataRegistry
                 .connect(roles.randomPerson)
-                .registerDapi(
+                .addDapi(
                   generateRandomBytes32(),
                   generateRandomBytes32(),
                   generateRandomAddress(),
@@ -740,7 +740,7 @@ describe('DapiDataRegistry', function () {
           await expect(
             dapiDataRegistry
               .connect(roles.api3MarketContract)
-              .registerDapi(
+              .addDapi(
                 generateRandomBytes32(),
                 generateRandomBytes32(),
                 generateRandomAddress(),
@@ -761,7 +761,7 @@ describe('DapiDataRegistry', function () {
         await expect(
           dapiDataRegistry
             .connect(roles.api3MarketContract)
-            .registerDapi(
+            .addDapi(
               generateRandomBytes32(),
               generateRandomBytes32(),
               generateRandomAddress(),
@@ -776,11 +776,11 @@ describe('DapiDataRegistry', function () {
     });
   });
 
-  describe('unregisterDapi', function () {
+  describe('removeDapi', function () {
     context('dAPI name is not zero', function () {
       context('Sender is manager or needs Registrar role', function () {
-        context('dAPI name is registered', function () {
-          it('unregisters dAPI', async function () {
+        context('dAPI name has been added', function () {
+          it('removes dAPI', async function () {
             const { roles, dapiDataRegistry, apiTree, apiTreeValues, dataFeedDatas, dapiTree, dapiTreeValues } =
               await helpers.loadFixture(deploy);
 
@@ -817,7 +817,7 @@ describe('DapiDataRegistry', function () {
 
             await dapiDataRegistry
               .connect(roles.api3MarketContract)
-              .registerDapi(
+              .addDapi(
                 dapiName,
                 beaconSetId,
                 sponsorWallet,
@@ -828,18 +828,18 @@ describe('DapiDataRegistry', function () {
                 dapiTree.getProof(dapiTreeValue)
               );
 
-            await expect(dapiDataRegistry.connect(roles.api3MarketContract).unregisterDapi(dapiName))
-              .to.emit(dapiDataRegistry, 'UnregisteredDapi')
+            await expect(dapiDataRegistry.connect(roles.api3MarketContract).removeDapi(dapiName))
+              .to.emit(dapiDataRegistry, 'RemovedDapi')
               .withArgs(dapiName);
           });
         });
-        context('dAPI name is not registered', function () {
+        context('dAPI name has not been added', function () {
           it('reverts', async function () {
             const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
             await expect(
-              dapiDataRegistry.connect(roles.api3MarketContract).unregisterDapi(generateRandomBytes32())
-            ).to.be.revertedWith('dAPI name is not registered');
+              dapiDataRegistry.connect(roles.api3MarketContract).removeDapi(generateRandomBytes32())
+            ).to.be.revertedWith('dAPI name has not been added');
           });
         });
       });
@@ -848,7 +848,7 @@ describe('DapiDataRegistry', function () {
           const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
           await expect(
-            dapiDataRegistry.connect(roles.randomPerson).unregisterDapi(generateRandomBytes32())
+            dapiDataRegistry.connect(roles.randomPerson).removeDapi(generateRandomBytes32())
           ).to.be.revertedWith('Sender is not manager or needs Registrar role');
         });
       });
@@ -858,7 +858,7 @@ describe('DapiDataRegistry', function () {
         const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
         await expect(
-          dapiDataRegistry.connect(roles.api3MarketContract).unregisterDapi(hre.ethers.constants.HashZero)
+          dapiDataRegistry.connect(roles.api3MarketContract).removeDapi(hre.ethers.constants.HashZero)
         ).to.be.revertedWith('dAPI name is zero');
       });
     });
@@ -904,7 +904,7 @@ describe('DapiDataRegistry', function () {
           const [dapiName, beaconSetId, sponsorWallet] = dapiTreeValue;
           return dapiDataRegistry
             .connect(roles.api3MarketContract)
-            .registerDapi(
+            .addDapi(
               dapiName,
               beaconSetId,
               sponsorWallet,
@@ -965,7 +965,7 @@ describe('DapiDataRegistry', function () {
 
       const calldatas = dapiTreeValues.map((dapiTreeValue) => {
         const [dapiName, beaconSetId, sponsorWallet] = dapiTreeValue;
-        return dapiDataRegistry.interface.encodeFunctionData('registerDapi', [
+        return dapiDataRegistry.interface.encodeFunctionData('addDapi', [
           dapiName,
           beaconSetId,
           sponsorWallet,

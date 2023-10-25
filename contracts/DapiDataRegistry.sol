@@ -176,7 +176,7 @@ contract DapiDataRegistry is
         emit RegisteredDataFeed(dataFeedId, newDataFeedData);
     }
 
-    function registerDapi(
+    function addDapi(
         bytes32 dapiName,
         bytes32 dataFeedId,
         address sponsorWallet,
@@ -222,7 +222,7 @@ contract DapiDataRegistry is
         // Set dapiName to dataFeedId (this contract needs to be granted the dapi name setter role)
         api3ServerV1.setDapiName(dapiName, dataFeedId);
 
-        emit RegisteredDapi(
+        emit AddedDapi(
             dapiName,
             dataFeedId,
             sponsorWallet,
@@ -232,17 +232,17 @@ contract DapiDataRegistry is
         );
     }
 
-    function unregisterDapi(bytes32 dapiName) external override {
+    function removeDapi(bytes32 dapiName) external override {
         require(dapiName != bytes32(0), "dAPI name is zero");
         require(
             hasRegistrarRoleOrIsManager(msg.sender),
             "Sender is not manager or needs Registrar role"
         );
-        require(activeDapis.remove(dapiName), "dAPI name is not registered");
+        require(activeDapis.remove(dapiName), "dAPI name has not been added");
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         delete dapiNameHashToUpdateParameters[dapiNameHash];
 
-        emit UnregisteredDapi(dapiName); // TODO: add msg.sender?
+        emit RemovedDapi(dapiName); // TODO: add msg.sender?
     }
 
     function registeredDapisCount()
