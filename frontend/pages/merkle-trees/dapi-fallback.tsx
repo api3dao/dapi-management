@@ -1,5 +1,5 @@
 import RootLayout from '~/components/root-layout';
 
-export default function DapiFallback() {
+export default function DapiFallbackTree() {
   return <RootLayout>TODO</RootLayout>;
 }

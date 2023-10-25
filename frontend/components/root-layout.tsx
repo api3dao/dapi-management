@@ -24,10 +24,10 @@ export default function RootLayout(props: Props) {
             </Link>
             <h3 className="mb-2 font-medium">Merkle Trees</h3>
             <div className="flex flex-col gap-2 text-sm">
-              <NavLink href="/merkle-trees/api-integration">API Integration</NavLink>
               <NavLink href="/merkle-trees/dapi-fallback">dAPI Fallback</NavLink>
               <NavLink href="/merkle-trees/dapi-management">dAPI Management</NavLink>
-              <NavLink href="/merkle-trees/prices">Price</NavLink>
+              <NavLink href="/merkle-trees/dapi-pricing">dAPI Pricing</NavLink>
+              <NavLink href="/merkle-trees/signed-api-url">Signed API URL</NavLink>
             </div>
             <div className="mt-auto pt-6">
               <Account />
