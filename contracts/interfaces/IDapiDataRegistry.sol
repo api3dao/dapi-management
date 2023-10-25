@@ -17,7 +17,7 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
         uint32 heartbeatInterval
     );
 
-    event RemovedDapi(bytes32 indexed dapiName);
+    event RemovedDapi(bytes32 indexed dapiName, address sender);
 
     struct UpdateParameters {
         uint256 deviationThresholdInPercentage;

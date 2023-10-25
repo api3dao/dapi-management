@@ -214,7 +214,7 @@ contract DapiDataRegistry is
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         delete dapiNameToUpdateParameters[dapiNameHash];
 
-        emit RemovedDapi(dapiName); // TODO: add msg.sender?
+        emit RemovedDapi(dapiName, msg.sender); // TODO: add msg.sender?
     }
 
     function dapisCount() public view override returns (uint256 count) {

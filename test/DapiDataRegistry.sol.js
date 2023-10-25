@@ -740,7 +740,7 @@ describe('DapiDataRegistry', function () {
 
             await expect(dapiDataRegistry.connect(roles.api3MarketContract).removeDapi(dapiName))
               .to.emit(dapiDataRegistry, 'RemovedDapi')
-              .withArgs(dapiName);
+              .withArgs(dapiName, roles.api3MarketContract.address);
           });
         });
         context('dAPI name has not been added', function () {
