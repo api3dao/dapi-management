@@ -87,9 +87,17 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
 
         uint256 sponsorWalletBalance = args.sponsorWallet.balance;
         if (sponsorWalletBalance < minSponsorWalletBalance) {
-            _fundSponsorWallet(
+            uint256 amount = minSponsorWalletBalance - sponsorWalletBalance;
+            require(
+                address(this).balance >= amount,
+                "Insufficient contract balance"
+            );
+            Address.sendValue(args.sponsorWallet, amount);
+            emit FundedSponsorWallet(
                 args.sponsorWallet,
-                minSponsorWalletBalance - sponsorWalletBalance
+                amount,
+                address(this).balance,
+                msg.sender
             );
         }
         IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.beaconId);
@@ -107,22 +115,5 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
             "Tree has not been registered"
         );
         require(MerkleProof.verify(proof, root, leaf), "Invalid tree proof");
-    }
-
-    function _fundSponsorWallet(
-        address payable sponsorWallet,
-        uint256 amount
-    ) private {
-        require(
-            address(this).balance >= amount,
-            "Insufficient contract balance"
-        );
-        Address.sendValue(sponsorWallet, amount);
-        emit FundedSponsorWallet(
-            sponsorWallet,
-            amount,
-            address(this).balance,
-            msg.sender
-        );
     }
 }
