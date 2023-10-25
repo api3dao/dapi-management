@@ -319,164 +319,133 @@ describe('DapiDataRegistry', function () {
   });
 
   describe('registerDataFeed', function () {
-    context('Data feed is not empty', function () {
-      context('Encoded data feed is valid address and bytes32 pairs', function () {
-        context('Encoded data feed is valid 32 bytes pairs', function () {
-          it('registers beacon data feed', async function () {
-            const { roles, dapiDataRegistry, dataFeeds } = await helpers.loadFixture(deploy);
+    context('Encoded data feed is valid address and bytes32 pairs', function () {
+      context('Encoded data feed is valid 32 bytes pairs', function () {
+        it('registers beacon data feed', async function () {
+          const { roles, dapiDataRegistry, dataFeeds } = await helpers.loadFixture(deploy);
 
-            const [dataFeed] = dataFeeds;
-            const encodedBeaconData = hre.ethers.utils.defaultAbiCoder.encode(
-              ['address', 'bytes32'],
-              [dataFeed[0].airnode, dataFeed[0].templateId]
-            );
-            const dataFeedId = hre.ethers.utils.solidityKeccak256(
-              ['address', 'bytes32'],
-              [dataFeed[0].airnode, dataFeed[0].templateId]
-            );
+          const [dataFeed] = dataFeeds;
+          const encodedBeaconData = hre.ethers.utils.defaultAbiCoder.encode(
+            ['address', 'bytes32'],
+            [dataFeed[0].airnode, dataFeed[0].templateId]
+          );
+          const dataFeedId = hre.ethers.utils.solidityKeccak256(
+            ['address', 'bytes32'],
+            [dataFeed[0].airnode, dataFeed[0].templateId]
+          );
 
-            await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconData))
-              .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
-              .withArgs(dataFeedId, encodedBeaconData);
-            expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconData);
-          });
-          it('registers beaconSet data feed', async function () {
-            const { roles, dapiDataRegistry, dataFeeds, dapiTreeValues } = await helpers.loadFixture(deploy);
-
-            const [dataFeed] = dataFeeds;
-            const [[, beaconSetId]] = dapiTreeValues;
-            const { airnodes, templateIds } = dataFeed.reduce(
-              (acc, { airnode, templateId }) => ({
-                airnodes: [...acc.airnodes, airnode],
-                templateIds: [...acc.templateIds, templateId],
-              }),
-              { airnodes: [], templateIds: [] }
-            );
-            const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
-              ['address[]', 'bytes32[]'],
-              [airnodes, templateIds]
-            );
-
-            await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData))
-              .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
-              .withArgs(beaconSetId, encodedBeaconSetData);
-            expect(await dapiDataRegistry.dataFeeds(beaconSetId)).to.deep.equal(encodedBeaconSetData);
-          });
-          it('registers beaconSet data feed dropping trailing data', async function () {
-            const { roles, dapiDataRegistry, dataFeeds, dapiTreeValues } = await helpers.loadFixture(deploy);
-
-            const [dataFeed] = dataFeeds;
-            const [[, beaconSetId]] = dapiTreeValues;
-            const { airnodes, templateIds } = dataFeed.reduce(
-              (acc, { airnode, templateId }) => ({
-                airnodes: [...acc.airnodes, airnode],
-                templateIds: [...acc.templateIds, templateId],
-              }),
-              { airnodes: [], templateIds: [] }
-            );
-            const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
-              ['address[]', 'bytes32[]'],
-              [airnodes, templateIds]
-            );
-            const extraBytes32 = generateRandomBytes32();
-            const extraAddress = generateRandomAddress();
-            const encodedBeaconSetDataWithEvenNumberOfExtraBytes32 = hre.ethers.utils.hexConcat([
-              encodedBeaconSetData,
-              extraBytes32,
-              extraBytes32,
-              extraBytes32,
-              hre.ethers.utils.hexZeroPad(extraAddress, 32),
-            ]);
-            await expect(
-              dapiDataRegistry
-                .connect(roles.randomPerson)
-                .registerDataFeed(encodedBeaconSetDataWithEvenNumberOfExtraBytes32)
-            )
-              .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
-              .withArgs(beaconSetId, encodedBeaconSetData);
-            expect(await dapiDataRegistry.dataFeeds(beaconSetId)).to.deep.equal(encodedBeaconSetData);
-          });
+          await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconData))
+            .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
+            .withArgs(dataFeedId, encodedBeaconData);
+          expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconData);
         });
-        context('Encoded data feed is not valid 32 bytes pairs', function () {
-          it('reverts', async function () {
-            const { roles, dapiDataRegistry, dataFeeds, dapiTreeValues } = await helpers.loadFixture(deploy);
+        it('registers beaconSet data feed', async function () {
+          const { roles, dapiDataRegistry, dataFeeds, dapiTreeValues } = await helpers.loadFixture(deploy);
 
-            const [dataFeed] = dataFeeds;
-            const [[, beaconSetId]] = dapiTreeValues;
-            const { airnodes, templateIds } = dataFeed.reduce(
-              (acc, { airnode, templateId }) => ({
-                airnodes: [...acc.airnodes, airnode],
-                templateIds: [...acc.templateIds, templateId],
-              }),
-              { airnodes: [], templateIds: [] }
-            );
-            const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
-              ['address[]', 'bytes32[]'],
-              [airnodes, templateIds]
-            );
-            const extraBytes32 = generateRandomBytes32();
-            const encodedBeaconSetDataWithEvenNumberOfExtraBytes32 = hre.ethers.utils.hexConcat([
-              encodedBeaconSetData,
-              extraBytes32,
-              extraBytes32,
-              extraBytes32,
-            ]);
-            await expect(
-              dapiDataRegistry
-                .connect(roles.randomPerson)
-                .registerDataFeed(encodedBeaconSetDataWithEvenNumberOfExtraBytes32)
-            ).to.have.been.revertedWith('Invalid data feed');
-            const extraAddress = generateRandomAddress();
-            const encodedBeaconSetDataWithExtraAddress = hre.ethers.utils.hexConcat([
-              encodedBeaconSetData,
-              extraAddress,
-            ]);
-            await expect(
-              dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetDataWithExtraAddress)
-            ).to.have.been.revertedWith('Invalid data feed');
-            expect(await dapiDataRegistry.dataFeeds(beaconSetId)).to.deep.equal('0x');
-          });
+          const [dataFeed] = dataFeeds;
+          const [[, beaconSetId]] = dapiTreeValues;
+          const { airnodes, templateIds } = dataFeed.reduce(
+            (acc, { airnode, templateId }) => ({
+              airnodes: [...acc.airnodes, airnode],
+              templateIds: [...acc.templateIds, templateId],
+            }),
+            { airnodes: [], templateIds: [] }
+          );
+          const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+            ['address[]', 'bytes32[]'],
+            [airnodes, templateIds]
+          );
+
+          await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData))
+            .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
+            .withArgs(beaconSetId, encodedBeaconSetData);
+          expect(await dapiDataRegistry.dataFeeds(beaconSetId)).to.deep.equal(encodedBeaconSetData);
         });
       });
-      context('Encoded data feed is not valid address and bytes32 pairs', function () {
+      context('Encoded data feed is not valid 32 bytes pairs', function () {
         it('reverts', async function () {
-          const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
+          const { roles, dapiDataRegistry, dataFeeds, dapiTreeValues } = await helpers.loadFixture(deploy);
 
-          const invalidDataFeed1 = hre.ethers.utils.defaultAbiCoder.encode(
-            ['bytes32', 'address'],
-            [generateRandomBytes32(), generateRandomAddress()]
+          const [dataFeed] = dataFeeds;
+          const [[, beaconSetId]] = dapiTreeValues;
+          const { airnodes, templateIds } = dataFeed.reduce(
+            (acc, { airnode, templateId }) => ({
+              airnodes: [...acc.airnodes, airnode],
+              templateIds: [...acc.templateIds, templateId],
+            }),
+            { airnodes: [], templateIds: [] }
           );
-          const invalidDataFeed2 = hre.ethers.utils.defaultAbiCoder.encode(
-            ['address', 'string'],
-            [generateRandomAddress(), generateRandomBytes(32)]
+          const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+            ['address[]', 'bytes32[]'],
+            [airnodes, templateIds]
           );
-          const invalidDataFeed3 = hre.ethers.utils.defaultAbiCoder.encode(
-            ['bytes32[]', 'bytes32[]'],
-            [
-              [generateRandomBytes32(), generateRandomBytes32()],
-              [generateRandomBytes32(), generateRandomBytes32()],
-            ]
-          );
+          await expect(
+            dapiDataRegistry
+              .connect(roles.randomPerson)
+              .registerDataFeed(hre.ethers.utils.hexConcat([encodedBeaconSetData, hre.ethers.utils.hexZeroPad(1, 32)]))
+          ).to.have.been.revertedWith('Invalid data feed');
+          await expect(
+            dapiDataRegistry
+              .connect(roles.randomPerson)
+              .registerDataFeed(hre.ethers.utils.hexConcat([encodedBeaconSetData, generateRandomBytes32()]))
+          ).to.have.been.revertedWith('Invalid data feed');
+          await expect(
+            dapiDataRegistry
+              .connect(roles.randomPerson)
+              .registerDataFeed(
+                hre.ethers.utils.hexConcat([
+                  encodedBeaconSetData,
+                  hre.ethers.utils.hexZeroPad(generateRandomAddress, 32),
+                ])
+              )
+          ).to.have.been.revertedWith('Invalid data feed');
 
-          await expect(
-            dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeed1)
-          ).to.be.revertedWithoutReason();
-          await expect(
-            dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeed2)
-          ).to.be.revertedWithoutReason();
-          await expect(
-            dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeed3)
-          ).to.be.revertedWithoutReason();
+          expect(await dapiDataRegistry.dataFeeds(beaconSetId)).to.deep.equal('0x');
         });
       });
     });
-    context('Data feed is empty', function () {
+    context('Encoded data feed is not valid address and bytes32 pairs', function () {
       it('reverts', async function () {
         const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
-        await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed('0x')).to.be.revertedWith(
-          'Data feed is empty'
+        const invalidDataFeed1 = hre.ethers.utils.defaultAbiCoder.encode(
+          ['bytes32', 'address'],
+          [generateRandomBytes32(), generateRandomAddress()]
         );
+        const invalidDataFeed2 = hre.ethers.utils.defaultAbiCoder.encode(
+          ['address', 'string'],
+          [generateRandomAddress(), generateRandomBytes(32)]
+        );
+        const invalidDataFeed3 = hre.ethers.utils.defaultAbiCoder.encode(
+          ['bytes32[]', 'bytes32[]'],
+          [
+            [generateRandomBytes32(), generateRandomBytes32()],
+            [generateRandomBytes32(), generateRandomBytes32()],
+          ]
+        );
+        const invalidDataFeed4 = hre.ethers.utils.defaultAbiCoder.encode(
+          ['address', 'bytes32'],
+          [generateRandomAddress(), generateRandomBytes32()]
+        );
+        const invalidDataFeed5 = '0x';
+
+        await expect(
+          dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeed1)
+        ).to.be.revertedWithoutReason();
+        await expect(
+          dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeed2)
+        ).to.be.revertedWithoutReason();
+        await expect(
+          dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeed3)
+        ).to.be.revertedWithoutReason();
+        await expect(
+          dapiDataRegistry
+            .connect(roles.randomPerson)
+            .registerDataFeed(hre.ethers.utils.hexConcat([invalidDataFeed4, 1]))
+        ).to.be.revertedWithoutReason();
+        await expect(
+          dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeed5)
+        ).to.be.revertedWithoutReason();
       });
     });
   });

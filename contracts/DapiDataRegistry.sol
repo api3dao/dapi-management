@@ -115,7 +115,6 @@ contract DapiDataRegistry is
     function registerDataFeed(
         bytes calldata dataFeed
     ) external override returns (bytes32 dataFeedId) {
-        require(dataFeed.length > 0, "Data feed is empty");
         bytes memory newDataFeed;
         if (dataFeed.length == 64) {
             // dataFeedId maps to a beacon
@@ -129,11 +128,13 @@ contract DapiDataRegistry is
             dataFeedId = keccak256(abi.encodePacked(airnode, templateId));
             newDataFeed = dataFeed;
         } else {
-            // dataFeed must have an even number of bytes32 pairs
-            require((dataFeed.length / 2) % 32 == 0, "Invalid data feed");
             // dataFeedId maps to a beaconSet
             (address[] memory airnodes, bytes32[] memory templateIds) = abi
                 .decode(dataFeed, (address[], bytes32[]));
+            require(
+                abi.encode(airnodes, templateIds).length == dataFeed.length,
+                "Invalid data feed"
+            );
             require(airnodes.length == templateIds.length, "Length mismatch");
             bytes32[] memory beaconIds = new bytes32[](airnodes.length);
             for (uint256 i = 0; i < airnodes.length; i++) {
