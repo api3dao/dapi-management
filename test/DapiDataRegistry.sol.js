@@ -518,10 +518,9 @@ describe('DapiDataRegistry', function () {
 
                   const dapisCount = await dapiDataRegistry.dapisCount();
                   expect(dapisCount).to.equal(1);
-                  const [dapiNames, dataFeedIds, updateParameters, encodedDataFeedsdataFeeds, signedApiUrls] =
+                  const [dapiNames, updateParameters, encodedDataFeedsdataFeeds, signedApiUrls] =
                     await dapiDataRegistry.readDapis(0, dapisCount);
                   expect(dapiNames).to.deep.equal([dapiName]);
-                  expect(dataFeedIds).to.deep.equal([beaconSetId]);
                   expect(updateParameters[0].deviationThresholdInPercentage).to.deep.equal(
                     deviationThresholdInPercentage
                   );
@@ -828,26 +827,21 @@ describe('DapiDataRegistry', function () {
       );
 
       const dapisCount = await dapiDataRegistry.dapisCount();
-      const [dapiNames, dataFeedIds, updateParameters, encodedDataFeedsdataFeeds, signedApiUrls] =
-        await dapiDataRegistry.readDapis(0, dapisCount);
+      const [dapiNames, updateParameters, encodedDataFeedsdataFeeds, signedApiUrls] = await dapiDataRegistry.readDapis(
+        0,
+        dapisCount
+      );
 
       expect(dapiNames).to.deep.equal(dapiTreeValues.map(([dapiName]) => dapiName));
-      expect(dataFeedIds).to.deep.equal(dapiTreeValues.map(([, dataFeedId]) => dataFeedId));
       expect(updateParameters).to.deep.equal(
         Array(dapiTreeValues.length).fill([deviationThresholdInPercentage, deviationReference, heartbeatInterval])
       );
       expect(encodedDataFeedsdataFeeds).to.deep.equal(encodedBeaconSetDatas);
       expect(signedApiUrls).to.deep.equal(Array(dapiTreeValues.length).fill(apiTreeValues.map(([, url]) => url)));
 
-      const [
-        emptyDapiNames,
-        emptyDataFeedIds,
-        emptyUpdateParameters,
-        emptyEncodedDataFeedsdataFeeds,
-        emptySignedApiUrls,
-      ] = await dapiDataRegistry.readDapis(dapisCount, dapisCount);
+      const [emptyDapiNames, emptyUpdateParameters, emptyEncodedDataFeedsdataFeeds, emptySignedApiUrls] =
+        await dapiDataRegistry.readDapis(dapisCount, dapisCount);
       expect(emptyDapiNames).to.deep.equal([]);
-      expect(emptyDataFeedIds).to.deep.equal([]);
       expect(emptyUpdateParameters).to.deep.equal([]);
       expect(emptyEncodedDataFeedsdataFeeds).to.deep.equal([]);
       expect(emptySignedApiUrls).to.deep.equal([]);
@@ -904,11 +898,10 @@ describe('DapiDataRegistry', function () {
       const dapisCount = await dapiDataRegistry.dapisCount();
       for (let i = 0; i < dapisCount; i += 2) {
         const chunkSize = Math.min(2, dapisCount - i);
-        const [dapiNames, dataFeedIds, updateParameters, encodedDataFeedsdataFeeds, signedApiUrls] =
+        const [dapiNames, updateParameters, encodedDataFeedsdataFeeds, signedApiUrls] =
           await dapiDataRegistry.readDapis(i, chunkSize);
 
         expect(dapiNames).to.deep.equal(dapiTreeValues.slice(i, i + chunkSize).map(([dapiName]) => dapiName));
-        expect(dataFeedIds).to.deep.equal(dapiTreeValues.slice(i, i + chunkSize).map(([, dataFeedId]) => dataFeedId));
         expect(updateParameters).to.deep.equal(
           Array(chunkSize).fill([deviationThresholdInPercentage, deviationReference, heartbeatInterval])
         );

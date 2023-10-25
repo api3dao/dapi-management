@@ -230,7 +230,6 @@ contract DapiDataRegistry is
         override
         returns (
             bytes32[] memory dapiNames,
-            bytes32[] memory dataFeedIds,
             UpdateParameters[] memory updateParameters,
             bytes[] memory dataFeeds_,
             string[][] memory signedApiUrls
@@ -242,7 +241,6 @@ contract DapiDataRegistry is
                 ? count - offset
                 : limit;
             dapiNames = new bytes32[](limitAdjusted);
-            dataFeedIds = new bytes32[](limitAdjusted);
             updateParameters = new UpdateParameters[](limitAdjusted);
             dataFeeds_ = new bytes[](limitAdjusted);
             signedApiUrls = new string[][](limitAdjusted);
@@ -253,7 +251,6 @@ contract DapiDataRegistry is
                 bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
                 bytes32 dataFeedId = IApi3ServerV1(api3ServerV1)
                     .dapiNameHashToDataFeedId(dapiNameHash);
-                dataFeedIds[currentIndex] = dataFeedId;
                 updateParameters[currentIndex] = dapiNameToUpdateParameters[
                     dapiNameHash
                 ];

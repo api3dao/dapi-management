@@ -79,7 +79,6 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
         view
         returns (
             bytes32[] memory dapiNames,
-            bytes32[] memory dataFeedIds,
             UpdateParameters[] memory updateParameters,
             bytes[] memory dataFeeds_,
             string[][] memory signedApiUrls
