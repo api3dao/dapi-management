@@ -115,7 +115,6 @@ contract DapiDataRegistry is
     function registerDataFeed(
         bytes calldata dataFeed
     ) external override returns (bytes32 dataFeedId) {
-        bytes memory newDataFeed;
         if (dataFeed.length == 64) {
             // dataFeedId maps to a beacon
             (address airnode, bytes32 templateId) = abi.decode(
@@ -126,7 +125,7 @@ contract DapiDataRegistry is
             // Derive beacon ID
             // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L87
             dataFeedId = keccak256(abi.encodePacked(airnode, templateId));
-            newDataFeed = dataFeed;
+            dataFeeds[dataFeedId] = dataFeed;
         } else {
             // dataFeedId maps to a beaconSet
             (address[] memory airnodes, bytes32[] memory templateIds) = abi
@@ -150,12 +149,9 @@ contract DapiDataRegistry is
             // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L98
             dataFeedId = keccak256(abi.encode(beaconIds));
 
-            newDataFeed = abi.encode(airnodes, templateIds);
+            dataFeeds[dataFeedId] = abi.encode(airnodes, templateIds);
         }
-
-        dataFeeds[dataFeedId] = newDataFeed;
-
-        emit RegisteredDataFeed(dataFeedId, newDataFeed);
+        emit RegisteredDataFeed(dataFeedId, dataFeeds[dataFeedId]);
     }
 
     function addDapi(
