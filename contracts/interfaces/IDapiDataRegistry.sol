@@ -29,9 +29,15 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
 
     function HUNDRED_PERCENT() external view returns (uint256);
 
-    function DAPI_MANAGEMENT_HASH_TYPE() external view returns (bytes32);
+    function DAPI_MANAGEMENT_HASH_TYPE_DESCRIPTION()
+        external
+        view
+        returns (string memory);
 
-    function API_INTEGRATION_HASH_TYPE() external view returns (bytes32);
+    function API_INTEGRATION_HASH_TYPE_DESCRIPTION()
+        external
+        view
+        returns (string memory);
 
     function REGISTRAR_ROLE_DESCRIPTION() external view returns (string memory);
 
