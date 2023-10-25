@@ -25,6 +25,11 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
         uint32 heartbeatInterval;
     }
 
+    struct DataFeedValues {
+        int224 value;
+        uint32 timestamp;
+    }
+
     function HUNDRED_PERCENT() external view returns (uint256);
 
     function REGISTRAR_ROLE_DESCRIPTION() external view returns (string memory);
@@ -80,6 +85,7 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
         returns (
             bytes32[] memory dapiNames,
             UpdateParameters[] memory updateParameters,
+            DataFeedValues[] memory dataFeedValues,
             bytes[] memory dataFeeds_,
             string[][] memory signedApiUrls
         );
