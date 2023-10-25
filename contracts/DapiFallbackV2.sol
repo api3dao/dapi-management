@@ -3,6 +3,7 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3ServerV1.sol";
 import "./interfaces/IHashRegistry.sol";
 import "./interfaces/IDapiFallbackV2.sol";
@@ -33,8 +34,7 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
             address(this).balance >= amount,
             "Insufficient contract balance"
         );
-        (bool success, ) = payable(msg.sender).call{value: amount}("");
-        require(success, "Failed to withdraw");
+        Address.sendValue(payable(msg.sender), amount);
         emit Withdrawn(msg.sender, amount, address(this).balance);
     }
 
@@ -117,8 +117,7 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
             address(this).balance >= amount,
             "Insufficient contract balance"
         );
-        (bool success, ) = sponsorWallet.call{value: amount}("");
-        require(success, "Failed to fund sponsor wallet");
+        Address.sendValue(sponsorWallet, amount);
         emit FundedSponsorWallet(
             sponsorWallet,
             amount,
