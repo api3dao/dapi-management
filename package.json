@@ -22,6 +22,7 @@
     "test": "hardhat test",
     "test:coverage": "hardhat coverage",
     "write-env-example": "node scripts/write-env-example.js",
+    "sign": "node scripts/signMerkleTree.js",
     "frontend:dev": "cd frontend && next dev",
     "frontend:build": "cd frontend && next build",
     "frontend:start": "cd frontend && next start",
