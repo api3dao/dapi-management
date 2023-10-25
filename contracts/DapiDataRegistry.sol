@@ -131,8 +131,6 @@ contract DapiDataRegistry is
                 (address, bytes32)
             );
 
-            // TODO: check if signed API URL exists for Airnode?
-
             // Derive beacon ID
             // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L87
             dataFeedId = keccak256(abi.encodePacked(airnode, templateId));
