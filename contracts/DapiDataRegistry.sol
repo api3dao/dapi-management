@@ -244,18 +244,18 @@ contract DapiDataRegistry is
             updateParameters = new UpdateParameters[](limitAdjusted);
             dataFeeds_ = new bytes[](limitAdjusted);
             signedApiUrls = new string[][](limitAdjusted);
-            for (uint256 i = offset; i < offset + limitAdjusted; i++) {
-                bytes32 dapiName = _dapis.at(i);
-                uint256 currentIndex = i - offset;
-                dapiNames[currentIndex] = dapiName;
+            for (uint256 ind = offset; ind < offset + limitAdjusted; ind++) {
+                bytes32 dapiName = _dapis.at(ind);
+                uint256 currentInd = ind - offset;
+                dapiNames[currentInd] = dapiName;
                 bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
                 bytes32 dataFeedId = IApi3ServerV1(api3ServerV1)
                     .dapiNameHashToDataFeedId(dapiNameHash);
-                updateParameters[currentIndex] = dapiNameToUpdateParameters[
+                updateParameters[currentInd] = dapiNameToUpdateParameters[
                     dapiNameHash
                 ];
                 bytes memory dataFeed = dataFeeds[dataFeedId];
-                dataFeeds_[currentIndex] = dataFeed;
+                dataFeeds_[currentInd] = dataFeed;
                 if (dataFeed.length == 64) {
                     (address airnode, ) = abi.decode(
                         dataFeed,
@@ -263,17 +263,17 @@ contract DapiDataRegistry is
                     );
                     string[] memory urls = new string[](1);
                     urls[0] = airnodeToSignedApiUrl[airnode];
-                    signedApiUrls[currentIndex] = urls;
+                    signedApiUrls[currentInd] = urls;
                 } else {
                     (address[] memory airnodes, ) = abi.decode(
                         dataFeed,
                         (address[], bytes32[])
                     );
                     string[] memory urls = new string[](airnodes.length);
-                    for (uint256 j = 0; j < airnodes.length; j++) {
-                        urls[j] = airnodeToSignedApiUrl[airnodes[j]];
+                    for (uint256 ind2 = 0; ind2 < airnodes.length; ind2++) {
+                        urls[ind2] = airnodeToSignedApiUrl[airnodes[ind2]];
                     }
-                    signedApiUrls[currentIndex] = urls;
+                    signedApiUrls[currentInd] = urls;
                 }
             }
         }
