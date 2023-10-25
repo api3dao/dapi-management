@@ -11,58 +11,58 @@ const merkleType = process.argv[2];
 const chainIdArg = process.argv[3];
 
 const MERKLE_TREE_MAPPING = {
-    'price': 'dapi-pricing-merkle-tree-root',
-    'dapi management': 'dapi-management-merkle-tree-root',
-    'dapi fallback': 'dapi-fallback-merkle-tree-root',
-    'api integration': 'signed-api-url-merkle-tree-root',
+  price: 'dapi-pricing-merkle-tree-root',
+  'dapi management': 'dapi-management-merkle-tree-root',
+  'dapi fallback': 'dapi-fallback-merkle-tree-root',
+  'api integration': 'signed-api-url-merkle-tree-root',
 };
 
 if (!MERKLE_TREE_MAPPING[merkleType]) {
-    console.error('You must provide a valid Merkle type as an argument!');
-    process.exit(1);
+  console.error('You must provide a valid Merkle type as an argument!');
+  process.exit(1);
 }
 
 if (!chainIdArg || isNaN(parseInt(chainIdArg))) {
-    console.error('You must provide a valid chainId as an argument!');
-    process.exit(1);
+  console.error('You must provide a valid chainId as an argument!');
+  process.exit(1);
 }
 const chainId = parseInt(chainIdArg);
 
 const domain = {
-    name: 'HashRegistry',
-    version: '1.0.0',
-    chainId: chainId,
-    verifyingContract: '0x0000000000000000000000000000000000000000',
+  name: 'HashRegistry',
+  version: '1.0.0',
+  chainId: chainId,
+  verifyingContract: '0x0000000000000000000000000000000000000000',
 };
 
 const types = {
-    SignedHash: [
-        { name: 'hashType', type: 'bytes32' },
-        { name: 'hash', type: 'bytes32' },
-        { name: 'timestamp', type: 'uint256' },
-    ],
+  SignedHash: [
+    { name: 'hashType', type: 'bytes32' },
+    { name: 'hash', type: 'bytes32' },
+    { name: 'timestamp', type: 'uint256' },
+  ],
 };
 
 async function signEIP712Message(hashType, hash, timestamp) {
-    const message = {
-        hashType: hashType,
-        hash: hash,
-        timestamp: timestamp,
-    };
+  const message = {
+    hashType: hashType,
+    hash: hash,
+    timestamp: timestamp,
+  };
 
-    const signature = await wallet._signTypedData(domain, types, message);
-    return signature;
+  const signature = await wallet._signTypedData(domain, types, message);
+  return signature;
 }
 
 function constructMerkleTree(values, dataTypes) {
-    return StandardMerkleTree.of(values, dataTypes);
+  return StandardMerkleTree.of(values, dataTypes);
 }
 
 const HASH_TYPE_DATA_TYPES = {
-    'price': ['bytes32', 'uint256', 'bytes', 'uint256', 'uint256'],
-    'dapi management': ['bytes32', 'bytes32', 'address'],
-    'dapi fallback': ['bytes32', 'bytes32', 'address'],
-    'api integration': ['address', 'bytes32'],
+  price: ['bytes32', 'uint256', 'bytes', 'uint256', 'uint256'],
+  'dapi management': ['bytes32', 'bytes32', 'address'],
+  'dapi fallback': ['bytes32', 'bytes32', 'address'],
+  'api integration': ['address', 'bytes32'],
 };
 
 async function signMerkleTree(merkleTreeName) {
@@ -72,8 +72,8 @@ async function signMerkleTree(merkleTreeName) {
   let currentHashData = { signatures: {}, merkleTreeValues: { values: [] } };
 
   if (fs.existsSync(currentHashPath)) {
-      const currentHashRawData = fs.readFileSync(currentHashPath, 'utf8');
-      currentHashData = JSON.parse(currentHashRawData);
+    const currentHashRawData = fs.readFileSync(currentHashPath, 'utf8');
+    currentHashData = JSON.parse(currentHashRawData);
   }
 
   const values = currentHashData.merkleTreeValues ? currentHashData.merkleTreeValues.values : [];
@@ -81,7 +81,7 @@ async function signMerkleTree(merkleTreeName) {
 
   const dataTypes = HASH_TYPE_DATA_TYPES[merkleTreeName];
   if (!dataTypes) {
-      throw new Error(`Data type for ${merkleTreeName} not found`);
+    throw new Error(`Data type for ${merkleTreeName} not found`);
   }
   const tree = constructMerkleTree(values, dataTypes);
   const merkleRoot = tree.root;
@@ -93,12 +93,12 @@ async function signMerkleTree(merkleTreeName) {
 
   currentHashData = {
     timestamp: timestamp,
-      hash: merkleRoot,
-      signatures: {
-          ...currentHashData.signatures,
-          [signerAddress]: signature
-      },
-      merkleTreeValues: { values: values },
+    hash: merkleRoot,
+    signatures: {
+      ...currentHashData.signatures,
+      [signerAddress]: signature,
+    },
+    merkleTreeValues: { values: values },
   };
 
   fs.writeFileSync(currentHashPath, JSON.stringify(currentHashData, null, 4));

@@ -58,9 +58,9 @@ This command constructs the Merkle tree based on the data, signs the root, and u
 
 ## Data File Details
 
-  - **current-hash.json:** Stores the state of the Merkle tree. Updated by the script with each execution, recording the new Merkle root, its signature, and the timestamp.
+- **current-hash.json:** Stores the state of the Merkle tree. Updated by the script with each execution, recording the new Merkle root, its signature, and the timestamp.
 
-  - **hash-signers.json:** Holds addresses that are authorized to sign the Merkle root, ensuring the authenticity of the signatures.
+- **hash-signers.json:** Holds addresses that are authorized to sign the Merkle root, ensuring the authenticity of the signatures.
 
 ### 1. dAPI pricing Merkle Tree
 
