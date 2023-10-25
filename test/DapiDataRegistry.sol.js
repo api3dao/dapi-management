@@ -529,19 +529,6 @@ describe('DapiDataRegistry', function () {
                   expect(updateParameters[0].heartbeatInterval).to.deep.equal(heartbeatInterval);
                   expect(encodedDataFeedsdataFeeds).to.deep.equal([encodedBeaconSetData]);
                   expect(signedApiUrls).to.deep.equal([apiTreeValues.map(([, url]) => url)]);
-
-                  const [
-                    emptyDapiNames,
-                    emptyDataFeedIds,
-                    emptyUpdateParameters,
-                    emptyEncodedDataFeedsdataFeeds,
-                    emptySignedApiUrls,
-                  ] = await dapiDataRegistry.readDapis(dapisCount, dapisCount);
-                  expect(emptyDapiNames).to.deep.equal([]);
-                  expect(emptyDataFeedIds).to.deep.equal([]);
-                  expect(emptyUpdateParameters).to.deep.equal([]);
-                  expect(emptyEncodedDataFeedsdataFeeds).to.deep.equal([]);
-                  expect(emptySignedApiUrls).to.deep.equal([]);
                 });
               });
               context('Proof is not valid', function () {
@@ -851,6 +838,19 @@ describe('DapiDataRegistry', function () {
       );
       expect(encodedDataFeedsdataFeeds).to.deep.equal(encodedBeaconSetDatas);
       expect(signedApiUrls).to.deep.equal(Array(dapiTreeValues.length).fill(apiTreeValues.map(([, url]) => url)));
+
+      const [
+        emptyDapiNames,
+        emptyDataFeedIds,
+        emptyUpdateParameters,
+        emptyEncodedDataFeedsdataFeeds,
+        emptySignedApiUrls,
+      ] = await dapiDataRegistry.readDapis(dapisCount, dapisCount);
+      expect(emptyDapiNames).to.deep.equal([]);
+      expect(emptyDataFeedIds).to.deep.equal([]);
+      expect(emptyUpdateParameters).to.deep.equal([]);
+      expect(emptyEncodedDataFeedsdataFeeds).to.deep.equal([]);
+      expect(emptySignedApiUrls).to.deep.equal([]);
     });
     it('reads all dAPIs paginated', async function () {
       const { roles, dapiDataRegistry, apiTree, apiTreeValues, dataFeeds, dapiTreeValues, dapiTree } =
