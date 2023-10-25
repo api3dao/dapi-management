@@ -27,10 +27,15 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
 
     receive() external payable {}
 
-    function withdraw(
-        uint256 amount
-    ) external override onlyOwner {
-        _withdraw(payable(msg.sender), amount);
+    function withdraw(uint256 amount) external override onlyOwner {
+        require(amount != 0, "Amount zero");
+        require(
+            address(this).balance >= amount,
+            "Insufficient contract balance"
+        );
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "Failed to withdraw");
+        emit Withdrawn(msg.sender, amount, address(this).balance);
     }
 
     function executeDapiFallback(
@@ -102,18 +107,6 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
             "Tree has not been registered"
         );
         require(MerkleProof.verify(proof, root, leaf), "Invalid tree proof");
-    }
-
-    function _withdraw(address payable recipient, uint256 amount) private {
-        require(recipient != address(0), "Recipient address zero");
-        require(amount != 0, "Amount zero");
-        require(
-            address(this).balance >= amount,
-            "Insufficient contract balance"
-        );
-        (bool success, ) = recipient.call{value: amount}("");
-        require(success, "Failed to withdraw");
-        emit Withdrawn(recipient, amount, address(this).balance);
     }
 
     function _fundSponsorWallet(

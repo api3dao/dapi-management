@@ -219,9 +219,7 @@ describe.only('DapiFallbackV2', function () {
               it('withdraws the requested amount', async function () {
                 const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
                 await expect(
-                  dapiFallbackV2
-                    .connect(roles.dapiFallbackV2Owner)
-                    .withdraw(hre.ethers.utils.parseEther('1'))
+                  dapiFallbackV2.connect(roles.dapiFallbackV2Owner).withdraw(hre.ethers.utils.parseEther('1'))
                 )
                   .to.emit(dapiFallbackV2, 'Withdrawn')
                   .withArgs(
@@ -236,9 +234,7 @@ describe.only('DapiFallbackV2', function () {
             it('reverts', async function () {
               const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
               await expect(
-                dapiFallbackV2
-                  .connect(roles.dapiFallbackV2Owner)
-                  .withdraw(hre.ethers.utils.parseEther('34'))
+                dapiFallbackV2.connect(roles.dapiFallbackV2Owner).withdraw(hre.ethers.utils.parseEther('34'))
               ).to.be.revertedWith('Insufficient contract balance');
             });
           });
@@ -246,9 +242,9 @@ describe.only('DapiFallbackV2', function () {
         context('Amount is zero', function () {
           it('reverts', async function () {
             const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
-            await expect(
-              dapiFallbackV2.connect(roles.dapiFallbackV2Owner).withdraw(0)
-            ).to.be.revertedWith('Amount zero');
+            await expect(dapiFallbackV2.connect(roles.dapiFallbackV2Owner).withdraw(0)).to.be.revertedWith(
+              'Amount zero'
+            );
           });
         });
       });
@@ -257,9 +253,7 @@ describe.only('DapiFallbackV2', function () {
       it('reverts', async function () {
         const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
         await expect(
-          dapiFallbackV2
-            .connect(roles.randomPerson)
-            .withdraw(hre.ethers.utils.parseEther('33'))
+          dapiFallbackV2.connect(roles.randomPerson).withdraw(hre.ethers.utils.parseEther('33'))
         ).to.be.revertedWith('Ownable: caller is not the owner');
       });
     });
