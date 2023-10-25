@@ -8,17 +8,19 @@ import "./interfaces/IHashRegistry.sol";
 import "./interfaces/IDapiFallbackV2.sol";
 
 contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
-    IApi3ServerV1 public immutable override api3ServerV1;
-    IHashRegistry public immutable override hashRegistry;
+    address public immutable api3ServerV1;
+    address public immutable hashRegistry;
 
-    // keccak256(abi.encodePacked("dAPI fallback merkle tree root"));
-    bytes32 public constant override DAPI_FALLBACK_HASH_TYPE =
-        0x9abf68c65165db40997b7281172ee53d4fdf09977459c7d590cd8f7df6d8f966;
-    // keccak256(abi.encodePacked("Price merkle tree root"));
-    bytes32 public constant override PRICE_HASH_TYPE =
-        0x749ebf36df1b524d3282fd33252feb0a23f304bb2aab84d0a58bf1341953b233;
+    bytes32 private constant _DAPI_FALLBACK_HASH_TYPE =
+        keccak256(abi.encodePacked("dAPI fallback Merkle tree root"));
+    bytes32 private constant _PRICE_HASH_TYPE =
+        keccak256(abi.encodePacked("Price Merkle tree root"));
 
-    constructor(IApi3ServerV1 _api3ServerV1, IHashRegistry _hashRegistry) {
+    constructor(address _api3ServerV1, address _hashRegistry) {
+        require(
+            _api3ServerV1 != address(0) && _hashRegistry != address(0),
+            "Address cannot be zero"
+        );
         api3ServerV1 = _api3ServerV1;
         hashRegistry = _hashRegistry;
     }
@@ -35,9 +37,8 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
     function executeDapiFallback(
         ExecuteDapiFallbackArgs calldata args
     ) external override {
-        bytes32 currentBeaconId = api3ServerV1.dapiNameHashToDataFeedId(
-            args.dapiName
-        );
+        bytes32 currentBeaconId = IApi3ServerV1(api3ServerV1)
+            .dapiNameHashToDataFeedId(args.dapiName);
         require(
             currentBeaconId != args.beaconId,
             "Beacon ID will not be changed"
@@ -51,7 +52,7 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
             )
         );
         _validateTree(
-            DAPI_FALLBACK_HASH_TYPE,
+            _DAPI_FALLBACK_HASH_TYPE,
             args.fallbackProof,
             args.fallbackRoot,
             fallbackLeaf
@@ -72,7 +73,7 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         );
 
         _validateTree(
-            PRICE_HASH_TYPE,
+            _PRICE_HASH_TYPE,
             args.priceProof,
             args.priceRoot,
             priceLeaf
@@ -87,7 +88,7 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
                 minSponsorWalletBalance - sponsorWalletBalance
             );
         }
-        api3ServerV1.setDapiName(args.dapiName, args.beaconId);
+        IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.beaconId);
         emit ExecutedDapiFallback(args.dapiName, args.beaconId, msg.sender);
     }
 
@@ -97,10 +98,8 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         bytes32 root,
         bytes32 leaf
     ) private view {
-        require(root != bytes32(0), "Root is zero");
-        require(proof.length != 0, "Proof is empty");
         require(
-            hashRegistry.hashTypeToHash(treeType) == root,
+            IHashRegistry(hashRegistry).hashTypeToHash(treeType) == root,
             "Tree has not been registered"
         );
         require(MerkleProof.verify(proof, root, leaf), "Invalid tree proof");

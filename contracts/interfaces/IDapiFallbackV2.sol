@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3ServerV1.sol";
-import "./IHashRegistry.sol";
-
 interface IDapiFallbackV2 {
     struct ExecuteDapiFallbackArgs {
         bytes32 dapiName;
@@ -37,13 +34,9 @@ interface IDapiFallbackV2 {
         address sender
     );
 
-    function api3ServerV1() external view returns (IApi3ServerV1);
+    /*     function api3ServerV1() external view returns (address);
 
-    function hashRegistry() external view returns (IHashRegistry);
-
-    function DAPI_FALLBACK_HASH_TYPE() external view returns (bytes32);
-
-    function PRICE_HASH_TYPE() external view returns (bytes32);
+    function hashRegistry() external view returns (address); */
 
     function withdraw(address payable recipient, uint256 amount) external;
 

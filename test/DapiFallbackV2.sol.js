@@ -101,7 +101,7 @@ describe.only('DapiFallbackV2', function () {
     const fallbackRoot = fallbackTree.root;
     const fallbackProof = fallbackTree.getProof(fallbackTreeEntry);
 
-    const dapiFallbackHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI fallback merkle tree root']);
+    const dapiFallbackHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI fallback Merkle tree root']);
     const fallbackValues = {
       hashType: dapiFallbackHashType,
       hash: fallbackRoot,
@@ -137,7 +137,7 @@ describe.only('DapiFallbackV2', function () {
     const priceRoot = priceTree.root;
     const priceProof = priceTree.getProof(priceTreeEntry);
 
-    const priceHashType = hre.ethers.utils.solidityKeccak256(['string'], ['Price merkle tree root']);
+    const priceHashType = hre.ethers.utils.solidityKeccak256(['string'], ['Price Merkle tree root']);
     const priceValues = {
       hashType: priceHashType,
       hash: priceRoot,
@@ -200,17 +200,13 @@ describe.only('DapiFallbackV2', function () {
   };
 
   describe('constructor', function () {
-    it('constructs', async function () {
-      const { roles, api3ServerV1, dapiFallbackV2, hashRegistry } = await helpers.loadFixture(deploy);
-      expect(await dapiFallbackV2.owner()).to.equal(roles.dapiFallbackV2Owner.address);
-      expect(await dapiFallbackV2.DAPI_FALLBACK_HASH_TYPE()).to.equal(
-        hre.ethers.utils.solidityKeccak256(['string'], ['dAPI fallback merkle tree root'])
-      );
-      expect(await dapiFallbackV2.PRICE_HASH_TYPE()).to.equal(
-        hre.ethers.utils.solidityKeccak256(['string'], ['Price merkle tree root'])
-      );
-      expect(await dapiFallbackV2.api3ServerV1()).to.equal(api3ServerV1.address);
-      expect(await dapiFallbackV2.hashRegistry()).to.equal(hashRegistry.address);
+    context('Address is not zero', function () {
+      it('constructs', async function () {
+        const { roles, api3ServerV1, dapiFallbackV2, hashRegistry } = await helpers.loadFixture(deploy);
+        expect(await dapiFallbackV2.owner()).to.equal(roles.dapiFallbackV2Owner.address);
+        expect(await dapiFallbackV2.api3ServerV1()).to.equal(api3ServerV1.address);
+        expect(await dapiFallbackV2.hashRegistry()).to.equal(hashRegistry.address);
+      });
     });
   });
 
@@ -420,72 +416,6 @@ describe.only('DapiFallbackV2', function () {
               ).to.be.revertedWith('Tree has not been registered');
             });
           });
-        });
-        context('Proof is empty', function () {
-          it('reverts', async function () {
-            const {
-              roles,
-              dapiFallbackV2,
-              dapiName,
-              fallbackBeaconId,
-              fallbackRoot,
-              updateParams,
-              priceRoot,
-              priceProof,
-              duration,
-              price,
-              fallbackSponsorWalletAddress,
-            } = await helpers.loadFixture(deploy);
-            const emptyFallbackProof = [];
-            const executeDapiFallbackArgs = {
-              dapiName: hre.ethers.utils.formatBytes32String(dapiName),
-              beaconId: fallbackBeaconId,
-              fallbackRoot: fallbackRoot,
-              fallbackProof: emptyFallbackProof,
-              updateParams: updateParams,
-              priceRoot: priceRoot,
-              priceProof: priceProof,
-              duration: duration,
-              price: price,
-              sponsorWallet: fallbackSponsorWalletAddress,
-            };
-            await expect(
-              dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
-            ).to.be.revertedWith('Proof is empty');
-          });
-        });
-      });
-      context('Root is empty', function () {
-        it('reverts', async function () {
-          const {
-            roles,
-            dapiFallbackV2,
-            dapiName,
-            fallbackBeaconId,
-            fallbackRoot,
-            fallbackProof,
-            updateParams,
-            priceProof,
-            duration,
-            price,
-            fallbackSponsorWalletAddress,
-          } = await helpers.loadFixture(deploy);
-          const zeroPriceRoot = hre.ethers.constants.HashZero;
-          const executeDapiFallbackArgs = {
-            dapiName: hre.ethers.utils.formatBytes32String(dapiName),
-            beaconId: fallbackBeaconId,
-            fallbackRoot: fallbackRoot,
-            fallbackProof: fallbackProof,
-            updateParams: updateParams,
-            priceRoot: zeroPriceRoot,
-            priceProof: priceProof,
-            duration: duration,
-            price: price,
-            sponsorWallet: fallbackSponsorWalletAddress,
-          };
-          await expect(
-            dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
-          ).to.be.revertedWith('Root is zero');
         });
       });
     });
