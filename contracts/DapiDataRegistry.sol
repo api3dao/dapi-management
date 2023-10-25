@@ -3,14 +3,12 @@ pragma solidity 0.8.18;
 
 import "@api3/airnode-protocol-v1/contracts/access-control-registry/AccessControlRegistryAdminnedWithManager.sol";
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3ServerV1.sol";
-import "@api3/airnode-protocol-v1/contracts/utils/SelfMulticall.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./interfaces/IDapiDataRegistry.sol";
 import "./interfaces/IHashRegistry.sol";
 
 contract DapiDataRegistry is
-    SelfMulticall,
     AccessControlRegistryAdminnedWithManager,
     IDapiDataRegistry
 {

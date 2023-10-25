@@ -3,13 +3,9 @@ pragma solidity 0.8.18;
 
 import "@api3/airnode-protocol-v1/contracts/access-control-registry/interfaces/IAccessControlRegistryAdminnedWithManager.sol";
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3ServerV1.sol";
-import "@api3/airnode-protocol-v1/contracts/utils/interfaces/ISelfMulticall.sol";
 import "./IHashRegistry.sol";
 
-interface IDapiDataRegistry is
-    ISelfMulticall,
-    IAccessControlRegistryAdminnedWithManager
-{
+interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
     event RegisteredSignedApiUrl(address indexed airnode, string url);
 
     event UnregisteredSignedApiUrl(address indexed airnode);

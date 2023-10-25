@@ -963,23 +963,20 @@ describe('DapiDataRegistry', function () {
       const deviationReference = hre.ethers.constants.Zero; // Not used in Airseeker V1
       const heartbeatInterval = hre.ethers.BigNumber.from(86400); // 24 hrs
 
-      await Promise.all(
-        dapiTreeValues.map((dapiTreeValue) => {
-          const [dapiName, beaconSetId, sponsorWallet] = dapiTreeValue;
-          return dapiDataRegistry
-            .connect(roles.api3MarketContract)
-            .registerDapi(
-              dapiName,
-              beaconSetId,
-              sponsorWallet,
-              deviationThresholdInPercentage,
-              deviationReference,
-              heartbeatInterval,
-              dapiTree.root,
-              dapiTree.getProof(dapiTreeValue)
-            );
-        })
-      );
+      const calldatas = dapiTreeValues.map((dapiTreeValue) => {
+        const [dapiName, beaconSetId, sponsorWallet] = dapiTreeValue;
+        return dapiDataRegistry.interface.encodeFunctionData('registerDapi', [
+          dapiName,
+          beaconSetId,
+          sponsorWallet,
+          deviationThresholdInPercentage,
+          deviationReference,
+          heartbeatInterval,
+          dapiTree.root,
+          dapiTree.getProof(dapiTreeValue),
+        ]);
+      });
+      await dapiDataRegistry.connect(roles.api3MarketContract).multicall(calldatas);
 
       const dapisCount = await dapiDataRegistry.registeredDapisCount();
       for (let i = 0; i < dapisCount; i += 2) {
