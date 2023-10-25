@@ -2,8 +2,6 @@
 pragma solidity 0.8.18;
 
 import "@api3/airnode-protocol-v1/contracts/access-control-registry/interfaces/IAccessControlRegistryAdminnedWithManager.sol";
-import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3ServerV1.sol";
-import "./IHashRegistry.sol";
 
 interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
     event RegisteredSignedApiUrl(address indexed airnode, string url);
@@ -33,9 +31,9 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
 
     function registrarRole() external view returns (bytes32);
 
-    function hashRegistry() external view returns (IHashRegistry);
+    function hashRegistry() external view returns (address);
 
-    function api3ServerV1() external view returns (IApi3ServerV1);
+    function api3ServerV1() external view returns (address);
 
     function airnodeToSignedApiUrl(
         address

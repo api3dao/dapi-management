@@ -28,8 +28,8 @@ contract DapiDataRegistry is
     /// @notice Registrar role
     bytes32 public immutable override registrarRole;
 
-    IHashRegistry public immutable override hashRegistry;
-    IApi3ServerV1 public immutable override api3ServerV1;
+    address public immutable override hashRegistry;
+    address public immutable override api3ServerV1;
 
     // This is updated using the API management merkle tree
     // TODO: should this mapping be private now that we are returning these valuse via readDapis()
@@ -54,8 +54,8 @@ contract DapiDataRegistry is
         address _accessControlRegistry,
         string memory _adminRoleDescription,
         address _manager,
-        IHashRegistry _hashRegistry,
-        IApi3ServerV1 _api3ServerV1
+        address _hashRegistry,
+        address _api3ServerV1
     )
         AccessControlRegistryAdminnedWithManager(
             _accessControlRegistry,
@@ -63,6 +63,8 @@ contract DapiDataRegistry is
             _manager
         )
     {
+        require(_hashRegistry != address(0), "HashRegistry address is zero");
+        require(_api3ServerV1 != address(0), "Api3ServerV1 address is zero");
         registrarRole = _deriveRole(
             _deriveAdminRole(manager),
             REGISTRAR_ROLE_DESCRIPTION
@@ -95,7 +97,9 @@ contract DapiDataRegistry is
         require(proof.length != 0, "Proof is empty");
         // Check root exists in HashRegistry
         require(
-            hashRegistry.hashTypeToHash(_SIGNED_API_URL_HASH_TYPE) == root,
+            IHashRegistry(hashRegistry).hashTypeToHash(
+                _SIGNED_API_URL_HASH_TYPE
+            ) == root,
             "Root has not been registered"
         );
 
@@ -176,7 +180,9 @@ contract DapiDataRegistry is
         );
         // Check root exists in HashRegistry
         require(
-            hashRegistry.hashTypeToHash(_DAPI_MANAGEMENT_HASH_TYPE) == root,
+            IHashRegistry(hashRegistry).hashTypeToHash(
+                _DAPI_MANAGEMENT_HASH_TYPE
+            ) == root,
             "Root has not been registered"
         );
         // Check dataFeedId has been registered
@@ -202,7 +208,7 @@ contract DapiDataRegistry is
         );
 
         // Set dapiName to dataFeedId (this contract needs to be granted the dapi name setter role)
-        api3ServerV1.setDapiName(dapiName, dataFeedId);
+        IApi3ServerV1(api3ServerV1).setDapiName(dapiName, dataFeedId);
 
         emit AddedDapi(
             dapiName,
@@ -264,9 +270,8 @@ contract DapiDataRegistry is
             uint256 currentIndex = i - offset;
             dapiNames[currentIndex] = dapiName;
             bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
-            bytes32 dataFeedId = api3ServerV1.dapiNameHashToDataFeedId(
-                dapiNameHash
-            );
+            bytes32 dataFeedId = IApi3ServerV1(api3ServerV1)
+                .dapiNameHashToDataFeedId(dapiNameHash);
             dataFeedIds[currentIndex] = dataFeedId;
             updateParameters[currentIndex] = dapiNameHashToUpdateParameters[
                 dapiNameHash
