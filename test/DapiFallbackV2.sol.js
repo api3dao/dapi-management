@@ -218,30 +218,17 @@ describe.only('DapiFallbackV2', function () {
             context('Low level call succeeds', function () {
               it('withdraws the requested amount', async function () {
                 const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
-                const initialBalance = await hre.ethers.provider.getBalance(roles.randomPerson.address);
                 await expect(
                   dapiFallbackV2
                     .connect(roles.dapiFallbackV2Owner)
-                    .withdraw(roles.randomPerson.address, hre.ethers.utils.parseEther('1'))
+                    .withdraw(hre.ethers.utils.parseEther('1'))
                 )
                   .to.emit(dapiFallbackV2, 'Withdrawn')
                   .withArgs(
-                    roles.randomPerson.address,
+                    roles.dapiFallbackV2Owner.address,
                     hre.ethers.utils.parseEther('1'),
                     hre.ethers.utils.parseEther('32')
                   );
-                const finalBalance = await hre.ethers.provider.getBalance(roles.randomPerson.address);
-                expect(finalBalance.sub(initialBalance)).to.equal(hre.ethers.utils.parseEther('1'));
-              });
-            });
-            context('Low level call reverts', function () {
-              it('reverts', async function () {
-                const { roles, dapiFallbackV2, accessControlRegistry } = await helpers.loadFixture(deploy);
-                await expect(
-                  dapiFallbackV2
-                    .connect(roles.dapiFallbackV2Owner)
-                    .withdraw(accessControlRegistry.address, hre.ethers.utils.parseEther('33'))
-                ).to.be.revertedWith('Failed to withdraw');
               });
             });
           });
@@ -251,7 +238,7 @@ describe.only('DapiFallbackV2', function () {
               await expect(
                 dapiFallbackV2
                   .connect(roles.dapiFallbackV2Owner)
-                  .withdraw(roles.randomPerson.address, hre.ethers.utils.parseEther('34'))
+                  .withdraw(hre.ethers.utils.parseEther('34'))
               ).to.be.revertedWith('Insufficient contract balance');
             });
           });
@@ -260,19 +247,9 @@ describe.only('DapiFallbackV2', function () {
           it('reverts', async function () {
             const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
             await expect(
-              dapiFallbackV2.connect(roles.dapiFallbackV2Owner).withdraw(roles.randomPerson.address, 0)
+              dapiFallbackV2.connect(roles.dapiFallbackV2Owner).withdraw(0)
             ).to.be.revertedWith('Amount zero');
           });
-        });
-      });
-      context('Recipient address is zero', function () {
-        it('reverts', async function () {
-          const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
-          await expect(
-            dapiFallbackV2
-              .connect(roles.dapiFallbackV2Owner)
-              .withdraw(hre.ethers.constants.AddressZero, hre.ethers.utils.parseEther('33'))
-          ).to.be.revertedWith('Recipient address zero');
         });
       });
     });
@@ -282,7 +259,7 @@ describe.only('DapiFallbackV2', function () {
         await expect(
           dapiFallbackV2
             .connect(roles.randomPerson)
-            .withdraw(roles.randomPerson.address, hre.ethers.utils.parseEther('33'))
+            .withdraw(hre.ethers.utils.parseEther('33'))
         ).to.be.revertedWith('Ownable: caller is not the owner');
       });
     });

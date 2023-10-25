@@ -28,10 +28,9 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
     receive() external payable {}
 
     function withdraw(
-        address payable recipient,
         uint256 amount
     ) external override onlyOwner {
-        _withdraw(recipient, amount);
+        _withdraw(payable(msg.sender), amount);
     }
 
     function executeDapiFallback(

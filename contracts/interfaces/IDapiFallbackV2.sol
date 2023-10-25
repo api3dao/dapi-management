@@ -34,11 +34,7 @@ interface IDapiFallbackV2 {
         address sender
     );
 
-    /*     function api3ServerV1() external view returns (address);
-
-    function hashRegistry() external view returns (address); */
-
-    function withdraw(address payable recipient, uint256 amount) external;
+    function withdraw(uint256 amount) external;
 
     function executeDapiFallback(
         ExecuteDapiFallbackArgs calldata args
