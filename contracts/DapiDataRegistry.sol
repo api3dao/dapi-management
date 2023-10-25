@@ -50,6 +50,18 @@ contract DapiDataRegistry is
         public
         override dapiNameToUpdateParameters;
 
+    modifier onlyRegistrarOrManager() {
+        require(
+            msg.sender == manager ||
+                IAccessControlRegistry(accessControlRegistry).hasRole(
+                    registrarRole,
+                    msg.sender
+                ),
+            "Sender is not manager or needs Registrar role"
+        );
+        _;
+    }
+
     constructor(
         address _accessControlRegistry,
         string memory _adminRoleDescription,
@@ -71,20 +83,6 @@ contract DapiDataRegistry is
         );
         hashRegistry = _hashRegistry;
         api3ServerV1 = _api3ServerV1;
-    }
-
-    /// @dev Returns if the account has the Registrar role or is the manager
-    /// @param account Account address
-    /// @return If the account has the Registrar role or is the manager
-    function hasRegistrarRoleOrIsManager(
-        address account
-    ) internal view returns (bool) {
-        return
-            manager == account ||
-            IAccessControlRegistry(accessControlRegistry).hasRole(
-                registrarRole,
-                account
-            );
     }
 
     function registerAirnodeSignedApiUrl(
@@ -168,13 +166,9 @@ contract DapiDataRegistry is
         uint32 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
-    ) external override {
+    ) external override onlyRegistrarOrManager {
         require(root != bytes32(0), "Root is zero");
         require(proof.length != 0, "Proof is empty");
-        require(
-            hasRegistrarRoleOrIsManager(msg.sender),
-            "Sender is not manager or needs Registrar role"
-        );
         // Check root exists in HashRegistry
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(
@@ -217,12 +211,10 @@ contract DapiDataRegistry is
         );
     }
 
-    function removeDapi(bytes32 dapiName) external override {
+    function removeDapi(
+        bytes32 dapiName
+    ) external override onlyRegistrarOrManager {
         require(dapiName != bytes32(0), "dAPI name is zero");
-        require(
-            hasRegistrarRoleOrIsManager(msg.sender),
-            "Sender is not manager or needs Registrar role"
-        );
         require(_dapis.remove(dapiName), "dAPI name has not been added");
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         delete dapiNameToUpdateParameters[dapiNameHash];
