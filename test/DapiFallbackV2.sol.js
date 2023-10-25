@@ -156,7 +156,7 @@ describe.only('DapiFallbackV2', function () {
 
     const executeDapiFallbackArgs = {
       dapiName: hre.ethers.utils.formatBytes32String(dapiName),
-      beaconId: fallbackBeaconId,
+      dataFeedId: fallbackBeaconId,
       fallbackRoot: fallbackRoot,
       fallbackProof: fallbackProof,
       updateParams: updateParams,
@@ -328,7 +328,7 @@ describe.only('DapiFallbackV2', function () {
                 const invalidFallbackProof = invalidFallbackTree.getProof(invalidFallbackTreeEntry);
                 const executeDapiFallbackArgs = {
                   dapiName: hre.ethers.utils.formatBytes32String(dapiName),
-                  beaconId: fallbackBeaconId,
+                  dataFeedId: fallbackBeaconId,
                   fallbackRoot: fallbackRoot,
                   fallbackProof: invalidFallbackProof,
                   updateParams: updateParams,
@@ -372,7 +372,7 @@ describe.only('DapiFallbackV2', function () {
               const fallbackProof = fallbackTree.getProof(fallbackTreeEntry);
               const executeDapiFallbackArgs = {
                 dapiName: hre.ethers.utils.formatBytes32String(dapiName),
-                beaconId: fallbackBeaconId,
+                dataFeedId: fallbackBeaconId,
                 fallbackRoot: fallbackRoot,
                 fallbackProof: fallbackProof,
                 updateParams: updateParams,

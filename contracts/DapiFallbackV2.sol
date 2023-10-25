@@ -41,17 +41,21 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
     function executeDapiFallback(
         ExecuteDapiFallbackArgs calldata args
     ) external override {
-        bytes32 currentBeaconId = IApi3ServerV1(api3ServerV1)
+        bytes32 currentDataFeedId = IApi3ServerV1(api3ServerV1)
             .dapiNameHashToDataFeedId(args.dapiName);
         require(
-            currentBeaconId != args.beaconId,
-            "Beacon ID will not be changed"
+            currentDataFeedId != args.dataFeedId,
+            "Data feed ID will not be changed"
         );
 
         bytes32 fallbackLeaf = keccak256(
             bytes.concat(
                 keccak256(
-                    abi.encode(args.dapiName, args.beaconId, args.sponsorWallet)
+                    abi.encode(
+                        args.dapiName,
+                        args.dataFeedId,
+                        args.sponsorWallet
+                    )
                 )
             )
         );
@@ -100,8 +104,8 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
                 msg.sender
             );
         }
-        IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.beaconId);
-        emit ExecutedDapiFallback(args.dapiName, args.beaconId, msg.sender);
+        IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.dataFeedId);
+        emit ExecutedDapiFallback(args.dapiName, args.dataFeedId, msg.sender);
     }
 
     function _validateTree(

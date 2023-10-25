@@ -4,7 +4,7 @@ pragma solidity 0.8.18;
 interface IDapiFallbackV2 {
     struct ExecuteDapiFallbackArgs {
         bytes32 dapiName;
-        bytes32 beaconId;
+        bytes32 dataFeedId;
         bytes32 fallbackRoot;
         bytes32[] fallbackProof;
         bytes updateParams;
@@ -30,7 +30,7 @@ interface IDapiFallbackV2 {
 
     event ExecutedDapiFallback(
         bytes32 indexed dapiName,
-        bytes32 indexed beaconId,
+        bytes32 indexed dataFeedId,
         address sender
     );
 
