@@ -32,7 +32,6 @@ contract DapiDataRegistry is
     address public immutable override api3ServerV1;
 
     // This is updated using the API management merkle tree
-    // TODO: should this mapping be private now that we are returning these valuse via readDapis()
     mapping(address => string) public override airnodeToSignedApiUrl;
 
     // The value should be a single value or an array of them
@@ -40,8 +39,7 @@ contract DapiDataRegistry is
     // or a beaconSet based on the lenght
     // It can be udpated by anyone because the contract will hash the data and derive it
     // Airseeker will need to multicall to read all data using a single RPC call
-    // TODO: should this mapping be private now that we are returning these valuse via readDapis()
-    mapping(bytes32 => bytes) public override dataFeedIdToData;
+    mapping(bytes32 => bytes) public override dataFeeds;
 
     // This is the list of dAPIs AirseekerV2 will need to update
     // Api3Market contract will have a role to update this after a purchase
@@ -115,30 +113,27 @@ contract DapiDataRegistry is
     }
 
     function registerDataFeed(
-        bytes calldata dataFeedData
+        bytes calldata dataFeed
     ) external override returns (bytes32 dataFeedId) {
-        require(dataFeedData.length > 0, "Data feed data is empty");
-        bytes memory newDataFeedData;
-        if (dataFeedData.length == 64) {
-            // DataFeedId maps to a beacon
+        require(dataFeed.length > 0, "Data feed is empty");
+        bytes memory newDataFeed;
+        if (dataFeed.length == 64) {
+            // dataFeedId maps to a beacon
             (address airnode, bytes32 templateId) = abi.decode(
-                dataFeedData,
+                dataFeed,
                 (address, bytes32)
             );
 
             // Derive beacon ID
             // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L87
             dataFeedId = keccak256(abi.encodePacked(airnode, templateId));
-            newDataFeedData = dataFeedData;
+            newDataFeed = dataFeed;
         } else {
-            // dataFeedData must have an even number of bytes32 pairs
-            require(
-                (dataFeedData.length / 2) % 32 == 0,
-                "Invalid data feed data"
-            );
-            // DataFeedId maps to a beaconSet
+            // dataFeed must have an even number of bytes32 pairs
+            require((dataFeed.length / 2) % 32 == 0, "Invalid data feed");
+            // dataFeedId maps to a beaconSet
             (address[] memory airnodes, bytes32[] memory templateIds) = abi
-                .decode(dataFeedData, (address[], bytes32[]));
+                .decode(dataFeed, (address[], bytes32[]));
             require(airnodes.length == templateIds.length, "Length mismatch");
             bytes32[] memory beaconIds = new bytes32[](airnodes.length);
             for (uint256 i = 0; i < airnodes.length; i++) {
@@ -154,12 +149,12 @@ contract DapiDataRegistry is
             // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L98
             dataFeedId = keccak256(abi.encode(beaconIds));
 
-            newDataFeedData = abi.encode(airnodes, templateIds);
+            newDataFeed = abi.encode(airnodes, templateIds);
         }
 
-        dataFeedIdToData[dataFeedId] = newDataFeedData;
+        dataFeeds[dataFeedId] = newDataFeed;
 
-        emit RegisteredDataFeed(dataFeedId, newDataFeedData);
+        emit RegisteredDataFeed(dataFeedId, newDataFeed);
     }
 
     function addDapi(
@@ -187,7 +182,7 @@ contract DapiDataRegistry is
         );
         // Check dataFeedId has been registered
         require(
-            dataFeedIdToData[dataFeedId].length > 0,
+            dataFeeds[dataFeedId].length > 0,
             "Data feed ID has not been registered"
         );
 
@@ -253,7 +248,7 @@ contract DapiDataRegistry is
             bytes32[] memory dapiNames,
             bytes32[] memory dataFeedIds,
             UpdateParameters[] memory updateParameters,
-            bytes[] memory dataFeedDatas,
+            bytes[] memory dataFeeds_,
             string[][] memory signedApiUrls
         )
     {
@@ -263,7 +258,7 @@ contract DapiDataRegistry is
         dapiNames = new bytes32[](limitAdjusted);
         dataFeedIds = new bytes32[](limitAdjusted);
         updateParameters = new UpdateParameters[](limitAdjusted);
-        dataFeedDatas = new bytes[](limitAdjusted);
+        dataFeeds_ = new bytes[](limitAdjusted);
         signedApiUrls = new string[][](limitAdjusted);
         for (uint256 i = offset; i < offset + limitAdjusted; i++) {
             bytes32 dapiName = activeDapis.at(i);
@@ -276,19 +271,16 @@ contract DapiDataRegistry is
             updateParameters[currentIndex] = dapiNameHashToUpdateParameters[
                 dapiNameHash
             ];
-            bytes memory dataFeedData = dataFeedIdToData[dataFeedId];
-            dataFeedDatas[currentIndex] = dataFeedData;
-            if (dataFeedData.length == 64) {
-                (address airnode, ) = abi.decode(
-                    dataFeedData,
-                    (address, bytes32)
-                );
+            bytes memory dataFeed = dataFeeds[dataFeedId];
+            dataFeeds_[currentIndex] = dataFeed;
+            if (dataFeed.length == 64) {
+                (address airnode, ) = abi.decode(dataFeed, (address, bytes32));
                 string[] memory urls = new string[](1);
                 urls[0] = airnodeToSignedApiUrl[airnode];
                 signedApiUrls[currentIndex] = urls;
             } else {
                 (address[] memory airnodes, ) = abi.decode(
-                    dataFeedData,
+                    dataFeed,
                     (address[], bytes32[])
                 );
                 string[] memory urls = new string[](airnodes.length);

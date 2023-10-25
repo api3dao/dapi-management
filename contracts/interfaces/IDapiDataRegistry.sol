@@ -39,7 +39,7 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
         address
     ) external view returns (string memory);
 
-    function dataFeedIdToData(bytes32) external view returns (bytes memory);
+    function dataFeeds(bytes32) external view returns (bytes memory);
 
     function registerAirnodeSignedApiUrl(
         address airnode,
@@ -77,7 +77,7 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
             bytes32[] memory dapiNames,
             bytes32[] memory dataFeedIds,
             UpdateParameters[] memory updateParameters,
-            bytes[] memory dataFeedDatas,
+            bytes[] memory dataFeeds_,
             string[][] memory signedApiUrls
         );
 }

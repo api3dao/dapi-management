@@ -146,7 +146,7 @@ describe('DapiDataRegistry', function () {
       ['UNI/USD', generateRandomAddress()],
     ];
 
-    const dataFeedDatas = dapiNamesWithSponsorWallets.map(() =>
+    const dataFeeds = dapiNamesWithSponsorWallets.map(() =>
       [
         roles.airnode1.address,
         roles.airnode2.address,
@@ -160,7 +160,7 @@ describe('DapiDataRegistry', function () {
     );
 
     const dapiTreeValues = dapiNamesWithSponsorWallets.map(([dapiName, sponsorWallet], index) => {
-      const beaconIds = dataFeedDatas[index].map(({ airnode, templateId }) =>
+      const beaconIds = dataFeeds[index].map(({ airnode, templateId }) =>
         hre.ethers.utils.solidityKeccak256(['address', 'bytes32'], [airnode, templateId])
       );
 
@@ -202,7 +202,7 @@ describe('DapiDataRegistry', function () {
       dapiDataRegistryAdminRoleDescription,
       apiTree,
       apiTreeValues,
-      dataFeedDatas,
+      dataFeeds,
       dapiTree,
       dapiTreeValues,
     };
@@ -319,33 +319,33 @@ describe('DapiDataRegistry', function () {
   });
 
   describe('registerDataFeed', function () {
-    context('Data feed data is not empty', function () {
-      context('Encoded data feed data is valid address and bytes32 pairs', function () {
-        context('Encoded data feed data is valid 32 bytes pairs', function () {
+    context('Data feed is not empty', function () {
+      context('Encoded data feed is valid address and bytes32 pairs', function () {
+        context('Encoded data feed is valid 32 bytes pairs', function () {
           it('registers beacon data feed', async function () {
-            const { roles, dapiDataRegistry, dataFeedDatas } = await helpers.loadFixture(deploy);
+            const { roles, dapiDataRegistry, dataFeeds } = await helpers.loadFixture(deploy);
 
-            const [dataFeedData] = dataFeedDatas;
+            const [dataFeed] = dataFeeds;
             const encodedBeaconData = hre.ethers.utils.defaultAbiCoder.encode(
               ['address', 'bytes32'],
-              [dataFeedData[0].airnode, dataFeedData[0].templateId]
+              [dataFeed[0].airnode, dataFeed[0].templateId]
             );
             const dataFeedId = hre.ethers.utils.solidityKeccak256(
               ['address', 'bytes32'],
-              [dataFeedData[0].airnode, dataFeedData[0].templateId]
+              [dataFeed[0].airnode, dataFeed[0].templateId]
             );
 
             await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconData))
               .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
               .withArgs(dataFeedId, encodedBeaconData);
-            expect(await dapiDataRegistry.dataFeedIdToData(dataFeedId)).to.equal(encodedBeaconData);
+            expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconData);
           });
           it('registers beaconSet data feed', async function () {
-            const { roles, dapiDataRegistry, dataFeedDatas, dapiTreeValues } = await helpers.loadFixture(deploy);
+            const { roles, dapiDataRegistry, dataFeeds, dapiTreeValues } = await helpers.loadFixture(deploy);
 
-            const [dataFeedData] = dataFeedDatas;
+            const [dataFeed] = dataFeeds;
             const [[, beaconSetId]] = dapiTreeValues;
-            const { airnodes, templateIds } = dataFeedData.reduce(
+            const { airnodes, templateIds } = dataFeed.reduce(
               (acc, { airnode, templateId }) => ({
                 airnodes: [...acc.airnodes, airnode],
                 templateIds: [...acc.templateIds, templateId],
@@ -360,14 +360,14 @@ describe('DapiDataRegistry', function () {
             await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData))
               .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
               .withArgs(beaconSetId, encodedBeaconSetData);
-            expect(await dapiDataRegistry.dataFeedIdToData(beaconSetId)).to.deep.equal(encodedBeaconSetData);
+            expect(await dapiDataRegistry.dataFeeds(beaconSetId)).to.deep.equal(encodedBeaconSetData);
           });
           it('registers beaconSet data feed dropping trailing data', async function () {
-            const { roles, dapiDataRegistry, dataFeedDatas, dapiTreeValues } = await helpers.loadFixture(deploy);
+            const { roles, dapiDataRegistry, dataFeeds, dapiTreeValues } = await helpers.loadFixture(deploy);
 
-            const [dataFeedData] = dataFeedDatas;
+            const [dataFeed] = dataFeeds;
             const [[, beaconSetId]] = dapiTreeValues;
-            const { airnodes, templateIds } = dataFeedData.reduce(
+            const { airnodes, templateIds } = dataFeed.reduce(
               (acc, { airnode, templateId }) => ({
                 airnodes: [...acc.airnodes, airnode],
                 templateIds: [...acc.templateIds, templateId],
@@ -394,16 +394,16 @@ describe('DapiDataRegistry', function () {
             )
               .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
               .withArgs(beaconSetId, encodedBeaconSetData);
-            expect(await dapiDataRegistry.dataFeedIdToData(beaconSetId)).to.deep.equal(encodedBeaconSetData);
+            expect(await dapiDataRegistry.dataFeeds(beaconSetId)).to.deep.equal(encodedBeaconSetData);
           });
         });
-        context('Encoded data feed data is not valid 32 bytes pairs', function () {
+        context('Encoded data feed is not valid 32 bytes pairs', function () {
           it('reverts', async function () {
-            const { roles, dapiDataRegistry, dataFeedDatas, dapiTreeValues } = await helpers.loadFixture(deploy);
+            const { roles, dapiDataRegistry, dataFeeds, dapiTreeValues } = await helpers.loadFixture(deploy);
 
-            const [dataFeedData] = dataFeedDatas;
+            const [dataFeed] = dataFeeds;
             const [[, beaconSetId]] = dapiTreeValues;
-            const { airnodes, templateIds } = dataFeedData.reduce(
+            const { airnodes, templateIds } = dataFeed.reduce(
               (acc, { airnode, templateId }) => ({
                 airnodes: [...acc.airnodes, airnode],
                 templateIds: [...acc.templateIds, templateId],
@@ -425,7 +425,7 @@ describe('DapiDataRegistry', function () {
               dapiDataRegistry
                 .connect(roles.randomPerson)
                 .registerDataFeed(encodedBeaconSetDataWithEvenNumberOfExtraBytes32)
-            ).to.have.been.revertedWith('Invalid data feed data');
+            ).to.have.been.revertedWith('Invalid data feed');
             const extraAddress = generateRandomAddress();
             const encodedBeaconSetDataWithExtraAddress = hre.ethers.utils.hexConcat([
               encodedBeaconSetData,
@@ -433,24 +433,24 @@ describe('DapiDataRegistry', function () {
             ]);
             await expect(
               dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetDataWithExtraAddress)
-            ).to.have.been.revertedWith('Invalid data feed data');
-            expect(await dapiDataRegistry.dataFeedIdToData(beaconSetId)).to.deep.equal('0x');
+            ).to.have.been.revertedWith('Invalid data feed');
+            expect(await dapiDataRegistry.dataFeeds(beaconSetId)).to.deep.equal('0x');
           });
         });
       });
-      context('Encoded data feed data is not valid address and bytes32 pairs', function () {
+      context('Encoded data feed is not valid address and bytes32 pairs', function () {
         it('reverts', async function () {
           const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
-          const invalidDataFeedData1 = hre.ethers.utils.defaultAbiCoder.encode(
+          const invalidDataFeed1 = hre.ethers.utils.defaultAbiCoder.encode(
             ['bytes32', 'address'],
             [generateRandomBytes32(), generateRandomAddress()]
           );
-          const invalidDataFeedData2 = hre.ethers.utils.defaultAbiCoder.encode(
+          const invalidDataFeed2 = hre.ethers.utils.defaultAbiCoder.encode(
             ['address', 'string'],
             [generateRandomAddress(), generateRandomBytes(32)]
           );
-          const invalidDataFeedData3 = hre.ethers.utils.defaultAbiCoder.encode(
+          const invalidDataFeed3 = hre.ethers.utils.defaultAbiCoder.encode(
             ['bytes32[]', 'bytes32[]'],
             [
               [generateRandomBytes32(), generateRandomBytes32()],
@@ -459,23 +459,23 @@ describe('DapiDataRegistry', function () {
           );
 
           await expect(
-            dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeedData1)
+            dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeed1)
           ).to.be.revertedWithoutReason();
           await expect(
-            dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeedData2)
+            dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeed2)
           ).to.be.revertedWithoutReason();
           await expect(
-            dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeedData3)
+            dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeed3)
           ).to.be.revertedWithoutReason();
         });
       });
     });
-    context('Data feed data is empty', function () {
+    context('Data feed is empty', function () {
       it('reverts', async function () {
         const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
         await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed('0x')).to.be.revertedWith(
-          'Data feed data is empty'
+          'Data feed is empty'
         );
       });
     });
@@ -489,7 +489,7 @@ describe('DapiDataRegistry', function () {
             context('Data feed ID has been registered', function () {
               context('Proof is valid', function () {
                 it('adds a dAPI', async function () {
-                  const { roles, dapiDataRegistry, apiTree, apiTreeValues, dataFeedDatas, dapiTree, dapiTreeValues } =
+                  const { roles, dapiDataRegistry, apiTree, apiTreeValues, dataFeeds, dapiTree, dapiTreeValues } =
                     await helpers.loadFixture(deploy);
 
                   const apiTreeRoot = apiTree.root;
@@ -502,8 +502,8 @@ describe('DapiDataRegistry', function () {
                     })
                   );
 
-                  const [dataFeedData] = dataFeedDatas;
-                  const { airnodes, templateIds } = dataFeedData.reduce(
+                  const [dataFeed] = dataFeeds;
+                  const { airnodes, templateIds } = dataFeed.reduce(
                     (acc, { airnode, templateId }) => ({
                       airnodes: [...acc.airnodes, airnode],
                       templateIds: [...acc.templateIds, templateId],
@@ -549,7 +549,7 @@ describe('DapiDataRegistry', function () {
 
                   const dapisCount = await dapiDataRegistry.registeredDapisCount();
                   expect(dapisCount).to.equal(1);
-                  const [dapiNames, dataFeedIds, updateParameters, encodedDataFeedDatas, signedApiUrls] =
+                  const [dapiNames, dataFeedIds, updateParameters, encodedDataFeedsdataFeeds, signedApiUrls] =
                     await dapiDataRegistry.readDapis(0, dapisCount);
                   expect(dapiNames).to.deep.equal([dapiName]);
                   expect(dataFeedIds).to.deep.equal([beaconSetId]);
@@ -558,17 +558,18 @@ describe('DapiDataRegistry', function () {
                   );
                   expect(updateParameters[0].deviationReference).to.deep.equal(deviationReference);
                   expect(updateParameters[0].heartbeatInterval).to.deep.equal(heartbeatInterval);
-                  expect(encodedDataFeedDatas).to.deep.equal([encodedBeaconSetData]);
+                  expect(encodedDataFeedsdataFeeds).to.deep.equal([encodedBeaconSetData]);
                   expect(signedApiUrls).to.deep.equal([apiTreeValues.map(([, url]) => url)]);
                 });
               });
               context('Proof is not valid', function () {
                 it('reverts', async function () {
-                  const { roles, dapiDataRegistry, dataFeedDatas, dapiTree, dapiTreeValues } =
-                    await helpers.loadFixture(deploy);
+                  const { roles, dapiDataRegistry, dataFeeds, dapiTree, dapiTreeValues } = await helpers.loadFixture(
+                    deploy
+                  );
 
-                  const [dataFeedData] = dataFeedDatas;
-                  const { airnodes, templateIds } = dataFeedData.reduce(
+                  const [dataFeed] = dataFeeds;
+                  const { airnodes, templateIds } = dataFeed.reduce(
                     (acc, { airnode, templateId }) => ({
                       airnodes: [...acc.airnodes, airnode],
                       templateIds: [...acc.templateIds, templateId],
@@ -619,7 +620,7 @@ describe('DapiDataRegistry', function () {
                 await expect(
                   dapiDataRegistry.connect(roles.api3MarketContract).addDapi(
                     dapiName,
-                    beaconSetId, // registerDataFeed() has not been called yet (dataFeedIdToData() returns empty string)
+                    beaconSetId, // registerDataFeed() has not been called yet (dataFeeds() returns empty string)
                     sponsorWallet,
                     deviationThresholdInPercentage,
                     deviationReference,
@@ -721,7 +722,7 @@ describe('DapiDataRegistry', function () {
       context('Sender is manager or needs Registrar role', function () {
         context('dAPI name has been added', function () {
           it('removes dAPI', async function () {
-            const { roles, dapiDataRegistry, apiTree, apiTreeValues, dataFeedDatas, dapiTree, dapiTreeValues } =
+            const { roles, dapiDataRegistry, apiTree, apiTreeValues, dataFeeds, dapiTree, dapiTreeValues } =
               await helpers.loadFixture(deploy);
 
             const apiTreeRoot = apiTree.root;
@@ -734,8 +735,8 @@ describe('DapiDataRegistry', function () {
               })
             );
 
-            const [dataFeedData] = dataFeedDatas;
-            const { airnodes, templateIds } = dataFeedData.reduce(
+            const [dataFeed] = dataFeeds;
+            const { airnodes, templateIds } = dataFeed.reduce(
               (acc, { airnode, templateId }) => ({
                 airnodes: [...acc.airnodes, airnode],
                 templateIds: [...acc.templateIds, templateId],
@@ -806,7 +807,7 @@ describe('DapiDataRegistry', function () {
 
   describe('readDapis', function () {
     it('reads all dAPIs', async function () {
-      const { roles, dapiDataRegistry, apiTree, apiTreeValues, dataFeedDatas, dapiTreeValues, dapiTree } =
+      const { roles, dapiDataRegistry, apiTree, apiTreeValues, dataFeeds, dapiTreeValues, dapiTree } =
         await helpers.loadFixture(deploy);
 
       const apiTreeRoot = apiTree.root;
@@ -819,8 +820,8 @@ describe('DapiDataRegistry', function () {
         })
       );
 
-      const encodedBeaconSetDatas = dataFeedDatas.map((dataFeedData) => {
-        const { airnodes, templateIds } = dataFeedData.reduce(
+      const encodedBeaconSetDatas = dataFeeds.map((dataFeed) => {
+        const { airnodes, templateIds } = dataFeed.reduce(
           (acc, { airnode, templateId }) => ({
             airnodes: [...acc.airnodes, airnode],
             templateIds: [...acc.templateIds, templateId],
@@ -858,7 +859,7 @@ describe('DapiDataRegistry', function () {
       );
 
       const dapisCount = await dapiDataRegistry.registeredDapisCount();
-      const [dapiNames, dataFeedIds, updateParameters, encodedDataFeedDatas, signedApiUrls] =
+      const [dapiNames, dataFeedIds, updateParameters, encodedDataFeedsdataFeeds, signedApiUrls] =
         await dapiDataRegistry.readDapis(0, dapisCount);
 
       expect(dapiNames).to.deep.equal(dapiTreeValues.map(([dapiName]) => dapiName));
@@ -866,11 +867,11 @@ describe('DapiDataRegistry', function () {
       expect(updateParameters).to.deep.equal(
         Array(dapiTreeValues.length).fill([deviationThresholdInPercentage, deviationReference, heartbeatInterval])
       );
-      expect(encodedDataFeedDatas).to.deep.equal(encodedBeaconSetDatas);
+      expect(encodedDataFeedsdataFeeds).to.deep.equal(encodedBeaconSetDatas);
       expect(signedApiUrls).to.deep.equal(Array(dapiTreeValues.length).fill(apiTreeValues.map(([, url]) => url)));
     });
     it('reads all dAPIs paginated', async function () {
-      const { roles, dapiDataRegistry, apiTree, apiTreeValues, dataFeedDatas, dapiTreeValues, dapiTree } =
+      const { roles, dapiDataRegistry, apiTree, apiTreeValues, dataFeeds, dapiTreeValues, dapiTree } =
         await helpers.loadFixture(deploy);
 
       const apiTreeRoot = apiTree.root;
@@ -883,8 +884,8 @@ describe('DapiDataRegistry', function () {
         })
       );
 
-      const encodedBeaconSetDatas = dataFeedDatas.map((dataFeedData) => {
-        const { airnodes, templateIds } = dataFeedData.reduce(
+      const encodedBeaconSetDatas = dataFeeds.map((dataFeed) => {
+        const { airnodes, templateIds } = dataFeed.reduce(
           (acc, { airnode, templateId }) => ({
             airnodes: [...acc.airnodes, airnode],
             templateIds: [...acc.templateIds, templateId],
@@ -921,7 +922,7 @@ describe('DapiDataRegistry', function () {
       const dapisCount = await dapiDataRegistry.registeredDapisCount();
       for (let i = 0; i < dapisCount; i += 2) {
         const chunkSize = Math.min(2, dapisCount - i);
-        const [dapiNames, dataFeedIds, updateParameters, encodedDataFeedDatas, signedApiUrls] =
+        const [dapiNames, dataFeedIds, updateParameters, encodedDataFeedsdataFeeds, signedApiUrls] =
           await dapiDataRegistry.readDapis(i, chunkSize);
 
         expect(dapiNames).to.deep.equal(dapiTreeValues.slice(i, i + chunkSize).map(([dapiName]) => dapiName));
@@ -929,7 +930,7 @@ describe('DapiDataRegistry', function () {
         expect(updateParameters).to.deep.equal(
           Array(chunkSize).fill([deviationThresholdInPercentage, deviationReference, heartbeatInterval])
         );
-        expect(encodedDataFeedDatas).to.deep.equal(encodedBeaconSetDatas.slice(i, i + chunkSize));
+        expect(encodedDataFeedsdataFeeds).to.deep.equal(encodedBeaconSetDatas.slice(i, i + chunkSize));
         expect(signedApiUrls).to.deep.equal(Array(chunkSize).fill(apiTreeValues.map(([, url]) => url)));
       }
     });
