@@ -38,7 +38,10 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         bytes32 currentBeaconId = api3ServerV1.dapiNameHashToDataFeedId(
             args.dapiName
         );
-        require(currentBeaconId != args.beaconId, "Beacon ID will not change");
+        require(
+            currentBeaconId != args.beaconId,
+            "Beacon ID will not be changed"
+        );
 
         bytes32 fallbackLeaf = keccak256(
             bytes.concat(
@@ -95,7 +98,7 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         bytes32 leaf
     ) private view {
         require(root != bytes32(0), "Root is zero");
-        require(proof.length != 0, "Fallback proof is empty");
+        require(proof.length != 0, "Proof is empty");
         require(
             hashRegistry.hashTypeToHash(treeType) == root,
             "Tree has not been registered"

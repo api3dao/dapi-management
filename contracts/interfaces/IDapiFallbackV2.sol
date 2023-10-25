@@ -10,7 +10,7 @@ interface IDapiFallbackV2 {
         bytes32 beaconId;
         bytes32 fallbackRoot;
         bytes32[] fallbackProof;
-        bytes32 updateParams;
+        bytes updateParams;
         bytes32 priceRoot;
         bytes32[] priceProof;
         uint256 duration;
