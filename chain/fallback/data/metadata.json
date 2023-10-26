@@ -1,0 +1,81 @@
+{
+  "rootSigners": [
+    "0x80efDd3bB15F2108C407049C5575490858800D47",
+    "0x09dEa15D4E1F82787e181F23788Dc3f4b3d3DAE4",
+    "0x433171908d5BAB4ac0E860c64D1333F51A310321"
+  ],
+  "dapiFallbackExecutors": [
+    "0xF5944F7Fa9BAD3196f93d6D9D318f1fDC357b41c",
+    "0x9ff07C52AC45B40422d66E0356D14F8D64B9002E",
+    "0x70cC8f7C40A8e65A73b804Ad1c49F39D40ea3050",
+    "0x918350a01A4C259FBCc94c6Fb2ca49A3753BDb86",
+    "0x5b2962121b4334fe563F7062feA975f51313EDE3",
+    "0x433171908d5BAB4ac0E860c64D1333F51A310321"
+  ],
+  "minSponsorWalletBalance": {
+    "1": {
+      "value": 0.126,
+      "unit": "ether"
+    },
+    "10": {
+      "value": 0.0183,
+      "unit": "ether"
+    },
+    "30": {
+      "value": 0.00045,
+      "unit": "ether"
+    },
+    "56": {
+      "value": 0.0253,
+      "unit": "ether"
+    },
+    "100": {
+      "value": 0.0182,
+      "unit": "ether"
+    },
+    "137": {
+      "value": 1.03,
+      "unit": "ether"
+    },
+    "250": {
+      "value": 15.3,
+      "unit": "ether"
+    },
+    "1101": {
+      "value": 0.0114,
+      "unit": "ether"
+    },
+    "1284": {
+      "value": 1.24,
+      "unit": "ether"
+    },
+    "1285": {
+      "value": 0.0118,
+      "unit": "ether"
+    },
+    "2222": {
+      "value": 0.00643,
+      "unit": "ether"
+    },
+    "5000": {
+      "value": 5.25,
+      "unit": "ether"
+    },
+    "8453": {
+      "value": 0.0105,
+      "unit": "ether"
+    },
+    "42161": {
+      "value": 0.0115,
+      "unit": "ether"
+    },
+    "43114": {
+      "value": 0.235,
+      "unit": "ether"
+    },
+    "59144": {
+      "value": 0.0105,
+      "unit": "ether"
+    }
+  }
+}

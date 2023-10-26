@@ -30,7 +30,9 @@
     "frontend:add-component": "npx shadcn-ui@latest add --cwd frontend"
   },
   "devDependencies": {
+    "@api3/airnode-protocol-v1": "^2.10.0",
     "@api3/chains": "^3.5.1",
+    "@api3/promise-utils": "^0.4.0",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
@@ -39,6 +41,7 @@
     "@typechain/ethers-v5": "^10.1.0",
     "@typechain/hardhat": "^6.1.2",
     "@types/chai": "^4.2.0",
+    "@types/jest": "^29.5.6",
     "@types/mocha": ">=9.1.0",
     "@types/node": "^20.8.7",
     "@types/react": "^18.2.29",
@@ -65,7 +68,7 @@
     "typescript": ">=4.5.0"
   },
   "dependencies": {
-    "@api3/airnode-protocol-v1": "^2.10.0",
+    "@nodary/utilities": "^0.7.1",
     "@openzeppelin/contracts": "4.9.3",
     "@openzeppelin/merkle-tree": "^1.0.5",
     "@radix-ui/react-popover": "^1.0.7",
@@ -75,6 +78,7 @@
     "ethers": "^5.7.2",
     "lucide-react": "^0.288.0",
     "next": "13.5.6",
+    "node-mocks-http": "^1.13.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tailwind-merge": "^1.14.0",
