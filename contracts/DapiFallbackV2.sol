@@ -87,7 +87,7 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
             priceLeaf
         );
 
-        uint256 minSponsorWalletBalance = (args.price * 86400) / args.duration;
+        uint256 minSponsorWalletBalance = (args.price * 1 days) / args.duration;
 
         uint256 sponsorWalletBalance = args.sponsorWallet.balance;
         if (sponsorWalletBalance < minSponsorWalletBalance) {
