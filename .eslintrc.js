@@ -9,9 +9,4 @@ module.exports = {
     sourceType: 'module',
   },
   extends: 'eslint:recommended',
-  settings: {
-    next: {
-      rootDir: 'frontend/',
-    },
-  },
 };
