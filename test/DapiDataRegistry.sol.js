@@ -791,7 +791,7 @@ describe('DapiDataRegistry', function () {
 
         await expect(
           dapiDataRegistry.connect(roles.api3MarketContract).removeDapi(hre.ethers.constants.HashZero)
-        ).to.be.revertedWith('dAPI name is zero');
+        ).to.be.revertedWith('dAPI name has not been added');
       });
     });
   });

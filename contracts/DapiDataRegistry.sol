@@ -262,7 +262,6 @@ contract DapiDataRegistry is
     function removeDapi(
         bytes32 dapiName
     ) external override onlyRegistrarOrManager {
-        require(dapiName != bytes32(0), "dAPI name is zero");
         require(_dapis.remove(dapiName), "dAPI name has not been added");
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         delete dapiNameToUpdateParameters[dapiNameHash];
