@@ -231,7 +231,7 @@ contract DapiDataRegistry is
         returns (
             bytes32[] memory dapiNames,
             UpdateParameters[] memory updateParameters,
-            DataFeedValues[] memory dataFeedValues,
+            DataFeedValue[] memory dataFeedValues,
             bytes[] memory dataFeeds_,
             string[][] memory signedApiUrls
         )
@@ -243,7 +243,7 @@ contract DapiDataRegistry is
                 : limit;
             dapiNames = new bytes32[](limitAdjusted);
             updateParameters = new UpdateParameters[](limitAdjusted);
-            dataFeedValues = new DataFeedValues[](limitAdjusted);
+            dataFeedValues = new DataFeedValue[](limitAdjusted);
             dataFeeds_ = new bytes[](limitAdjusted);
             signedApiUrls = new string[][](limitAdjusted);
             for (uint256 ind = offset; ind < offset + limitAdjusted; ind++) {
@@ -255,7 +255,7 @@ contract DapiDataRegistry is
                     .dapiNameHashToDataFeedId(dapiNameHash);
                 (int224 value, uint32 timestamp) = IApi3ServerV1(api3ServerV1)
                     .dataFeeds(dataFeedId);
-                dataFeedValues[currentInd] = DataFeedValues(value, timestamp);
+                dataFeedValues[currentInd] = DataFeedValue(value, timestamp);
                 updateParameters[currentInd] = dapiNameToUpdateParameters[
                     dapiNameHash
                 ];
@@ -280,6 +280,47 @@ contract DapiDataRegistry is
                     }
                     signedApiUrls[currentInd] = urls;
                 }
+            }
+        }
+    }
+
+    function readDapi(
+        bytes32 dapiName
+    )
+        external
+        view
+        override
+        returns (
+            UpdateParameters memory updateParameters,
+            DataFeedValue memory dataFeedValue,
+            bytes memory dataFeed,
+            string[] memory signedApiUrls
+        )
+    {
+        bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
+        bytes32 dataFeedId = IApi3ServerV1(api3ServerV1)
+            .dapiNameHashToDataFeedId(dapiNameHash);
+        if (dataFeedId != bytes32(0)) {
+            (int224 value, uint32 timestamp) = IApi3ServerV1(api3ServerV1)
+                .dataFeeds(dataFeedId);
+            dataFeedValue = DataFeedValue(value, timestamp);
+            updateParameters = dapiNameToUpdateParameters[dapiNameHash];
+            dataFeed = dataFeeds[dataFeedId];
+            if (dataFeed.length == 64) {
+                (address airnode, ) = abi.decode(dataFeed, (address, bytes32));
+                string[] memory urls = new string[](1);
+                urls[0] = airnodeToSignedApiUrl[airnode];
+                signedApiUrls = urls;
+            } else {
+                (address[] memory airnodes, ) = abi.decode(
+                    dataFeed,
+                    (address[], bytes32[])
+                );
+                string[] memory urls = new string[](airnodes.length);
+                for (uint256 ind2 = 0; ind2 < airnodes.length; ind2++) {
+                    urls[ind2] = airnodeToSignedApiUrl[airnodes[ind2]];
+                }
+                signedApiUrls = urls;
             }
         }
     }

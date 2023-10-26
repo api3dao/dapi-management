@@ -543,17 +543,14 @@ describe('DapiDataRegistry', function () {
 
                   const dapisCount = await dapiDataRegistry.dapisCount();
                   expect(dapisCount).to.equal(1);
-                  const [dapiNames, updateParameters, dataFeedValues, encodedDataFeeds, signedApiUrls] =
-                    await dapiDataRegistry.readDapis(0, dapisCount);
-                  expect(dapiNames).to.deep.equal([dapiName]);
-                  expect(updateParameters[0].deviationThresholdInPercentage).to.deep.equal(
-                    deviationThresholdInPercentage
-                  );
-                  expect(updateParameters[0].deviationReference).to.deep.equal(deviationReference);
-                  expect(updateParameters[0].heartbeatInterval).to.deep.equal(heartbeatInterval);
-                  expect(dataFeedValues).to.deep.equal([[hre.ethers.constants.Zero, 0]]);
-                  expect(encodedDataFeeds).to.deep.equal([encodedBeaconSetData]);
-                  expect(signedApiUrls).to.deep.equal([apiTreeValues.map(([, url]) => url)]);
+                  const [updateParameters, dataFeedValue, encodedDataFeed, signedApiUrls] =
+                    await dapiDataRegistry.readDapi(dapiName);
+                  expect(updateParameters.deviationThresholdInPercentage).to.equal(deviationThresholdInPercentage);
+                  expect(updateParameters.deviationReference).to.equal(deviationReference);
+                  expect(updateParameters.heartbeatInterval).to.equal(heartbeatInterval);
+                  expect(dataFeedValue).to.deep.equal([hre.ethers.constants.Zero, 0]);
+                  expect(encodedDataFeed).to.deep.equal(encodedBeaconSetData);
+                  expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));
                 });
               });
               context('Proof is not valid', function () {
