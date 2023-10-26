@@ -188,9 +188,9 @@ contract DapiDataRegistry is
         _dapis.add(dapiName); // TODO: Not checking if already exists in set to allow for update parameters override (downgrade/upgrade)
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         dapiNameToUpdateParameters[dapiNameHash] = UpdateParameters(
-            deviationThresholdInPercentage, // TODO: can this be 0? should we check against any low/high boundary based on HUNDRED_PERCENT constant?
+            deviationThresholdInPercentage,
             deviationReference,
-            heartbeatInterval // TODO: can this be 0?
+            heartbeatInterval
         );
 
         // Set dapiName to dataFeedId (this contract needs to be granted the dapi name setter role)
