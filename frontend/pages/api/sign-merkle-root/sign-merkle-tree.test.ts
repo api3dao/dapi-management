@@ -6,8 +6,8 @@ describe('/api/sign-merkle-root/[tree]', () => {
     const { req, res } = createMocks({
       method: 'POST',
       body: {
-        signature: "string",
-        address: "string"
+        signature: 'string',
+        address: 'string',
       },
       query: {
         tree: 'DAPI_FALLBACK',
@@ -17,6 +17,6 @@ describe('/api/sign-merkle-root/[tree]', () => {
     signRoot(req, res);
 
     expect(res._getStatusCode()).toBe(404);
-    expect(res._getData()).toEqual("Signature file not found");
+    expect(res._getData()).toEqual('Signature file not found');
   });
 });

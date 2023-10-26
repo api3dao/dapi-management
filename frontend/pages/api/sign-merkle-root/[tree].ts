@@ -5,7 +5,7 @@ import { join } from 'path';
 import { ethers } from 'ethers';
 import { format, Options } from 'prettier';
 import { validateTreeRootSignatures } from './validators';
-import getNodaryFallbackTree from '../../../../chain/fallback/src/tree'
+import getNodaryFallbackTree from '../../../../chain/fallback/src/tree';
 
 export interface SignMerkleRootRequest {
   signature: string;
@@ -24,20 +24,20 @@ export interface RootSignatureMetadata {
 }
 
 enum MerkleTrees {
-  DAPI_FALLBACK = 'DAPI_FALLBACK'
+  DAPI_FALLBACK = 'DAPI_FALLBACK',
 }
 
 const merkleTreeConfig = {
   [MerkleTrees.DAPI_FALLBACK]: {
     getNodaryFallbackTree: getNodaryFallbackTree,
-    fallbackTreeValidator: validateTreeRootSignatures
-  }
-}
+    fallbackTreeValidator: validateTreeRootSignatures,
+  },
+};
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {  
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const { tree } = req.query;
 
-  const treeConfig = merkleTreeConfig[tree as MerkleTrees]
+  const treeConfig = merkleTreeConfig[tree as MerkleTrees];
   const payload: SignMerkleRootRequest = req.body;
   const { signature, address } = payload;
 
@@ -78,15 +78,10 @@ export const PRETTIER_CONFIG: Options = {
   useTabs: false,
 };
 
-type JSONValue =
-    | string
-    | number
-    | boolean
-    | JSONObject
-    | string[];
+type JSONValue = string | number | boolean | JSONObject | string[];
 
 interface JSONObject {
-    [x: string]: JSONValue;
+  [x: string]: JSONValue;
 }
 
 export const prettyJson = (payload: JSONObject | JSONValue) =>
