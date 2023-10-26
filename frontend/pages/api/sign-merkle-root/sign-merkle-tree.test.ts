@@ -1,5 +1,4 @@
 import { createMocks } from 'node-mocks-http';
-import { describe, test } from '@jest/globals';
 import signRoot from './[tree]';
 
 describe('/api/sign-merkle-root/[tree]', () => {
