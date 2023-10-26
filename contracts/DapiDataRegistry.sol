@@ -8,6 +8,22 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./interfaces/IDapiDataRegistry.sol";
 import "./interfaces/IHashRegistry.sol";
 
+/// @title Contract used to store and manage dAPI related information
+/// @notice The DapiDataRegistry contract main use case is storing all the active
+/// dAPI names. By active we mean the list of data feeds currently being updated.
+/// This conract will also require that caller also provides update parameter
+/// information at the time a new dAPI is added. Previous to this, the user must
+/// have called registerDataFeed() to store data feed data that is needed for
+/// updating the data feed the dAPI name is point to. For instance, storing an
+/// encoded bytes with the Airnode address plus the template ID (when data feed
+/// is a beacon) or an array of Airnode addresses plus an array of template IDs
+/// (when the data feed is a beacon set) is required prior to adding a dAPI name.
+/// This contract will also store all Signed API URLs that should be used for
+/// fetching current API values while trying to update the data feed.
+/// Another feature is that it provides an optimized way for reading all dAPI
+/// related data by using a single RPC call. Since it has a reference to
+/// Api3ServerV1 contract, it can return all data stored in this contract plus
+/// current data feed values stored in Api3ServerV1
 contract DapiDataRegistry is
     AccessControlRegistryAdminnedWithManager,
     IDapiDataRegistry
@@ -17,38 +33,39 @@ contract DapiDataRegistry is
     /// @notice Number that represents 100%
     uint256 public constant override HUNDRED_PERCENT = 1e8;
 
-    bytes32 private constant _DAPI_MANAGEMENT_HASH_TYPE =
-        keccak256(abi.encodePacked("dAPI management Merkle tree root"));
-    bytes32 private constant _SIGNED_API_URL_HASH_TYPE =
-        keccak256(abi.encodePacked("Signed API URL Merkle root"));
-
     /// @notice Registrar role description
     string public constant override REGISTRAR_ROLE_DESCRIPTION = "Registrar";
 
     /// @notice Registrar role
     bytes32 public immutable override registrarRole;
 
+    /// @notice HashRegistry contract address
     address public immutable override hashRegistry;
+    /// @notice Api3ServerV1 contract address
     address public immutable override api3ServerV1;
 
-    // This is updated using the API management merkle tree
+    /// @notice Airnode Signed API URLs
+    /// @dev The values stored in this mapping rely on a merkle tree that must be
+    /// verified and signed by a set of accounts prior to registering the root
+    /// hash on the HashRegistry contract
     mapping(address => string) public override airnodeToSignedApiUrl;
 
-    // The value should be a single value or an array of them
-    // This needs to be encoded so we can determine if it's a beacon
-    // or a beaconSet based on the lenght
-    // It can be udpated by anyone because the contract will hash the data and derive it
-    // Airseeker will need to multicall to read all data using a single RPC call
+    /// @notice Encoded data feed data for each data feed ID
+    /// @dev The length of the bytes is used to determine if the encoded data
+    /// feed data belongs to a beacon or beacon set
     mapping(bytes32 => bytes) public override dataFeeds;
 
-    // This is the list of dAPIs AirseekerV2 will need to update
-    // Api3Market contract will have a role to update this after a purchase
-    // Dapi names are expected to be unique bytes32 strings
-    EnumerableSet.Bytes32Set private _dapis;
-
+    /// @notice Parameters used while checking the conditions for updating a dAPI
     mapping(bytes32 => UpdateParameters)
         public
         override dapiNameToUpdateParameters;
+
+    EnumerableSet.Bytes32Set private _dapis;
+
+    bytes32 private constant _DAPI_MANAGEMENT_HASH_TYPE =
+        keccak256(abi.encodePacked("dAPI management Merkle tree root"));
+    bytes32 private constant _SIGNED_API_URL_HASH_TYPE =
+        keccak256(abi.encodePacked("Signed API URL Merkle root"));
 
     modifier onlyRegistrarOrManager() {
         require(
@@ -62,6 +79,11 @@ contract DapiDataRegistry is
         _;
     }
 
+    /// @param _accessControlRegistry AccessControlRegistry contract address
+    /// @param _adminRoleDescription Admin role description
+    /// @param _manager Manager address
+    /// @param _hashRegistry HashRegistry contract address
+    /// @param _api3ServerV1 Api3ServerV1 contract address
     constructor(
         address _accessControlRegistry,
         string memory _adminRoleDescription,
@@ -85,6 +107,11 @@ contract DapiDataRegistry is
         api3ServerV1 = _api3ServerV1;
     }
 
+    /// @notice Called to register a Signed API URL for an Airnode
+    /// @param airnode Airnode address
+    /// @param url Signed API URL
+    /// @param root Merkle tree root hash
+    /// @param proof Array of hashes to verify a Merkle tree leaf
     function registerAirnodeSignedApiUrl(
         address airnode,
         string calldata url,
@@ -93,6 +120,7 @@ contract DapiDataRegistry is
     ) external override {
         require(root != bytes32(0), "Root is zero");
         require(proof.length != 0, "Proof is empty");
+
         // Check root exists in HashRegistry
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(
@@ -112,6 +140,12 @@ contract DapiDataRegistry is
         emit RegisteredSignedApiUrl(airnode, url);
     }
 
+    /// @notice Called to register data about a data feed
+    /// @dev Data feed IDs are derived based on this data. If the encoded bytes
+    /// has a length of 64 it is considered to be data for deriving a beacon ID.
+    /// Otherwise it is considered data for deriving beacon IDs that are then
+    /// used to derive the beacon set ID
+    /// @param dataFeed Encoded data feed data
     function registerDataFeed(
         bytes calldata dataFeed
     ) external override returns (bytes32 dataFeedId) {
@@ -121,9 +155,8 @@ contract DapiDataRegistry is
                 dataFeed,
                 (address, bytes32)
             );
-
             // Derive beacon ID
-            // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L87
+            // https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/DataFeedServer.sol#L83-L92
             dataFeedId = keccak256(abi.encodePacked(airnode, templateId));
             dataFeeds[dataFeedId] = dataFeed;
         } else {
@@ -138,20 +171,36 @@ contract DapiDataRegistry is
             bytes32[] memory beaconIds = new bytes32[](airnodes.length);
             for (uint256 i = 0; i < airnodes.length; i++) {
                 // Derive beacon ID
-                // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L87
+                // https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/DataFeedServer.sol#L83-L92
                 beaconIds[i] = keccak256(
                     abi.encodePacked(airnodes[i], templateIds[i])
                 );
             }
             // Derive beacon set ID
-            // https://github.com/api3dao/airnode-protocol-v1/blob/main/contracts/api3-server-v1/DataFeedServer.sol#L98
+            // https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/DataFeedServer.sol#L94-L102
             dataFeedId = keccak256(abi.encode(beaconIds));
-
             dataFeeds[dataFeedId] = abi.encode(airnodes, templateIds);
         }
         emit RegisteredDataFeed(dataFeedId, dataFeeds[dataFeedId]);
     }
 
+    /// Called by a registrar or manager to add a dAPI along with update
+    /// parameters data
+    /// @dev Since this function does not check if the dAPI already exists, the
+    /// caller is responsible with previously validating how the update
+    /// parameters are being overwritten. This by design to allow for update
+    /// parameters override (downgrade/upgrade)
+    /// @param dapiName dAPI name
+    /// @param dataFeedId Data feed ID the dAPI will point to
+    /// @param sponsorWallet Sponsor wallet address used to trigger updates
+    /// @param deviationThresholdInPercentage Value used to determine if data
+    /// feed requires updating based on deviation against API value
+    /// @param deviationReference Reference value that deviation will be
+    /// calculated against
+    /// @param heartbeatInterval Value used to determine if data
+    /// feed requires updating based on time elapsed since last update
+    /// @param root Merkle tree root hash
+    /// @param proof Array of hashes to verify a Merkle tree leaf
     function addDapi(
         bytes32 dapiName,
         bytes32 dataFeedId,
@@ -164,6 +213,7 @@ contract DapiDataRegistry is
     ) external override onlyRegistrarOrManager {
         require(root != bytes32(0), "Root is zero");
         require(proof.length != 0, "Proof is empty");
+
         // Check root exists in HashRegistry
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(
@@ -171,6 +221,7 @@ contract DapiDataRegistry is
             ) == root,
             "Root has not been registered"
         );
+
         // Check dataFeedId has been registered
         require(
             dataFeeds[dataFeedId].length > 0,
@@ -185,7 +236,7 @@ contract DapiDataRegistry is
         );
         require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
 
-        _dapis.add(dapiName); // TODO: Not checking if already exists in set to allow for update parameters override (downgrade/upgrade)
+        _dapis.add(dapiName);
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         dapiNameToUpdateParameters[dapiNameHash] = UpdateParameters(
             deviationThresholdInPercentage,
@@ -206,6 +257,8 @@ contract DapiDataRegistry is
         );
     }
 
+    /// @notice Called by a registrar or manager to remove a dAPI
+    /// @param dapiName dAPI name
     function removeDapi(
         bytes32 dapiName
     ) external override onlyRegistrarOrManager {
@@ -213,14 +266,24 @@ contract DapiDataRegistry is
         require(_dapis.remove(dapiName), "dAPI name has not been added");
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         delete dapiNameToUpdateParameters[dapiNameHash];
-
         emit RemovedDapi(dapiName, msg.sender);
     }
 
+    /// @notice Called to get the total count of dAPI names
+    /// @return count dAPI name count
     function dapisCount() public view override returns (uint256 count) {
         count = _dapis.length();
     }
 
+    /// @notice Called to get dAPI data using pagination
+    /// @param offset Start index
+    /// @param limit Amount of dAPIs to return
+    /// @return dapiNames Array with dAPI names
+    /// @return updateParameters Array with update parameters
+    /// @return dataFeedValues Array with last known data feed values
+    /// @return dataFeeds_ Array with data feed data (encoded airnode addresses
+    /// and templateIds)
+    /// @return signedApiUrls Array with Airnode Signed API URLs
     function readDapis(
         uint256 offset,
         uint256 limit
@@ -284,6 +347,14 @@ contract DapiDataRegistry is
         }
     }
 
+    /// Called to get information about a dAPI
+    /// @dev This function can be multicall'ed statically becuase this contract
+    /// inherits SelfMulticall
+    /// @param dapiName dAPI name
+    /// @return updateParameters Update parameters like deviation and heartbeat
+    /// @return dataFeedValue Last known data feed value
+    /// @return dataFeed encoded Airnode address(es) and templateId(s)
+    /// @return signedApiUrls Array with Airnode Signed API URLs
     function readDapi(
         bytes32 dapiName
     )
