@@ -60,7 +60,7 @@ contract DapiDataRegistry is
         public
         override dapiNameToUpdateParameters;
 
-    EnumerableSet.Bytes32Set private _dapis;
+    EnumerableSet.Bytes32Set private dapis;
 
     bytes32 private constant DAPI_MANAGEMENT_MERKLE_TREE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("dAPI management Merkle tree root"));
@@ -236,7 +236,7 @@ contract DapiDataRegistry is
         );
         require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
 
-        _dapis.add(dapiName);
+        dapis.add(dapiName);
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         dapiNameToUpdateParameters[dapiNameHash] = UpdateParameters(
             deviationThresholdInPercentage,
@@ -262,7 +262,7 @@ contract DapiDataRegistry is
     function removeDapi(
         bytes32 dapiName
     ) external override onlyRegistrarOrManager {
-        require(_dapis.remove(dapiName), "dAPI name has not been added");
+        require(dapis.remove(dapiName), "dAPI name has not been added");
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         delete dapiNameToUpdateParameters[dapiNameHash];
         emit RemovedDapi(dapiName, msg.sender);
@@ -271,7 +271,7 @@ contract DapiDataRegistry is
     /// @notice Called to get the total count of dAPI names
     /// @return count dAPI name count
     function dapisCount() public view override returns (uint256 count) {
-        count = _dapis.length();
+        count = dapis.length();
     }
 
     /// Called to get details about a dAPI by providing a dAPI name
@@ -348,7 +348,7 @@ contract DapiDataRegistry is
     {
         uint256 count = dapisCount();
         if (index < count) {
-            dapiName = _dapis.at(index);
+            dapiName = dapis.at(index);
             (
                 updateParameters,
                 dataFeedValue,
