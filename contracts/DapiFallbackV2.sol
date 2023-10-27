@@ -122,6 +122,8 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
             priceLeaf
         );
 
+        IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.dataFeedId);
+
         uint256 minSponsorWalletBalance = (args.price * 1 days) / args.duration;
 
         uint256 sponsorWalletBalance = args.sponsorWallet.balance;
@@ -135,7 +137,6 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
                 msg.sender
             );
         }
-        IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.dataFeedId);
         emit ExecutedDapiFallback(args.dapiName, args.dataFeedId, msg.sender);
     }
 
