@@ -235,7 +235,7 @@ describe.only('DapiFallbackV2', function () {
               const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
               await expect(
                 dapiFallbackV2.connect(roles.dapiFallbackV2Owner).withdraw(hre.ethers.utils.parseEther('34'))
-              ).to.be.revertedWith('Insufficient contract balance');
+              ).to.be.revertedWith('Address: insufficient balance');
             });
           });
         });

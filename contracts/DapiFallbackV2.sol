@@ -50,10 +50,6 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
     /// @param amount The amount of funds to withdraw.
     function withdraw(uint256 amount) external override onlyOwner {
         require(amount != 0, "Amount zero");
-        require(
-            address(this).balance >= amount,
-            "Insufficient contract balance"
-        );
         Address.sendValue(payable(msg.sender), amount);
         emit Withdrawn(msg.sender, amount, address(this).balance);
     }
@@ -131,10 +127,6 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         uint256 sponsorWalletBalance = args.sponsorWallet.balance;
         if (sponsorWalletBalance < minSponsorWalletBalance) {
             uint256 amount = minSponsorWalletBalance - sponsorWalletBalance;
-            require(
-                address(this).balance >= amount,
-                "Insufficient contract balance"
-            );
             Address.sendValue(args.sponsorWallet, amount);
             emit FundedSponsorWallet(
                 args.sponsorWallet,
