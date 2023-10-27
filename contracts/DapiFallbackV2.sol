@@ -31,8 +31,12 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
     /// @dev The constructor requires non-zero addresses for the api3ServerV1 and hashRegistry contracts.
     constructor(address _api3ServerV1, address _hashRegistry) {
         require(
-            _api3ServerV1 != address(0) && _hashRegistry != address(0),
-            "Address cannot be zero"
+            _api3ServerV1 != address(0),
+            "api3ServerV1 Address cannot be zero"
+        );
+        require(
+            _hashRegistry != address(0),
+            "hashRegistry Address cannot be zero"
         );
         api3ServerV1 = _api3ServerV1;
         hashRegistry = _hashRegistry;
