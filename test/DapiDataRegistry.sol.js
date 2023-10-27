@@ -661,7 +661,7 @@ describe('DapiDataRegistry', function () {
                   generateRandomBytes32(),
                   [generateRandomBytes32(), generateRandomBytes32(), generateRandomBytes32()]
                 )
-            ).to.be.revertedWith('Sender is not manager or needs Registrar role');
+            ).to.be.revertedWith('Sender is not manager or has Registrar role');
           });
         });
       });
@@ -775,13 +775,13 @@ describe('DapiDataRegistry', function () {
           });
         });
       });
-      context('Sender is not manager or needs Registrar role', function () {
+      context('Sender is not manager or has Registrar role', function () {
         it('reverts', async function () {
           const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
           await expect(
             dapiDataRegistry.connect(roles.randomPerson).removeDapi(generateRandomBytes32())
-          ).to.be.revertedWith('Sender is not manager or needs Registrar role');
+          ).to.be.revertedWith('Sender is not manager or has Registrar role');
         });
       });
     });

@@ -74,7 +74,7 @@ contract DapiDataRegistry is
                     registrarRole,
                     msg.sender
                 ),
-            "Sender is not manager or needs Registrar role"
+            "Sender is not manager or has Registrar role"
         );
         _;
     }
