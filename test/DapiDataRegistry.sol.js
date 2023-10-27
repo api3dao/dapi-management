@@ -452,7 +452,7 @@ describe('DapiDataRegistry', function () {
         ).to.be.revertedWithoutReason();
         await expect(
           dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(invalidDataFeed5)
-        ).to.be.revertedWithoutReason();
+        ).to.be.have.been.revertedWith('Data feed is empty');
       });
     });
   });

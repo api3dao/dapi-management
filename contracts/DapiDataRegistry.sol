@@ -159,6 +159,7 @@ contract DapiDataRegistry is
             dataFeedId = keccak256(abi.encodePacked(airnode, templateId));
             dataFeeds[dataFeedId] = dataFeed;
         } else {
+            require(dataFeed.length != 0, "Data feed is empty");
             // dataFeedId maps to a beaconSet
             (address[] memory airnodes, bytes32[] memory templateIds) = abi
                 .decode(dataFeed, (address[], bytes32[]));
