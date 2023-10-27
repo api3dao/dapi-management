@@ -76,21 +76,7 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
 
     function dapisCount() external view returns (uint256 count);
 
-    function readDapis(
-        uint256 offset,
-        uint256 limit
-    )
-        external
-        view
-        returns (
-            bytes32[] memory dapiNames,
-            UpdateParameters[] memory updateParameters,
-            DataFeedValue[] memory dataFeedValues,
-            bytes[] memory dataFeeds_,
-            string[][] memory signedApiUrls
-        );
-
-    function readDapi(
+    function readDapiWithName(
         bytes32 dapiName
     )
         external
@@ -98,7 +84,20 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
         returns (
             UpdateParameters memory updateParameters,
             DataFeedValue memory dataFeedValue,
-            bytes memory dataFeeds_,
+            bytes memory dataFeed,
+            string[] memory signedApiUrls
+        );
+
+    function readDapiWithIndex(
+        uint256 index
+    )
+        external
+        view
+        returns (
+            bytes32 dapiName,
+            UpdateParameters memory updateParameters,
+            DataFeedValue memory dataFeedValue,
+            bytes memory dataFeed,
             string[] memory signedApiUrls
         );
 }

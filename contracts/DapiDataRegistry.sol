@@ -274,79 +274,7 @@ contract DapiDataRegistry is
         count = _dapis.length();
     }
 
-    /// @notice Called to get dAPI data using pagination
-    /// @param offset Start index
-    /// @param limit Amount of dAPIs to return
-    /// @return dapiNames Array with dAPI names
-    /// @return updateParameters Array with update parameters
-    /// @return dataFeedValues Array with last known data feed values
-    /// @return dataFeeds_ Array with data feed data (encoded airnode addresses
-    /// and templateIds)
-    /// @return signedApiUrls Array with Airnode Signed API URLs
-    function readDapis(
-        uint256 offset,
-        uint256 limit
-    )
-        external
-        view
-        override
-        returns (
-            bytes32[] memory dapiNames,
-            UpdateParameters[] memory updateParameters,
-            DataFeedValue[] memory dataFeedValues,
-            bytes[] memory dataFeeds_,
-            string[][] memory signedApiUrls
-        )
-    {
-        uint256 count = dapisCount();
-        if (offset < count) {
-            uint256 limitAdjusted = offset + limit > count
-                ? count - offset
-                : limit;
-            dapiNames = new bytes32[](limitAdjusted);
-            updateParameters = new UpdateParameters[](limitAdjusted);
-            dataFeedValues = new DataFeedValue[](limitAdjusted);
-            dataFeeds_ = new bytes[](limitAdjusted);
-            signedApiUrls = new string[][](limitAdjusted);
-            for (uint256 ind = offset; ind < offset + limitAdjusted; ind++) {
-                bytes32 dapiName = _dapis.at(ind);
-                uint256 currentInd = ind - offset;
-                dapiNames[currentInd] = dapiName;
-                bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
-                bytes32 dataFeedId = IApi3ServerV1(api3ServerV1)
-                    .dapiNameHashToDataFeedId(dapiNameHash);
-                (int224 value, uint32 timestamp) = IApi3ServerV1(api3ServerV1)
-                    .dataFeeds(dataFeedId);
-                dataFeedValues[currentInd] = DataFeedValue(value, timestamp);
-                updateParameters[currentInd] = dapiNameToUpdateParameters[
-                    dapiNameHash
-                ];
-                bytes memory dataFeed = dataFeeds[dataFeedId];
-                dataFeeds_[currentInd] = dataFeed;
-                if (dataFeed.length == 64) {
-                    (address airnode, ) = abi.decode(
-                        dataFeed,
-                        (address, bytes32)
-                    );
-                    string[] memory urls = new string[](1);
-                    urls[0] = airnodeToSignedApiUrl[airnode];
-                    signedApiUrls[currentInd] = urls;
-                } else {
-                    (address[] memory airnodes, ) = abi.decode(
-                        dataFeed,
-                        (address[], bytes32[])
-                    );
-                    string[] memory urls = new string[](airnodes.length);
-                    for (uint256 ind2 = 0; ind2 < airnodes.length; ind2++) {
-                        urls[ind2] = airnodeToSignedApiUrl[airnodes[ind2]];
-                    }
-                    signedApiUrls[currentInd] = urls;
-                }
-            }
-        }
-    }
-
-    /// Called to get information about a dAPI
+    /// Called to get details about a dAPI by providing a dAPI name
     /// @dev This function can be multicall'ed statically becuase this contract
     /// inherits SelfMulticall
     /// @param dapiName dAPI name
@@ -354,10 +282,10 @@ contract DapiDataRegistry is
     /// @return dataFeedValue Last known data feed value
     /// @return dataFeed encoded Airnode address(es) and templateId(s)
     /// @return signedApiUrls Array with Airnode Signed API URLs
-    function readDapi(
+    function readDapiWithName(
         bytes32 dapiName
     )
-        external
+        public
         view
         override
         returns (
@@ -392,6 +320,41 @@ contract DapiDataRegistry is
                 }
                 signedApiUrls = urls;
             }
+        }
+    }
+
+    /// Called to get details about a dAPI by providing its index in storage
+    /// @dev This function can be multicall'ed statically becuase this contract
+    /// inherits SelfMulticall
+    /// @param index dAPI name index
+    /// @return dapiName dAPI name for the given index
+    /// @return updateParameters Update parameters like deviation and heartbeat
+    /// @return dataFeedValue Last known data feed value
+    /// @return dataFeed encoded Airnode address(es) and templateId(s)
+    /// @return signedApiUrls Array with Airnode Signed API URLs
+    function readDapiWithIndex(
+        uint256 index
+    )
+        external
+        view
+        override
+        returns (
+            bytes32 dapiName,
+            UpdateParameters memory updateParameters,
+            DataFeedValue memory dataFeedValue,
+            bytes memory dataFeed,
+            string[] memory signedApiUrls
+        )
+    {
+        uint256 count = dapisCount();
+        if (index < count) {
+            dapiName = _dapis.at(index);
+            (
+                updateParameters,
+                dataFeedValue,
+                dataFeed,
+                signedApiUrls
+            ) = readDapiWithName(dapiName);
         }
     }
 }
