@@ -16,7 +16,7 @@ interface Props {
 export default function RootLayout(props: Props) {
   return (
     <div className={`flex text-gray-800 ${inter.className}`}>
-      <aside className="w-full max-w-[200px] bg-gray-100">
+      <aside className="w-[200px] bg-gray-100">
         <div className="sticky top-0 w-full">
           <nav className="flex min-h-screen flex-col p-4 text-gray-500">
             <Link href="/" className="mb-5">
@@ -35,7 +35,7 @@ export default function RootLayout(props: Props) {
           </nav>
         </div>
       </aside>
-      <main role="main" className="w-full px-10 pt-4">
+      <main role="main" className="overflow-x-auto px-10 pt-4" style={{ maxWidth: 'calc(100vw - 200px)' }}>
         {props.children}
       </main>
     </div>
