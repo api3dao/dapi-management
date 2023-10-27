@@ -76,6 +76,12 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
     function executeDapiFallback(
         ExecuteDapiFallbackArgs calldata args
     ) external override {
+        require(args.dapiName != bytes32(0), "Dapi name is zero");
+        require(args.dataFeedId != bytes32(0), "Data feed ID is zero");
+        require(args.updateParams.length != 0, "Update params empty");
+        require(args.duration != 0, "Duration is zero");
+        require(args.price != 0, "Price is zero");
+        require(args.sponsorWallet != address(0), "Zero address");
         bytes32 currentDataFeedId = IApi3ServerV1(api3ServerV1)
             .dapiNameHashToDataFeedId(args.dapiName);
         require(
@@ -151,6 +157,8 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         bytes32 root,
         bytes32 leaf
     ) private view {
+        require(proof.length != 0, "Proof is empty");
+        require(root != bytes32(0), "Root is zero");
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(treeType) == root,
             "Tree has not been registered"
