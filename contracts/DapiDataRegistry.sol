@@ -62,10 +62,10 @@ contract DapiDataRegistry is
 
     EnumerableSet.Bytes32Set private _dapis;
 
-    bytes32 private constant _DAPI_MANAGEMENT_HASH_TYPE =
+    bytes32 private constant DAPI_MANAGEMENT_MERKLE_TREE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("dAPI management Merkle tree root"));
-    bytes32 private constant _SIGNED_API_URL_HASH_TYPE =
-        keccak256(abi.encodePacked("Signed API URL Merkle root"));
+    bytes32 private constant SIGNED_API_URL_MERKLE_TREE_ROOT_HASH_TYPE =
+        keccak256(abi.encodePacked("Signed API URL Merkle tree root"));
 
     modifier onlyRegistrarOrManager() {
         require(
@@ -124,7 +124,7 @@ contract DapiDataRegistry is
         // Check root exists in HashRegistry
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(
-                _SIGNED_API_URL_HASH_TYPE
+                SIGNED_API_URL_MERKLE_TREE_ROOT_HASH_TYPE
             ) == root,
             "Root has not been registered"
         );
@@ -217,7 +217,7 @@ contract DapiDataRegistry is
         // Check root exists in HashRegistry
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(
-                _DAPI_MANAGEMENT_HASH_TYPE
+                DAPI_MANAGEMENT_MERKLE_TREE_ROOT_HASH_TYPE
             ) == root,
             "Root has not been registered"
         );

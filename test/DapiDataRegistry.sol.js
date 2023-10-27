@@ -151,7 +151,7 @@ describe('DapiDataRegistry', function () {
       [roles.airnode5.address, baseUrl + generateRandomString(20)],
     ];
     const apiTree = StandardMerkleTree.of(apiTreeValues, ['address', 'string']);
-    const apiHashType = hre.ethers.utils.solidityKeccak256(['string'], ['Signed API URL Merkle root']);
+    const apiHashType = hre.ethers.utils.solidityKeccak256(['string'], ['Signed API URL Merkle tree root']);
     const rootSigners = [roles.rootSigner1, roles.rootSigner2, roles.rootSigner3];
     const apiTreeRootSignatures = await Promise.all(
       rootSigners.map(
