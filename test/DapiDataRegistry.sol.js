@@ -254,78 +254,60 @@ describe('DapiDataRegistry', function () {
   });
 
   describe('registerAirnodeSignedApiUrl', function () {
-    context('Root is not zero', function () {
-      context('Proof is not empty', function () {
-        context('Root has been registered', function () {
-          context('Proof is valid', function () {
-            it('registers an Airnode signed API URL', async function () {
-              const { roles, dapiDataRegistry, apiTree, apiTreeValues } = await helpers.loadFixture(deploy);
-
-              const apiTreeRoot = apiTree.root;
-              const [airnode, url] = apiTreeValues[2];
-              const apiTreeProof = apiTree.getProof([airnode, url]);
-
-              await expect(
-                dapiDataRegistry
-                  .connect(roles.api3MarketContract)
-                  .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof)
-              )
-                .to.emit(dapiDataRegistry, 'RegisteredSignedApiUrl')
-                .withArgs(airnode, url);
-              expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
-            });
-          });
-          context('Proof is not valid', function () {
-            it('reverts', async function () {
-              const { roles, dapiDataRegistry, apiTree, apiTreeValues } = await helpers.loadFixture(deploy);
-
-              const apiTreeRoot = apiTree.root;
-              const [airnode, url] = apiTreeValues[2];
-
-              await expect(
-                dapiDataRegistry
-                  .connect(roles.api3MarketContract)
-                  .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, [
-                    generateRandomBytes32(),
-                    generateRandomBytes32(),
-                  ])
-              ).to.be.revertedWith('Invalid proof');
-            });
-          });
-        });
-        context('Root has not been registered', function () {
-          it('reverts', async function () {
+    context('Airnode is not zero', function () {
+      context('Root has been registered', function () {
+        context('Proof is valid', function () {
+          it('registers an Airnode signed API URL', async function () {
             const { roles, dapiDataRegistry, apiTree, apiTreeValues } = await helpers.loadFixture(deploy);
 
+            const apiTreeRoot = apiTree.root;
             const [airnode, url] = apiTreeValues[2];
             const apiTreeProof = apiTree.getProof([airnode, url]);
 
             await expect(
               dapiDataRegistry
                 .connect(roles.api3MarketContract)
-                .registerAirnodeSignedApiUrl(airnode, url, generateRandomBytes32(), apiTreeProof)
-            ).to.be.revertedWith('Root has not been registered');
+                .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof)
+            )
+              .to.emit(dapiDataRegistry, 'RegisteredSignedApiUrl')
+              .withArgs(airnode, url);
+            expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
+          });
+        });
+        context('Proof is not valid', function () {
+          it('reverts', async function () {
+            const { roles, dapiDataRegistry, apiTree, apiTreeValues } = await helpers.loadFixture(deploy);
+
+            const apiTreeRoot = apiTree.root;
+            const [airnode, url] = apiTreeValues[2];
+
+            await expect(
+              dapiDataRegistry
+                .connect(roles.api3MarketContract)
+                .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, [
+                  generateRandomBytes32(),
+                  generateRandomBytes32(),
+                ])
+            ).to.be.revertedWith('Invalid proof');
           });
         });
       });
-      context('Proof is empty', function () {
+      context('Root has not been registered', function () {
         it('reverts', async function () {
-          const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
+          const { roles, dapiDataRegistry, apiTree, apiTreeValues } = await helpers.loadFixture(deploy);
+
+          const [airnode, url] = apiTreeValues[2];
+          const apiTreeProof = apiTree.getProof([airnode, url]);
 
           await expect(
             dapiDataRegistry
               .connect(roles.api3MarketContract)
-              .registerAirnodeSignedApiUrl(
-                generateRandomAddress(),
-                generateRandomBytes(20),
-                generateRandomBytes32(),
-                []
-              )
-          ).to.be.revertedWith('Proof is empty');
+              .registerAirnodeSignedApiUrl(airnode, url, generateRandomBytes32(), apiTreeProof)
+          ).to.be.revertedWith('Root has not been registered');
         });
       });
     });
-    context('Root is zero', function () {
+    context('Airnode is zero', function () {
       it('reverts', async function () {
         const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
@@ -333,12 +315,12 @@ describe('DapiDataRegistry', function () {
           dapiDataRegistry
             .connect(roles.api3MarketContract)
             .registerAirnodeSignedApiUrl(
-              generateRandomAddress(),
+              hre.ethers.constants.AddressZero,
               generateRandomBytes(20),
-              hre.ethers.constants.HashZero,
+              generateRandomBytes32(),
               [generateRandomBytes32(), generateRandomBytes32()]
             )
-        ).to.be.revertedWith('Root is zero');
+        ).to.be.revertedWith('Airnode is zero');
       });
     });
   });

@@ -118,8 +118,7 @@ contract DapiDataRegistry is
         bytes32 root,
         bytes32[] calldata proof
     ) external override {
-        require(root != bytes32(0), "Root is zero");
-        require(proof.length != 0, "Proof is empty");
+        require(airnode != address(0), "Airnode is zero");
 
         // Check root exists in HashRegistry
         require(
