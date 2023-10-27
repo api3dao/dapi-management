@@ -119,16 +119,12 @@ contract DapiDataRegistry is
         bytes32[] calldata proof
     ) external override {
         require(airnode != address(0), "Airnode is zero");
-
-        // Check root exists in HashRegistry
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(
                 SIGNED_API_URL_MERKLE_TREE_ROOT_HASH_TYPE
             ) == root,
             "Root has not been registered"
         );
-
-        // Verify proof
         bytes32 leaf = keccak256(
             bytes.concat(keccak256(abi.encode(airnode, url)))
         );
@@ -214,22 +210,16 @@ contract DapiDataRegistry is
         require(dapiName != bytes32(0), "dAPI name is zero");
         require(dataFeedId != bytes32(0), "Data feed ID is zero");
         require(sponsorWallet != address(0), "Sponsor wallet is zero");
-
-        // Check root exists in HashRegistry
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(
                 DAPI_MANAGEMENT_MERKLE_TREE_ROOT_HASH_TYPE
             ) == root,
             "Root has not been registered"
         );
-
-        // Check dataFeedId has been registered
         require(
             dataFeeds[dataFeedId].length > 0,
             "Data feed ID has not been registered"
         );
-
-        // Verify proof
         bytes32 leaf = keccak256(
             bytes.concat(
                 keccak256(abi.encode(dapiName, dataFeedId, sponsorWallet))
@@ -245,7 +235,8 @@ contract DapiDataRegistry is
             heartbeatInterval
         );
 
-        // Set dapiName to dataFeedId (this contract needs to be granted the dapi name setter role)
+        // This contract needs to be granted the dAPI name setter role
+        // https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/DapiServer.sol#L26
         IApi3ServerV1(api3ServerV1).setDapiName(dapiName, dataFeedId);
 
         emit AddedDapi(
