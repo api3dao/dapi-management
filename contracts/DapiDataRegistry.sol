@@ -210,8 +210,9 @@ contract DapiDataRegistry is
         bytes32 root,
         bytes32[] calldata proof
     ) external override onlyRegistrarOrManager {
-        require(root != bytes32(0), "Root is zero");
-        require(proof.length != 0, "Proof is empty");
+        require(dapiName != bytes32(0), "dAPI name is zero");
+        require(dataFeedId != bytes32(0), "Data feed ID is zero");
+        require(sponsorWallet != address(0), "Sponsor wallet is zero");
 
         // Check root exists in HashRegistry
         require(
