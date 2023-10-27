@@ -20,10 +20,10 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
     address public immutable hashRegistry;
 
     /// @notice Constants defining types of the Merkle tree roots used within the contract logic.
-    bytes32 private constant _DAPI_FALLBACK_HASH_TYPE =
+    bytes32 private constant DAPI_FALLBACK_MERKLE_TREE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("dAPI fallback Merkle tree root"));
-    bytes32 private constant _PRICE_HASH_TYPE =
-        keccak256(abi.encodePacked("Price Merkle tree root"));
+    bytes32 private constant DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE =
+        keccak256(abi.encodePacked("dAPI pricing Merkle tree root"));
 
     /// @notice Initializes the contract setting the api3ServerV1 and hashRegistry addresses.
     /// @param _api3ServerV1 The address of the Api3ServerV1 contract.
@@ -95,7 +95,7 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
             )
         );
         _validateTree(
-            _DAPI_FALLBACK_HASH_TYPE,
+            DAPI_FALLBACK_MERKLE_TREE_ROOT_HASH_TYPE,
             args.fallbackProof,
             args.fallbackRoot,
             fallbackLeaf
@@ -116,7 +116,7 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         );
 
         _validateTree(
-            _PRICE_HASH_TYPE,
+            DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE,
             args.priceProof,
             args.priceRoot,
             priceLeaf

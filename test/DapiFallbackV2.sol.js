@@ -137,7 +137,7 @@ describe.only('DapiFallbackV2', function () {
     const priceRoot = priceTree.root;
     const priceProof = priceTree.getProof(priceTreeEntry);
 
-    const priceHashType = hre.ethers.utils.solidityKeccak256(['string'], ['Price Merkle tree root']);
+    const priceHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI pricing Merkle tree root']);
     const priceValues = {
       hashType: priceHashType,
       hash: priceRoot,
