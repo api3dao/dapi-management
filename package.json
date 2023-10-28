@@ -21,6 +21,7 @@
     "prettier": "prettier --write \"./**/*.{js,ts,tsx,css,md,json,sol}\"",
     "test": "hardhat test",
     "test:coverage": "hardhat coverage",
+    "test:gas": "REPORT_GAS=TRUE hardhat test",
     "write-env-example": "node scripts/write-env-example.js",
     "sign": "node scripts/signMerkleTree.js",
     "frontend:dev": "cd frontend && next dev",
