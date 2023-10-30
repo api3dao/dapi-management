@@ -87,7 +87,10 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
 
         bytes32 hashedUpdateParams = keccak256(args.updateParams);
 
-        require(hashedUpdateParams == HASHED_PARAMS);
+        require(
+            hashedUpdateParams == HASHED_PARAMS,
+            "Update params does not match"
+        );
 
         bytes32 currentDataFeedId = IApi3ServerV1(api3ServerV1)
             .dapiNameHashToDataFeedId(args.dapiName);
