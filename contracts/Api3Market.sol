@@ -147,8 +147,7 @@ contract Api3Market is IApi3Market {
         }
         IApi3ServerV1(api3ServerV1).updateBeaconSetWithBeacons(beaconIds);
 
-        // TODO: Should we only sent the delta between price and sponsor wallet balance? If so, what to do with the rest?
-        // TODO: Will this contract require a withdraw() function?
+        // Fund sponsor wallet with order payment price
         Address.sendValue(args.sponsorWallet, msg.value);
 
         // TODO: emit event (include proxyAddress and updated sponsor wallet balance)
