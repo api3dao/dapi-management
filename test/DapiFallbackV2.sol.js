@@ -128,7 +128,7 @@ describe('DapiFallbackV2', function () {
     const heartbeatInterval = 86400; // 1 day in seconds
     const deviationReference = 0;
 
-    const updateParams = ethers.utils.defaultAbiCoder.encode(
+    const updateParams = hre.ethers.utils.defaultAbiCoder.encode(
       ['uint256', 'int224', 'uint32'],
       [deviationThresholdInPercentage, deviationReference, heartbeatInterval]
     );
