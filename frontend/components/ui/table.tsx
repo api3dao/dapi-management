@@ -9,9 +9,13 @@ const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableE
 );
 Table.displayName = 'Table';
 
-const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
-  ({ className, ...props }, ref) => <thead ref={ref} className={cn('[&_tr]:border-b', className)} {...props} />
-);
+const TableHeader = React.forwardRef<
+  HTMLTableSectionElement,
+  { sticky?: boolean } & React.HTMLAttributes<HTMLTableSectionElement>
+>(({ className, sticky, ...props }, ref) => {
+  const stickyClassName = sticky ? '[&_th]:sticky [&_th]:top-0 [&_th]:z-[1]' : undefined;
+  return <thead ref={ref} className={cn('[&_th]:bg-gray-50 [&_tr]:border-b', stickyClassName, className)} {...props} />;
+});
 TableHeader.displayName = 'TableHeader';
 
 const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(

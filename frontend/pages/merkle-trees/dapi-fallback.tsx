@@ -3,10 +3,11 @@ import { readFileSync } from 'fs';
 import { ethers } from 'ethers';
 import z from 'zod';
 import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
+import { BadgeInfoIcon } from 'lucide-react';
 import RootLayout from '~/components/root-layout';
-import SignatureTable from '~/components/signature-table';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
 import { Button } from '~/components/ui/button';
+import { TreeStatusBadge, TreeRootBadge, SignatureTable } from '~/components/merkle-tree-elements';
 import { useWeb3Data } from '~/contexts/web3-data-context';
 import { InferGetServerSidePropsType } from 'next';
 
@@ -52,32 +53,35 @@ export default function DapiFallbackTree(props: Props) {
 
   return (
     <RootLayout>
-      <h1 className="mb-1 text-4xl font-bold">dAPI Fallback Merkle Tree</h1>
+      <div>
+        <TreeStatusBadge signatures={signatures} />
+      </div>
+      <h1 className="mb-2 text-3xl font-bold">dAPI Fallback Merkle Tree</h1>
+      <TreeRootBadge className="mb-3" root={merkleTree.root} />
 
       <div className="mb-10">
-        <p className="inline-block whitespace-nowrap break-words rounded-md bg-blue-50 px-3 py-1 text-sm text-blue-900">
-          Root: {merkleTree.root}
-        </p>
-        {address && !isSigner && (
-          <div>
-            <p className="mt-2 inline-block whitespace-nowrap break-words rounded-md bg-amber-50 px-3 py-1 text-sm text-amber-700">
-              You are not a signer of this tree.
-            </p>
-          </div>
+        <div className="flex gap-3">
+          <Button disabled={!canSign} className="min-w-[15ch]">
+            Sign Root
+          </Button>
+          <Button variant="outline">View Tree Diff</Button>
+        </div>
+        {!!address && !isSigner && (
+          <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
+            <BadgeInfoIcon className="w-4 text-gray-300" />
+            You are not a signer.
+          </p>
         )}
-        <Button disabled={!canSign} className="mt-2 block min-w-[15ch]">
-          Sign Root
-        </Button>
       </div>
 
-      <section className="mb-10">
+      <div className="mb-10">
         <SignatureTable signatures={signatures} />
-      </section>
+      </div>
 
       <section>
-        <h3 className="mb-3 font-bold">Merkle Tree Values</h3>
+        <h3 className="mb-3 font-medium">Merkle Tree Values</h3>
         <Table className="text-s">
-          <TableHeader>
+          <TableHeader sticky>
             <TableRow>
               <TableHead className="whitespace-nowrap">dAPI Name</TableHead>
               <TableHead>Beacon ID</TableHead>
