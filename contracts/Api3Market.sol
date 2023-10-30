@@ -82,16 +82,20 @@ contract Api3Market is IApi3Market {
         //       to come in and buy 1% for the next 6 months, which means they
         //       should only pay for 1% for 3 months and the dAPI to be
         //       downgraded to 1% after 3 months
-        // TODO: should we derive the data feed ID based on the airnodes and templateIds to see if it matches the dataFeedId parameter?
         (
             uint256 deviationThresholdInPercentage,
             int224 deviationReference,
             uint32 heartbeatInterval
         ) = abi.decode(args.updateParams, (uint256, int224, uint32));
 
+        // Derive data feed ID
+        bytes32 dataFeedId = keccak256(
+            abi.encode(args.airnodes, args.templateIds)
+        );
+
         IDapiDataRegistry(dapiDataRegistry).addDapi(
             args.dapiName,
-            args.dataFeedId,
+            dataFeedId,
             args.sponsorWallet,
             deviationThresholdInPercentage,
             deviationReference,

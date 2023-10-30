@@ -10,7 +10,6 @@ interface IApi3Market {
         bytes32[][] signedApiUrlProofs;
         bytes32[] templateIds;
         bytes32 dapiName;
-        bytes32 dataFeedId;
         bytes updateParams;
         address payable sponsorWallet;
         bytes32 dapiRoot;
