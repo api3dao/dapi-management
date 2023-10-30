@@ -56,7 +56,7 @@ contract Api3Market is IApi3Market {
             "Airondes, URLs or Signed API URL proofs length mismatch"
         );
         for (uint ind = 0; ind < args.signedApiUrlProofs.length; ind++) {
-            // TODO: The being called is very naive and does not check if url being registered is the same for the current airnode
+            // TODO: This is very naive and does not check if url being registered is the same for the current airnode
             //       Should we add that check to avoid re-setting the same value to state if values are equal?
             IDapiDataRegistry(dapiDataRegistry).registerAirnodeSignedApiUrl(
                 args.airnodes[ind],
@@ -129,9 +129,6 @@ contract Api3Market is IApi3Market {
             "Invalid proof"
         );
         require(msg.value >= args.price, "Insufficient payment");
-        // TODO: Should we only sent the delta between price and sponsor wallet balance? If so, what to do with the rest?
-        // TODO: Will this contract require a withdraw() function?
-        Address.sendValue(args.sponsorWallet, msg.value);
 
         // Deploy the dAPI proxy (if it hasn't been deployed yet)
         // TODO: check if proxy has been deployed (see: https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/proxies/ProxyFactory.sol#L140)
@@ -150,6 +147,10 @@ contract Api3Market is IApi3Market {
         }
         IApi3ServerV1(api3ServerV1).updateBeaconSetWithBeacons(beaconIds);
 
-        // TODO: emit event (include proxyAddress?)
+        // TODO: Should we only sent the delta between price and sponsor wallet balance? If so, what to do with the rest?
+        // TODO: Will this contract require a withdraw() function?
+        Address.sendValue(args.sponsorWallet, msg.value);
+
+        // TODO: emit event (include proxyAddress and updated sponsor wallet balance)
     }
 }
