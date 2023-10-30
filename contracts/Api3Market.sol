@@ -138,15 +138,20 @@ contract Api3Market is IApi3Market {
             IProxyFactory(proxyFactory).deployDapiProxy(args.dapiName, "");
         }
 
-        // Update the dAPI with signed API data (if it hasn't been updated recently, what's recently?)
-        // TODO: why signed data? shouldn't we instead just call updateBeaconSetWithBeacons()?
-        bytes32[] memory beaconIds = new bytes32[](args.airnodes.length);
-        for (uint ind = 0; ind < args.airnodes.length; ind++) {
-            beaconIds[ind] = keccak256(
-                abi.encodePacked(args.airnodes[ind], args.templateIds[ind])
-            );
+        // Update the dAPI with signed API data (if it hasn't been updated recently)
+        (, uint32 timestamp) = IApi3ServerV1(api3ServerV1).dataFeeds(
+            dataFeedId
+        );
+        if (timestamp + heartbeatInterval <= block.timestamp) {
+            // TODO: Update each beaconSet beacon with signed data
+            bytes32[] memory beaconIds = new bytes32[](args.airnodes.length);
+            for (uint ind = 0; ind < args.airnodes.length; ind++) {
+                beaconIds[ind] = keccak256(
+                    abi.encodePacked(args.airnodes[ind], args.templateIds[ind])
+                );
+            }
+            IApi3ServerV1(api3ServerV1).updateBeaconSetWithBeacons(beaconIds);
         }
-        IApi3ServerV1(api3ServerV1).updateBeaconSetWithBeacons(beaconIds);
 
         // Fund sponsor wallet with order payment price
         Address.sendValue(args.sponsorWallet, msg.value);
