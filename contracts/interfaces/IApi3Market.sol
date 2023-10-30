@@ -2,6 +2,17 @@
 pragma solidity 0.8.18;
 
 interface IApi3Market {
+    event BoughtDapi(
+        bytes32 dapiName,
+        bytes32 dataFeedId,
+        address dapiProxyAddress,
+        uint256 price,
+        uint256 duration,
+        bytes updateParams,
+        uint256 sponsorWalletBalance,
+        address sender
+    );
+
     // TODO: This struct is used to avoid the infamous stack too deep error
     struct BuyDapiArgs {
         address[] airnodes;

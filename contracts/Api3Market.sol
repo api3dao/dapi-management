@@ -151,6 +151,15 @@ contract Api3Market is IApi3Market {
         // Fund sponsor wallet with order payment price
         Address.sendValue(args.sponsorWallet, msg.value);
 
-        // TODO: emit event (include dapiProxyAddress and updated sponsor wallet balance)
+        emit BoughtDapi(
+            args.dapiName,
+            dataFeedId,
+            dapiProxyAddress,
+            args.price,
+            args.duration,
+            args.updateParams,
+            args.sponsorWallet.balance,
+            msg.sender
+        );
     }
 }
