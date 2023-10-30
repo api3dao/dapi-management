@@ -24,6 +24,8 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         keccak256(abi.encodePacked("dAPI fallback Merkle tree root"));
     bytes32 private constant DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("dAPI pricing Merkle tree root"));
+    bytes32 private constant HASHED_PARAMS =
+        keccak256(abi.encode(uint256(1e6), int224(0), uint32(1 days)));
 
     /// @notice Initializes the contract setting the api3ServerV1 and hashRegistry addresses.
     /// @param _api3ServerV1 The address of the Api3ServerV1 contract.
@@ -83,21 +85,9 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         require(args.price != 0, "Price is zero");
         require(args.sponsorWallet != address(0), "Zero address");
 
-        (
-            uint256 deviationThresholdInPercentage,
-            int224 deviationReference,
-            uint32 heartbeatInterval
-        ) = abi.decode(args.updateParams, (uint256, int224, uint32));
+        bytes32 hashedUpdateParams = keccak256(args.updateParams);
 
-        require(
-            deviationThresholdInPercentage == 1e6,
-            "Deviation threshold must be 1%"
-        );
-        require(deviationReference == 0, "Deviation reference must be 0");
-        require(
-            heartbeatInterval == 86400,
-            "Heartbeat interval must be one day"
-        );
+        require(hashedUpdateParams == HASHED_PARAMS);
 
         bytes32 currentDataFeedId = IApi3ServerV1(api3ServerV1)
             .dapiNameHashToDataFeedId(args.dapiName);
