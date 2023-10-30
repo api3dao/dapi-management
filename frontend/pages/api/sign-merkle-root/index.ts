@@ -7,6 +7,7 @@ import { format, Options } from 'prettier';
 import { validateTreeRootSignatures } from '../../../src/utils/validators';
 import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
 
+// TODO: move types to a common place for frontend re-use
 enum MerkleTrees {
   DAPI_FALLBACK = 'DAPI_FALLBACK',
 }
@@ -94,15 +95,15 @@ export const PRETTIER_CONFIG: Options = {
   useTabs: false,
 };
 
-type JSONValue = string | number | boolean | JSONObject | string[] | string[][];
-
 interface JSONObject {
   [x: string]: JSONValue;
 }
 
-export const prettyJson = (payload: JSONObject | JSONValue) =>
+type JSONValue = string | number | boolean | JSONObject | string[] | string[][];
+
+export const prettyJson = (payload: JSONValue) =>
   format(JSON.stringify(payload), { semi: false, parser: 'json', ...PRETTIER_CONFIG });
 
-export const writeJsonFile = (path: string, payload: JSONObject | JSONValue) => {
+export const writeJsonFile = (path: string, payload: JSONValue) => {
   writeFileSync(path, prettyJson(payload));
 };
