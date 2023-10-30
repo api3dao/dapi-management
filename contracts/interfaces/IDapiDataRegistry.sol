@@ -19,6 +19,13 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
 
     event RemovedDapi(bytes32 indexed dapiName, address sender);
 
+    event UpdatedDapiDataFeedId(
+        bytes32 indexed dapiName,
+        bytes32 indexed dataFeedId,
+        address sponsorWallet,
+        address sender
+    );
+
     struct UpdateParameters {
         uint256 deviationThresholdInPercentage;
         int224 deviationReference;
@@ -73,6 +80,14 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
     ) external;
 
     function removeDapi(bytes32 dapiName) external;
+
+    function updateDapiDataFeedId(
+        bytes32 dapiName,
+        bytes32 dataFeedId,
+        address sponsorWallet,
+        bytes32 root,
+        bytes32[] calldata proof
+    ) external;
 
     function dapisCount() external view returns (uint256 count);
 
