@@ -82,6 +82,23 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         require(args.duration != 0, "Duration is zero");
         require(args.price != 0, "Price is zero");
         require(args.sponsorWallet != address(0), "Zero address");
+
+        (
+            uint256 deviationThresholdInPercentage,
+            int224 deviationReference,
+            uint32 heartbeatInterval
+        ) = abi.decode(args.updateParams, (uint256, int224, uint32));
+
+        require(
+            deviationThresholdInPercentage == 1e6,
+            "Deviation threshold must be 1%"
+        );
+        require(deviationReference == 0, "Deviation reference must be 0");
+        require(
+            heartbeatInterval == 86400,
+            "Heartbeat interval must be one day"
+        );
+
         bytes32 currentDataFeedId = IApi3ServerV1(api3ServerV1)
             .dapiNameHashToDataFeedId(args.dapiName);
         require(

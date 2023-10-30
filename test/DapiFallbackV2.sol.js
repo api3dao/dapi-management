@@ -124,7 +124,15 @@ describe('DapiFallbackV2', function () {
 
     const duration = 7776000; // 90 days in seconds
     const price = hre.ethers.utils.parseEther('3');
-    const updateParams = generateRandomBytes();
+    const deviationThresholdInPercentage = ethers.utils.parseUnits('1', 6); // 1e6 represents 1%
+    const heartbeatInterval = 86400; // 1 day in seconds
+    const deviationReference = 0;
+    
+    const updateParams = ethers.utils.defaultAbiCoder.encode(
+        ['uint256', 'int224', 'uint32'],
+        [deviationThresholdInPercentage, deviationReference, heartbeatInterval]
+    );
+    
     const priceTreeEntry = [hre.ethers.utils.formatBytes32String(dapiName), chainId, updateParams, duration, price];
     const priceTreeValues = [
       [generateRandomBytes32(), 1, generateRandomBytes(), 2592000, hre.ethers.utils.parseEther('1')],
