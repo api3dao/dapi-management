@@ -131,11 +131,12 @@ contract Api3Market is IApi3Market {
         require(msg.value >= args.price, "Insufficient payment");
 
         // Deploy the dAPI proxy (if it hasn't been deployed yet)
-        // TODO: check if proxy has been deployed (see: https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/proxies/ProxyFactory.sol#L140)
-        address proxyAddress = IProxyFactory(proxyFactory).deployDapiProxy(
-            args.dapiName,
-            ""
-        );
+        address dapiProxyAddress = IProxyFactory(proxyFactory)
+            .computeDapiProxyAddress(args.dapiName, "");
+        // https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/utils/ExtendedSelfMulticall.sol#L36
+        if (dapiProxyAddress.code.length == 0) {
+            IProxyFactory(proxyFactory).deployDapiProxy(args.dapiName, "");
+        }
 
         // Update the dAPI with signed API data (if it hasn't been updated recently, what's recently?)
         // TODO: why signed data? shouldn't we instead just call updateBeaconSetWithBeacons()?
@@ -150,6 +151,6 @@ contract Api3Market is IApi3Market {
         // Fund sponsor wallet with order payment price
         Address.sendValue(args.sponsorWallet, msg.value);
 
-        // TODO: emit event (include proxyAddress and updated sponsor wallet balance)
+        // TODO: emit event (include dapiProxyAddress and updated sponsor wallet balance)
     }
 }
