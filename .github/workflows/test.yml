@@ -14,5 +14,7 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Lint
         run: yarn lint
+      - name: Type check
+        run: yarn frontend:type-check
       - name: Run unit tests
         run: yarn test
