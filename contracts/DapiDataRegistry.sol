@@ -260,6 +260,53 @@ contract DapiDataRegistry is
         emit RemovedDapi(dapiName, msg.sender);
     }
 
+    /// Called by anyone to set the data feed ID the dAPI points to
+    /// @dev dAPI update parameters will remain unchanged
+    /// @param dapiName dAPI name
+    /// @param dataFeedId Data feed ID the dAPI will point to
+    /// @param sponsorWallet Sponsor wallet address used to trigger updates
+    /// @param root Merkle tree root hash
+    /// @param proof Array of hashes to verify a Merkle tree leaf
+    function updateDapiDataFeedId(
+        bytes32 dapiName,
+        bytes32 dataFeedId,
+        address sponsorWallet,
+        bytes32 root,
+        bytes32[] calldata proof
+    ) external override {
+        require(dapiName != bytes32(0), "dAPI name is zero");
+        require(dataFeedId != bytes32(0), "Data feed ID is zero");
+        require(sponsorWallet != address(0), "Sponsor wallet is zero");
+        require(dapis.contains(dapiName), "dAPI name has not been added");
+        require(
+            IHashRegistry(hashRegistry).hashTypeToHash(
+                DAPI_MANAGEMENT_MERKLE_TREE_ROOT_HASH_TYPE
+            ) == root,
+            "Root has not been registered"
+        );
+        require(
+            dataFeeds[dataFeedId].length > 0,
+            "Data feed ID has not been registered"
+        );
+        bytes32 leaf = keccak256(
+            bytes.concat(
+                keccak256(abi.encode(dapiName, dataFeedId, sponsorWallet))
+            )
+        );
+        require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
+
+        // This contract needs to be granted the dAPI name setter role
+        // https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/DapiServer.sol#L26
+        IApi3ServerV1(api3ServerV1).setDapiName(dapiName, dataFeedId);
+
+        emit UpdatedDapiDataFeedId(
+            dapiName,
+            dataFeedId,
+            sponsorWallet,
+            msg.sender
+        );
+    }
+
     /// @notice Called to get the total count of dAPI names
     /// @return count dAPI name count
     function dapisCount() public view override returns (uint256 count) {
