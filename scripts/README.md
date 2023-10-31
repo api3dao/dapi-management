@@ -72,5 +72,5 @@ In the context of this tool, each Merkle tree is associated with a unique type. 
 The following code snippet shows how we derive the type of Signed API URL Merkle Tree:
 
 ```js
-keccak256(abi.encodePacked('Signed API URL Merkle Tree'));
+keccak256(abi.encodePacked('Signed API URL Merkle tree root'));
 ```
