@@ -42,11 +42,12 @@ export function TreeRootBadge(props: TreeRootBadgeProps) {
 }
 
 interface SignatureTableProps {
+  signers: string[]; // We use this array to make sure we display the signers in the correct order
   signatures: Record<string, string>;
 }
 
 export function SignatureTable(props: SignatureTableProps) {
-  const { signatures } = props;
+  const { signers, signatures } = props;
 
   return (
     <Table className="min-w-[120ch] table-fixed">
@@ -57,7 +58,7 @@ export function SignatureTable(props: SignatureTableProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {Object.keys(signatures).map((signer) => {
+        {signers.map((signer) => {
           const signature = signatures[signer];
           return (
             <TableRow key={signer} className="text-sm">

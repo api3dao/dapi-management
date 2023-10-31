@@ -12,8 +12,6 @@ import { useWeb3Data } from '~/contexts/web3-data-context';
 import { InferGetServerSidePropsType } from 'next';
 
 const merkleTreeSchema = z.object({
-  timestamp: z.number(),
-  hash: z.string(),
   signatures: z.record(z.string()),
   merkleTreeValues: z.object({
     values: z.array(z.tuple([z.string(), z.string(), z.string()])),
@@ -75,12 +73,12 @@ export default function DapiFallbackTree(props: Props) {
       </div>
 
       <div className="mb-10">
-        <SignatureTable signatures={signatures} />
+        <SignatureTable signers={signers} signatures={signatures} />
       </div>
 
       <section>
         <h3 className="mb-3 font-medium">Merkle Tree Values</h3>
-        <Table className="text-s">
+        <Table>
           <TableHeader sticky>
             <TableRow>
               <TableHead className="whitespace-nowrap">dAPI Name</TableHead>
