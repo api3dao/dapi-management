@@ -11,6 +11,8 @@ const {
 } = require('./test-utils');
 
 describe('DapiFallbackV2', function () {
+  const HUNDRED_PERCENT = 1e8;
+
   const deploy = async () => {
     const roleNames = [
       'deployer',
@@ -24,7 +26,12 @@ describe('DapiFallbackV2', function () {
       'priceRootSigner1',
       'priceRootSigner2',
       'priceRootSigner3',
-      'airnode',
+      'api3Market',
+      'airnode1',
+      'airnode2',
+      'airnode3',
+      'airnode4',
+      'airnode5',
       'randomPerson',
     ];
     const accounts = await hre.ethers.getSigners();
@@ -47,8 +54,22 @@ describe('DapiFallbackV2', function () {
       roles.manager.address
     );
 
+    const dapiDataRegistryAdminRoleDescription = 'DapiDataRegistry admin';
+    const DapiDataRegistry = await hre.ethers.getContractFactory('DapiDataRegistry', roles.deployer);
+    const dapiDataRegistry = await DapiDataRegistry.deploy(
+      accessControlRegistry.address,
+      dapiDataRegistryAdminRoleDescription,
+      roles.manager.address,
+      hashRegistry.address,
+      api3ServerV1.address
+    );
+
     const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
-    const dapiFallbackV2 = await DapiFallbackV2.deploy(api3ServerV1.address, hashRegistry.address);
+    const dapiFallbackV2 = await DapiFallbackV2.deploy(
+      api3ServerV1.address,
+      hashRegistry.address,
+      dapiDataRegistry.address
+    );
     await dapiFallbackV2.connect(roles.deployer).transferOwnership(roles.dapiFallbackV2Owner.address);
 
     const rootRole = deriveRootRole(roles.manager.address);
@@ -66,6 +87,34 @@ describe('DapiFallbackV2', function () {
       .connect(roles.manager)
       .grantRole(await api3ServerV1.dapiNameSetterRole(), dapiFallbackV2.address);
 
+    await accessControlRegistry
+      .connect(roles.manager)
+      .initializeRoleAndGrantToSender(rootRole, dapiDataRegistryAdminRoleDescription);
+    await accessControlRegistry
+      .connect(roles.manager)
+      .initializeRoleAndGrantToSender(
+        await dapiDataRegistry.adminRole(),
+        await dapiDataRegistry.DAPI_ADDER_ROLE_DESCRIPTION()
+      );
+    await accessControlRegistry
+      .connect(roles.manager)
+      .initializeRoleAndGrantToSender(
+        await dapiDataRegistry.adminRole(),
+        await dapiDataRegistry.DAPI_REMOVER_ROLE_DESCRIPTION()
+      );
+    await accessControlRegistry
+      .connect(roles.manager)
+      .grantRole(await api3ServerV1.dapiNameSetterRole(), dapiDataRegistry.address);
+    await accessControlRegistry
+      .connect(roles.manager)
+      .grantRole(await dapiDataRegistry.dapiAdderRole(), roles.api3Market.address);
+    await accessControlRegistry
+      .connect(roles.manager)
+      .grantRole(await dapiDataRegistry.dapiAdderRole(), dapiFallbackV2.address);
+    await accessControlRegistry
+      .connect(roles.manager)
+      .grantRole(await dapiDataRegistry.dapiRemoverRole(), dapiFallbackV2.address);
+
     const timestamp = Math.floor(Date.now() / 1000);
     const chainId = (await hashRegistry.provider.getNetwork()).chainId;
     const domain = buildEIP712Domain('HashRegistry', chainId, hashRegistry.address);
@@ -81,7 +130,7 @@ describe('DapiFallbackV2', function () {
     const fallbackBeaconTemplateId = generateRandomBytes32();
     const fallbackBeaconId = hre.ethers.utils.solidityKeccak256(
       ['address', 'bytes32'],
-      [roles.airnode.address, fallbackBeaconTemplateId]
+      [roles.airnode1.address, fallbackBeaconTemplateId]
     );
     const fallbackSponsorWalletAddress = generateRandomAddress();
 
@@ -154,6 +203,50 @@ describe('DapiFallbackV2', function () {
     );
     await hashRegistry.registerHash(priceHashType, priceRoot, timestamp, priceSignatures);
 
+    const dapiNamesWithSponsorWallets = [
+      ['API3/USD', generateRandomAddress()],
+      ['BTC/USD', generateRandomAddress()],
+      ['ETH/USD', generateRandomAddress()],
+      ['MATIC/USD', generateRandomAddress()],
+      ['UNI/USD', generateRandomAddress()],
+    ];
+
+    const dataFeeds = dapiNamesWithSponsorWallets.map(() =>
+      [roles.airnode1, roles.airnode2, roles.airnode3, roles.airnode4, roles.airnode5].map((airnode) => ({
+        airnode,
+        templateId: generateRandomBytes32(),
+      }))
+    );
+
+    const dapiTreeValues = dapiNamesWithSponsorWallets.map(([dapiName, sponsorWallet], index) => {
+      const beaconIds = dataFeeds[index].map(({ airnode, templateId }) =>
+        hre.ethers.utils.solidityKeccak256(['address', 'bytes32'], [airnode.address, templateId])
+      );
+
+      const beaconSetId = hre.ethers.utils.keccak256(
+        hre.ethers.utils.defaultAbiCoder.encode(['bytes32[]'], [beaconIds])
+      );
+      return [hre.ethers.utils.formatBytes32String(dapiName), beaconSetId, sponsorWallet];
+    });
+
+    const dapiTree = StandardMerkleTree.of(dapiTreeValues, ['bytes32', 'bytes32', 'address']);
+    const dapiTreeRoot = dapiTree.root;
+    const dapiHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI management Merkle tree root']);
+    const dapiValues = {
+      hashType: dapiHashType,
+      hash: dapiTreeRoot,
+      timestamp,
+    };
+    const dapiTreeRootSignatures = await Promise.all(
+      dapiFallbackRootSigners.map(async (rootSigner) => await rootSigner._signTypedData(domain, types, dapiValues))
+    );
+
+    await hashRegistry.connect(roles.hashRegistryOwner).setupSigners(
+      dapiHashType,
+      dapiFallbackRootSigners.map((rootSigner) => rootSigner.address)
+    );
+    await hashRegistry.registerHash(dapiHashType, dapiTreeRoot, timestamp, dapiTreeRootSignatures);
+
     const executeDapiFallbackArgs = {
       dapiName: hre.ethers.utils.formatBytes32String(dapiName),
       dataFeedId: fallbackBeaconId,
@@ -196,6 +289,11 @@ describe('DapiFallbackV2', function () {
       duration,
       price,
       executeDapiFallbackArgs,
+      dapiDataRegistry,
+      dataFeeds,
+      dapiTreeValues,
+      dapiTree,
+      dapiTreeRootSignatures,
     };
   };
 
@@ -279,6 +377,10 @@ describe('DapiFallbackV2', function () {
                               fallbackBeaconId,
                               fallbackSponsorWalletAddress,
                               executeDapiFallbackArgs,
+                              dapiDataRegistry,
+                              dataFeeds,
+                              dapiTree,
+                              dapiTreeValues,
                             } = await helpers.loadFixture(deploy);
                             const initialBalanceOfDapiFallbackV2 = await hre.ethers.provider.getBalance(
                               dapiFallbackV2.address
@@ -286,6 +388,39 @@ describe('DapiFallbackV2', function () {
                             const initialBalanceOfSponsor = await hre.ethers.provider.getBalance(
                               fallbackSponsorWalletAddress
                             );
+
+                            const [dataFeed] = dataFeeds;
+                            const { airnodes, templateIds } = dataFeed.reduce(
+                              (acc, { airnode, templateId }) => ({
+                                airnodes: [...acc.airnodes, airnode.address],
+                                templateIds: [...acc.templateIds, templateId],
+                              }),
+                              { airnodes: [], templateIds: [] }
+                            );
+                            const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+                              ['address[]', 'bytes32[]'],
+                              [airnodes, templateIds]
+                            );
+                            await dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData);
+
+                            const deviationThresholdInPercentage = hre.ethers.BigNumber.from(HUNDRED_PERCENT / 50); // 2%
+                            const deviationReference = hre.ethers.constants.Zero; // Not used in Airseeker V1
+                            const heartbeatInterval = hre.ethers.BigNumber.from(86400); // 24 hrs
+
+                            const [dapiTreeValue] = dapiTreeValues;
+                            const [, beaconSetId, sponsorWallet] = dapiTreeValue;
+                            await dapiDataRegistry
+                              .connect(roles.api3Market)
+                              .addDapi(
+                                hre.ethers.utils.formatBytes32String(dapiName),
+                                beaconSetId,
+                                sponsorWallet,
+                                deviationThresholdInPercentage,
+                                deviationReference,
+                                heartbeatInterval,
+                                dapiTree.root,
+                                dapiTree.getProof(dapiTreeValue)
+                              );
                             await expect(
                               dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
                             )
@@ -368,7 +503,7 @@ describe('DapiFallbackV2', function () {
                           const fallbackBeaconTemplateId = generateRandomBytes32();
                           const fallbackBeaconId = hre.ethers.utils.solidityKeccak256(
                             ['address', 'bytes32'],
-                            [roles.airnode.address, fallbackBeaconTemplateId]
+                            [roles.airnode1.address, fallbackBeaconTemplateId]
                           );
                           const fallbackSponsorWalletAddress = generateRandomAddress();
                           const fallbackTreeEntry = [
@@ -493,7 +628,7 @@ describe('DapiFallbackV2', function () {
                   const fallbackBeaconTemplateId = generateRandomBytes32();
                   const fallbackBeaconId = hre.ethers.utils.solidityKeccak256(
                     ['address', 'bytes32'],
-                    [roles.airnode.address, fallbackBeaconTemplateId]
+                    [roles.airnode1.address, fallbackBeaconTemplateId]
                   );
                   const executeDapiFallbackArgs = {
                     dapiName: hre.ethers.utils.formatBytes32String(dapiName),
@@ -689,7 +824,7 @@ describe('DapiFallbackV2', function () {
         const fallbackBeaconTemplateId = generateRandomBytes32();
         const fallbackBeaconId = hre.ethers.utils.solidityKeccak256(
           ['address', 'bytes32'],
-          [roles.airnode.address, fallbackBeaconTemplateId]
+          [roles.airnode1.address, fallbackBeaconTemplateId]
         );
         const fallbackSponsorWalletAddress = generateRandomAddress();
         const fallbackTreeEntry = [
@@ -723,6 +858,73 @@ describe('DapiFallbackV2', function () {
           dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
         ).to.be.revertedWith('Dapi name is zero');
       });
+    });
+  });
+
+  describe('revertDapiFallback', function () {
+    it('executes dAPI fallback', async function () {
+      const {
+        roles,
+        dapiFallbackV2,
+        dapiName,
+        executeDapiFallbackArgs,
+        dapiDataRegistry,
+        dataFeeds,
+        dapiTree,
+        dapiTreeValues,
+      } = await helpers.loadFixture(deploy);
+      const [dataFeed] = dataFeeds;
+      const { airnodes, templateIds } = dataFeed.reduce(
+        (acc, { airnode, templateId }) => ({
+          airnodes: [...acc.airnodes, airnode.address],
+          templateIds: [...acc.templateIds, templateId],
+        }),
+        { airnodes: [], templateIds: [] }
+      );
+      const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+        ['address[]', 'bytes32[]'],
+        [airnodes, templateIds]
+      );
+      await dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData);
+
+      const deviationThresholdInPercentage = hre.ethers.BigNumber.from(HUNDRED_PERCENT / 50); // 2%
+      const deviationReference = hre.ethers.constants.Zero; // Not used in Airseeker V1
+      const heartbeatInterval = hre.ethers.BigNumber.from(86400); // 24 hrs
+
+      const [dapiTreeValue] = dapiTreeValues;
+      const [, beaconSetId, sponsorWallet] = dapiTreeValue;
+      await dapiDataRegistry
+        .connect(roles.api3Market)
+        .addDapi(
+          hre.ethers.utils.formatBytes32String(dapiName),
+          beaconSetId,
+          sponsorWallet,
+          deviationThresholdInPercentage,
+          deviationReference,
+          heartbeatInterval,
+          dapiTree.root,
+          dapiTree.getProof(dapiTreeValue)
+        );
+      await dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs);
+      expect(await dapiFallbackV2.getFallbackedDapis()).to.deep.equal([hre.ethers.utils.formatBytes32String(dapiName)]);
+
+      await expect(
+        dapiFallbackV2
+          .connect(roles.dapiFallbackV2Owner)
+          .revertDapiFallback(
+            hre.ethers.utils.formatBytes32String(dapiName),
+            beaconSetId,
+            sponsorWallet,
+            deviationThresholdInPercentage,
+            deviationReference,
+            heartbeatInterval,
+            dapiTree.root,
+            dapiTree.getProof(dapiTreeValue)
+          )
+      )
+        .to.emit(dapiFallbackV2, 'RevertedDapiFallback')
+        .withArgs(hre.ethers.utils.formatBytes32String(dapiName), beaconSetId, sponsorWallet);
+      expect(await dapiFallbackV2.getFallbackedDapis()).to.deep.equal([]);
     });
   });
 });

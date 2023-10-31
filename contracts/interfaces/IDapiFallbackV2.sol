@@ -51,6 +51,18 @@ interface IDapiFallbackV2 {
         address sender
     );
 
+    event RevertedDapiFallback(
+        bytes32 indexed dapiName,
+        bytes32 indexed dataFeedId,
+        address sponsorWallet
+    );
+
+    function api3ServerV1() external view returns (address);
+
+    function hashRegistry() external view returns (address);
+
+    function dapiDataRegistry() external view returns (address);
+
     /// @notice Allows the contract owner to withdraw funds from the contract.
     /// @param amount The amount of funds to withdraw.
     /// @dev This function should emit the Withdrawn event after a successful withdrawal.
@@ -62,4 +74,20 @@ interface IDapiFallbackV2 {
     function executeDapiFallback(
         ExecuteDapiFallbackArgs calldata args
     ) external;
+
+    function revertDapiFallback(
+        bytes32 dapiName,
+        bytes32 dataFeedId,
+        address sponsorWallet,
+        uint256 deviationThresholdInPercentage,
+        int224 deviationReference,
+        uint32 heartbeatInterval,
+        bytes32 root,
+        bytes32[] calldata proof
+    ) external;
+
+    function getFallbackedDapis()
+        external
+        view
+        returns (bytes32[] memory dapis);
 }

@@ -3,10 +3,12 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3ServerV1.sol";
 import "./interfaces/IHashRegistry.sol";
 import "./interfaces/IDapiFallbackV2.sol";
+import "./interfaces/IDapiDataRegistry.sol";
 
 /// @title DapiFallbackV2 contract for handling dAPI fallbacks in case of primary data feed failure.
 /// @notice This contract contains the logic for executing dAPI fallbacks
@@ -14,10 +16,14 @@ import "./interfaces/IDapiFallbackV2.sol";
 /// @dev The contract inherits from the Ownable contract of the OpenZeppelin library
 /// @dev which provides basic authorization control functions.
 contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
     /// @notice Api3ServerV1 contract address
-    address public immutable api3ServerV1;
+    address public immutable override api3ServerV1;
     /// @notice HashRegistry contract address
-    address public immutable hashRegistry;
+    address public immutable override hashRegistry;
+    /// @notice DapiDataRegistry contract address
+    address public immutable override dapiDataRegistry;
 
     /// @notice Constants defining types of the Merkle tree roots used within the contract logic.
     bytes32 private constant DAPI_FALLBACK_MERKLE_TREE_ROOT_HASH_TYPE =
@@ -25,11 +31,18 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
     bytes32 private constant DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("dAPI pricing Merkle tree root"));
 
+    EnumerableSet.Bytes32Set private fallbackedDapis;
+
     /// @notice Initializes the contract setting the api3ServerV1 and hashRegistry addresses.
     /// @param _api3ServerV1 The address of the Api3ServerV1 contract.
     /// @param _hashRegistry The address of the HashRegistry contract.
+    /// @param _dapiDataRegistry The address of the DapiDataRegistry contract.
     /// @dev The constructor requires non-zero addresses for the api3ServerV1 and hashRegistry contracts.
-    constructor(address _api3ServerV1, address _hashRegistry) {
+    constructor(
+        address _api3ServerV1,
+        address _hashRegistry,
+        address _dapiDataRegistry
+    ) {
         require(
             _api3ServerV1 != address(0),
             "api3ServerV1 Address cannot be zero"
@@ -38,8 +51,17 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
             _hashRegistry != address(0),
             "hashRegistry Address cannot be zero"
         );
+        require(
+            _hashRegistry != address(0),
+            "hashRegistry Address cannot be zero"
+        );
+        require(
+            _dapiDataRegistry != address(0),
+            "dapiDataRegistry Address cannot be zero"
+        );
         api3ServerV1 = _api3ServerV1;
         hashRegistry = _hashRegistry;
+        dapiDataRegistry = _dapiDataRegistry;
     }
 
     /// @notice Allows the contract to receive funds.
@@ -143,7 +165,65 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
                 msg.sender
             );
         }
+
+        require(
+            fallbackedDapis.add(args.dapiName),
+            "dAPI fallback already executed"
+        );
+
+        IDapiDataRegistry(dapiDataRegistry).removeDapi(args.dapiName);
+
         emit ExecutedDapiFallback(args.dapiName, args.dataFeedId, msg.sender);
+    }
+
+    // This function requires the root and a proof from the dAPI management
+    // Merkle tree and that the fallback dAPI function was previously executed.
+    // TODO: Only the contract owner can execute this function to switch back to
+    // previous payed dAPI subscription. Why anyone can call executeDapiFallback?
+    // We used to have a onlyByDapiFallbackExecutorWithInd modifier to have only
+    // a group of people be able to execute this function. I know that data from
+    // merkle trees has been reviewed and signed by other people but anyone that
+    // gets a hold of the json files with the merkle trees or by just clicking on
+    // the dapi management UI can still switch to fallback at any given time?
+    function revertDapiFallback(
+        bytes32 dapiName,
+        bytes32 dataFeedId,
+        address sponsorWallet,
+        uint256 deviationThresholdInPercentage,
+        int224 deviationReference,
+        uint32 heartbeatInterval,
+        bytes32 root,
+        bytes32[] calldata proof
+    ) external override onlyOwner {
+        require(
+            fallbackedDapis.remove(dapiName),
+            "dAPI fallback has not been executed"
+        );
+        IDapiDataRegistry(dapiDataRegistry).addDapi(
+            dapiName,
+            dataFeedId,
+            sponsorWallet,
+            deviationThresholdInPercentage,
+            deviationReference,
+            heartbeatInterval,
+            root,
+            proof
+        );
+        emit RevertedDapiFallback(dapiName, dataFeedId, sponsorWallet);
+    }
+
+    /// @notice Returns the dAPIs for which fallback has been executed
+    function getFallbackedDapis()
+        external
+        view
+        override
+        returns (bytes32[] memory dapis)
+    {
+        dapis = fallbackedDapis.values();
+
+        // TODO: This function is intended to be used by the UI to still be able to display fallbacked dAPIs
+        //       Should we store the dataFeedId and sponsorWallet used on executeDapiFallback? update params
+        //       are fixed at 1% deviation and 1 day heartbeat so might not be needed to be stored on-chain
     }
 
     /// @notice Validates the Merkle tree structure by verifying its root and proofs.

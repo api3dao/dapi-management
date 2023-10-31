@@ -205,14 +205,13 @@ describe('DapiDataRegistry', function () {
     const dapiTree = StandardMerkleTree.of(dapiTreeValues, ['bytes32', 'bytes32', 'address']);
     const dapiTreeRoot = dapiTree.root;
     const dapiHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI management Merkle tree root']);
-    // TODO: should I use a different set of signer addresses here?
     const dapiTreeRootSignatures = await Promise.all(
       rootSigners.map(
         async (rootSigner) =>
           await rootSigner._signTypedData(domain, types, {
             hashType: dapiHashType,
             hash: dapiTreeRoot,
-            timestamp, // TODO: use different timestamp?
+            timestamp,
           })
       )
     );
