@@ -13,20 +13,30 @@ interface IApi3Market {
         address sender
     );
 
-    // TODO: This struct is used to avoid the infamous stack too deep error
-    struct BuyDapiArgs {
-        address[] airnodes;
-        string[] urls;
-        bytes32 signedApiUrlRoot;
-        bytes32[][] signedApiUrlProofs;
-        bytes32[] templateIds;
-        bytes32 dapiName;
-        bytes updateParams;
+    struct Beacon {
+        address airnode;
+        bytes32 templateId;
+        uint256 timestamp;
+        bytes data;
+        bytes signature;
+        string url;
+    }
+
+    struct Dapi {
+        bytes32 name;
         address payable sponsorWallet;
-        bytes32 dapiRoot;
-        bytes32[] dapiProof;
+        bytes updateParams;
         uint256 price;
         uint256 duration;
+    }
+
+    struct BuyDapiArgs {
+        Dapi dapi;
+        Beacon[] beacons;
+        bytes32 signedApiUrlRoot;
+        bytes32[][] signedApiUrlProofs;
+        bytes32 dapiRoot;
+        bytes32[] dapiProof;
         bytes32 priceRoot;
         bytes32[] priceProof;
     }

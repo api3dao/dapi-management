@@ -49,32 +49,41 @@ contract Api3Market is IApi3Market {
 
     // This function must use the 3 Merkle trees to store the data needed for running a managed dAPI
     function buyDapi(BuyDapiArgs calldata args) external payable override {
+        require(args.beacons.length != 0, "Beacons is empty");
+
         // Store Signed API URLs for all the Airnodes used by the constituent beacons of the beaconSet
         require(
-            args.airnodes.length == args.urls.length &&
-                args.urls.length == args.signedApiUrlProofs.length,
-            "Airondes, URLs or Signed API URL proofs length mismatch"
+            args.beacons.length == args.signedApiUrlProofs.length,
+            "Signed API URL proofs length is incorrect"
         );
         for (uint ind = 0; ind < args.signedApiUrlProofs.length; ind++) {
             // TODO: This is very naive and does not check if url being registered is the same for the current airnode
             //       Should we add that check to avoid re-setting the same value to state if values are equal?
             IDapiDataRegistry(dapiDataRegistry).registerAirnodeSignedApiUrl(
-                args.airnodes[ind],
-                args.urls[ind],
+                args.beacons[ind].airnode,
+                args.beacons[ind].url,
                 args.signedApiUrlRoot,
                 args.signedApiUrlProofs[ind]
             );
         }
 
-        // Store the actual data used to derive each beaconId that will then be used to derive the beaconSetId
-        require(
-            args.airnodes.length == args.templateIds.length,
-            "Airnodes and template IDs length mismatch"
-        );
-        // TODO: dAPI purchases will always use beaconSets or will there be purchases that will point to a single beacon?
-        IDapiDataRegistry(dapiDataRegistry).registerDataFeed(
-            abi.encode(args.airnodes, args.templateIds)
-        );
+        // Store the actual data used to derive each beaconId (if more than one then it will also be used to derive the beaconSetId)
+        bytes32 dataFeedId;
+        if (args.beacons.length == 1) {
+            dataFeedId = IDapiDataRegistry(dapiDataRegistry).registerDataFeed(
+                abi.encode(args.beacons[0].airnode, args.beacons[0].templateId)
+            );
+        } else {
+            address[] memory airnodes = new address[](args.beacons.length);
+            bytes32[] memory templateIds = new bytes32[](args.beacons.length);
+            for (uint ind = 0; ind < args.beacons.length; ind++) {
+                airnodes[ind] = args.beacons[ind].airnode;
+                templateIds[ind] = args.beacons[ind].templateId;
+            }
+            dataFeedId = IDapiDataRegistry(dapiDataRegistry).registerDataFeed(
+                abi.encode(airnodes, templateIds)
+            );
+        }
 
         // Store the dAPI name along with the update parameters used by AirseekerV2
         // TODO: handle downgrade/upgrade
@@ -86,17 +95,12 @@ contract Api3Market is IApi3Market {
             uint256 deviationThresholdInPercentage,
             int224 deviationReference,
             uint32 heartbeatInterval
-        ) = abi.decode(args.updateParams, (uint256, int224, uint32));
-
-        // Derive data feed ID
-        bytes32 dataFeedId = keccak256(
-            abi.encode(args.airnodes, args.templateIds)
-        );
+        ) = abi.decode(args.dapi.updateParams, (uint256, int224, uint32));
 
         IDapiDataRegistry(dapiDataRegistry).addDapi(
-            args.dapiName,
+            args.dapi.name,
             dataFeedId,
-            args.sponsorWallet,
+            args.dapi.sponsorWallet,
             deviationThresholdInPercentage,
             deviationReference,
             heartbeatInterval,
@@ -111,31 +115,34 @@ contract Api3Market is IApi3Market {
             ) == args.priceRoot,
             "Root has not been registered"
         );
-        bytes32 priceLeaf = keccak256(
-            bytes.concat(
+        require(
+            MerkleProof.verify(
+                args.priceProof,
+                args.priceRoot,
                 keccak256(
-                    abi.encode(
-                        args.dapiName,
-                        block.chainid,
-                        args.updateParams,
-                        args.duration,
-                        args.price
+                    bytes.concat(
+                        keccak256(
+                            abi.encode(
+                                args.dapi.name,
+                                block.chainid,
+                                args.dapi.updateParams,
+                                args.dapi.duration,
+                                args.dapi.price
+                            )
+                        )
                     )
                 )
-            )
-        );
-        require(
-            MerkleProof.verify(args.priceProof, args.priceRoot, priceLeaf),
+            ),
             "Invalid proof"
         );
-        require(msg.value >= args.price, "Insufficient payment");
+        require(msg.value >= args.dapi.price, "Insufficient payment");
 
         // Deploy the dAPI proxy (if it hasn't been deployed yet)
         address dapiProxyAddress = IProxyFactory(proxyFactory)
-            .computeDapiProxyAddress(args.dapiName, "");
+            .computeDapiProxyAddress(args.dapi.name, "");
         // https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/utils/ExtendedSelfMulticall.sol#L36
         if (dapiProxyAddress.code.length == 0) {
-            IProxyFactory(proxyFactory).deployDapiProxy(args.dapiName, "");
+            IProxyFactory(proxyFactory).deployDapiProxy(args.dapi.name, "");
         }
 
         // Update the dAPI with signed API data (if it hasn't been updated recently)
@@ -143,27 +150,31 @@ contract Api3Market is IApi3Market {
             dataFeedId
         );
         if (timestamp + heartbeatInterval <= block.timestamp) {
-            // TODO: Update each beaconSet beacon with signed data
-            bytes32[] memory beaconIds = new bytes32[](args.airnodes.length);
-            for (uint ind = 0; ind < args.airnodes.length; ind++) {
-                beaconIds[ind] = keccak256(
-                    abi.encodePacked(args.airnodes[ind], args.templateIds[ind])
-                );
+            bytes32[] memory beaconIds = new bytes32[](args.beacons.length);
+            for (uint ind = 0; ind < args.beacons.length; ind++) {
+                beaconIds[ind] = IApi3ServerV1(api3ServerV1)
+                    .updateBeaconWithSignedData(
+                        args.beacons[ind].airnode,
+                        args.beacons[ind].templateId,
+                        args.beacons[ind].timestamp, // Signature timestamp
+                        args.beacons[ind].data, // Update data (an `int256` encoded in contract ABI)
+                        args.beacons[ind].signature // Template ID, timestamp and the update data signed by the Airnode
+                    );
             }
             IApi3ServerV1(api3ServerV1).updateBeaconSetWithBeacons(beaconIds);
         }
 
         // Fund sponsor wallet with order payment price
-        Address.sendValue(args.sponsorWallet, msg.value);
+        Address.sendValue(args.dapi.sponsorWallet, msg.value);
 
         emit BoughtDapi(
-            args.dapiName,
+            args.dapi.name,
             dataFeedId,
             dapiProxyAddress,
-            args.price,
-            args.duration,
-            args.updateParams,
-            args.sponsorWallet.balance,
+            args.dapi.price,
+            args.dapi.duration,
+            args.dapi.updateParams,
+            args.dapi.sponsorWallet.balance,
             msg.sender
         );
     }
