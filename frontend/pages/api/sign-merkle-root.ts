@@ -1,69 +1,81 @@
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { join } from 'path';
 import { ethers } from 'ethers';
-import { format, Options } from 'prettier';
-import { validateTreeRootSignatures } from '../../../src/utils/validators';
+import { validateTreeRootSignatures } from '../../lib/merkle-tree-utils';
 import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
+import { z } from 'zod';
+import { exec } from 'child_process';
 
-// TODO: move types to a common place for frontend re-use
-enum MerkleTrees {
-  DAPI_FALLBACK = 'DAPI_FALLBACK',
-}
+const MerkleTrees = z
+  .literal('dapi-fallback')
+  .or(z.literal('dapi-management').or(z.literal('dapi-priciing').or(z.literal('siged-api-url'))));
 
-export interface CurrentHash {
-  timestamp: number;
-  hash: string;
-  signatures: string[];
+type TreeType = z.infer<typeof MerkleTrees>;
+
+const requestBodySchema = z.object({
+  signature: z.string(),
+  address: z.string(),
+  tree: MerkleTrees,
+});
+
+interface MerkleTreeData {
+  signatures: Record<string, string>;
   merkleTreeValues: {
     values: string[][];
   };
 }
 
-export interface SignMerkleRootRequest {
+interface SignMerkleRootRequest {
   signature: string;
   address: string;
-  tree: MerkleTrees;
+  tree: TreeType;
 }
 
-export interface WalletBallance {
-  value: number;
-  unit: string;
-}
-
-export interface RootSignatureMetadata {
+interface RootSignatureMetadata {
   hashSigners: string[];
 }
 
-const merkleTreeConfig = {
-  [MerkleTrees.DAPI_FALLBACK]: {
-    fallbackTreeValidator: validateTreeRootSignatures,
-    subfolder: 'dapi-fallback-merkle-tree-root',
-  },
-};
+function getSubfolder(type: TreeType) {
+  switch (type) {
+    case 'dapi-fallback':
+      return 'dapi-fallback-merkle-tree-root';
+    default:
+      return '';
+  }
+}
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method not allowed');
+  }
+
+  const parseResult = requestBodySchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).send(`Invalid body:\n, ${JSON.stringify(parseResult.error.format())}`);
+  }
+
   const payload: SignMerkleRootRequest = req.body;
   const { signature, address, tree } = payload;
-  const treeConfig = merkleTreeConfig[tree];
+
+  const subfolder = getSubfolder(tree);
 
   // Read current signatures from the file
-  const currentHashPath = join(process.cwd(), '..', 'data', treeConfig.subfolder, 'current-hash.json');
+  const currentHashPath = join(process.cwd(), '..', 'data', subfolder, 'current-hash.json');
   if (!existsSync(currentHashPath)) {
     return res.status(404).send('Current hash file not found');
   }
-  const currentHash: CurrentHash = JSON.parse(readFileSync(currentHashPath, 'utf8'));
+  const currentHash: MerkleTreeData = JSON.parse(readFileSync(currentHashPath, 'utf8'));
 
   // Read metadata to get the root signers
-  const hashSignersPath = join(process.cwd(), '..', 'data', treeConfig.subfolder, 'hash-signers.json');
+  const hashSignersPath = join(process.cwd(), '..', 'data', subfolder, 'hash-signers.json');
   if (!existsSync(hashSignersPath)) {
     return res.status(404).send('Hash signers file not found');
   }
   const hashSigners: RootSignatureMetadata = JSON.parse(readFileSync(hashSignersPath, 'utf8'));
 
-  if (hashSigners.hashSigners.indexOf(address) === -1) {
-    return res.status(404).send(`Address not part of hash signers for tree ${tree}`);
+  if (!hashSigners.hashSigners.includes(address)) {
+    return res.status(403).send(`Address not part of hash signers for tree ${tree}`);
   }
 
   const merkleTree = StandardMerkleTree.of(currentHash.merkleTreeValues.values, ['bytes32', 'bytes32', 'address']);
@@ -73,27 +85,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   currentHash.signatures[hashSigners.hashSigners.indexOf(address)] = signature;
 
   // for every signer check if the signature is valid and if not replace it with "0x"
-  const validatedRootSignatures = treeConfig.fallbackTreeValidator(
-    root,
-    currentHash.signatures,
-    hashSigners.hashSigners
-  );
+  const validatedRootSignatures = validateTreeRootSignatures(root, currentHash.signatures, hashSigners.hashSigners);
 
   const validatedCurrentHash = { ...currentHash, signatures: validatedRootSignatures };
 
   // Write updated signatures to the file
   writeJsonFile(currentHashPath, validatedCurrentHash);
 
+  exec('yarn prettier');
+
   return res.status(200).send('Successfully signed root');
 }
-
-export const PRETTIER_CONFIG: Options = {
-  bracketSpacing: true,
-  printWidth: 120,
-  singleQuote: true,
-  trailingComma: 'es5',
-  useTabs: false,
-};
 
 interface JSONObject {
   [x: string]: JSONValue;
@@ -101,9 +103,6 @@ interface JSONObject {
 
 type JSONValue = string | number | boolean | JSONObject | string[] | string[][];
 
-export const prettyJson = (payload: JSONValue) =>
-  format(JSON.stringify(payload), { semi: false, parser: 'json', ...PRETTIER_CONFIG });
-
 export const writeJsonFile = (path: string, payload: JSONValue) => {
-  writeFileSync(path, prettyJson(payload));
+  writeFileSync(path, JSON.stringify(payload));
 };
