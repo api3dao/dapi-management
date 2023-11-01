@@ -3,10 +3,12 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3ServerV1.sol";
 import "./interfaces/IHashRegistry.sol";
 import "./interfaces/IDapiFallbackV2.sol";
+import "./interfaces/IDapiDataRegistry.sol";
 
 /// @title DapiFallbackV2 contract for handling dAPI fallbacks in case of primary data feed failure.
 /// @notice This contract contains the logic for executing dAPI fallbacks
@@ -14,22 +16,35 @@ import "./interfaces/IDapiFallbackV2.sol";
 /// @dev The contract inherits from the Ownable contract of the OpenZeppelin library
 /// @dev which provides basic authorization control functions.
 contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
     /// @notice Api3ServerV1 contract address
-    address public immutable api3ServerV1;
+    address public immutable override api3ServerV1;
     /// @notice HashRegistry contract address
-    address public immutable hashRegistry;
+    address public immutable override hashRegistry;
+    /// @notice DapiDataRegistry contract address
+    address public immutable override dapiDataRegistry;
 
     /// @notice Constants defining types of the Merkle tree roots used within the contract logic.
     bytes32 private constant DAPI_FALLBACK_MERKLE_TREE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("dAPI fallback Merkle tree root"));
     bytes32 private constant DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("dAPI pricing Merkle tree root"));
+    bytes32 private constant HASHED_PARAMS =
+        keccak256(abi.encode(uint256(1e6), int224(0), uint32(1 days)));
+
+    EnumerableSet.Bytes32Set private fallbackedDapis;
 
     /// @notice Initializes the contract setting the api3ServerV1 and hashRegistry addresses.
     /// @param _api3ServerV1 The address of the Api3ServerV1 contract.
     /// @param _hashRegistry The address of the HashRegistry contract.
+    /// @param _dapiDataRegistry The address of the DapiDataRegistry contract.
     /// @dev The constructor requires non-zero addresses for the api3ServerV1 and hashRegistry contracts.
-    constructor(address _api3ServerV1, address _hashRegistry) {
+    constructor(
+        address _api3ServerV1,
+        address _hashRegistry,
+        address _dapiDataRegistry
+    ) {
         require(
             _api3ServerV1 != address(0),
             "api3ServerV1 Address cannot be zero"
@@ -38,8 +53,17 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
             _hashRegistry != address(0),
             "hashRegistry Address cannot be zero"
         );
+        require(
+            _hashRegistry != address(0),
+            "hashRegistry Address cannot be zero"
+        );
+        require(
+            _dapiDataRegistry != address(0),
+            "dapiDataRegistry Address cannot be zero"
+        );
         api3ServerV1 = _api3ServerV1;
         hashRegistry = _hashRegistry;
+        dapiDataRegistry = _dapiDataRegistry;
     }
 
     /// @notice Allows the contract to receive funds.
@@ -82,6 +106,14 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         require(args.duration != 0, "Duration is zero");
         require(args.price != 0, "Price is zero");
         require(args.sponsorWallet != address(0), "Zero address");
+
+        bytes32 hashedUpdateParams = keccak256(args.updateParams);
+
+        require(
+            hashedUpdateParams == HASHED_PARAMS,
+            "Update params does not match"
+        );
+
         bytes32 currentDataFeedId = IApi3ServerV1(api3ServerV1)
             .dapiNameHashToDataFeedId(args.dapiName);
         require(
@@ -130,6 +162,13 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
 
         IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.dataFeedId);
 
+        require(
+            fallbackedDapis.add(args.dapiName),
+            "dAPI fallback already executed"
+        );
+
+        IDapiDataRegistry(dapiDataRegistry).removeDapi(args.dapiName);
+
         uint256 minSponsorWalletBalance = (args.price * 1 days) / args.duration;
 
         uint256 sponsorWalletBalance = args.sponsorWallet.balance;
@@ -143,7 +182,66 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
                 msg.sender
             );
         }
+
         emit ExecutedDapiFallback(args.dapiName, args.dataFeedId, msg.sender);
+    }
+
+    /// @notice Reverts the dAPI fallback execution by setting the dAPI back to a
+    /// managed data feed. It uses Merkle tree root and proof for verification
+    /// and it also requires that the executeDapiFallback function was previously
+    /// called
+    /// @dev Only the contract owner can execute this function to switch back to
+    /// managed data feed
+    /// @param dapiName dAPI name
+    /// @param dataFeedId Data feed ID the dAPI will point to
+    /// @param sponsorWallet Sponsor wallet address used to trigger updates
+    /// @param deviationThresholdInPercentage Value used to determine if data
+    /// feed requires updating based on deviation against API value
+    /// @param deviationReference Reference value that deviation will be
+    /// calculated against
+    /// @param heartbeatInterval Value used to determine if data
+    /// feed requires updating based on time elapsed since last update
+    /// @param root dAPI Management Merkle tree root hash
+    /// @param proof Array of hashes to verify a Merkle tree leaf
+    function revertDapiFallback(
+        bytes32 dapiName,
+        bytes32 dataFeedId,
+        address sponsorWallet,
+        uint256 deviationThresholdInPercentage,
+        int224 deviationReference,
+        uint32 heartbeatInterval,
+        bytes32 root,
+        bytes32[] calldata proof
+    ) external override onlyOwner {
+        require(
+            fallbackedDapis.remove(dapiName),
+            "dAPI fallback has not been executed"
+        );
+        IDapiDataRegistry(dapiDataRegistry).addDapi(
+            dapiName,
+            dataFeedId,
+            sponsorWallet,
+            deviationThresholdInPercentage,
+            deviationReference,
+            heartbeatInterval,
+            root,
+            proof
+        );
+        emit RevertedDapiFallback(dapiName, dataFeedId, sponsorWallet);
+    }
+
+    /// @notice Returns the dAPIs for which fallback has been executed
+    /// @dev Fallback data feeds are single sourced and self funded data feeds
+    /// with deviation threshold of 1% and heartbeat interval of 1 day (in secs).
+    /// Information about Airnode address or templateId for these data feeds can
+    /// be read from Nodary.io
+    function getFallbackedDapis()
+        external
+        view
+        override
+        returns (bytes32[] memory dapis)
+    {
+        dapis = fallbackedDapis.values();
     }
 
     /// @notice Validates the Merkle tree structure by verifying its root and proofs.
