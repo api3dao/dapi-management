@@ -51,16 +51,24 @@ interface IDapiFallbackV2 {
         address sender
     );
 
+    /// @notice Event emitted when a dAPI fallback has been reverted.
+    /// @param dapiName The unique identifier for the dAPI involved.
+    /// @param dataFeedId Identifier for the data feed that was updated.
+    /// @param sponsorWallet Address of the account used to perform data feed
+    /// updates.
     event RevertedDapiFallback(
         bytes32 indexed dapiName,
         bytes32 indexed dataFeedId,
         address sponsorWallet
     );
 
+    /// @notice Returns the address of the Api3ServerV1 contract.
     function api3ServerV1() external view returns (address);
 
+    /// @notice Returns the address of the HashRegistry contract.
     function hashRegistry() external view returns (address);
 
+    /// @notice Returns the address of the DapiDataRegistry contract.
     function dapiDataRegistry() external view returns (address);
 
     /// @notice Allows the contract owner to withdraw funds from the contract.
@@ -75,6 +83,20 @@ interface IDapiFallbackV2 {
         ExecuteDapiFallbackArgs calldata args
     ) external;
 
+    /// @notice Reverts the dAPI fallback execution mechanism.
+    /// @param dapiName dAPI name
+    /// @param dataFeedId Data feed ID the dAPI will point to
+    /// @param sponsorWallet Sponsor wallet address used to trigger updates
+    /// @param deviationThresholdInPercentage Value used to determine if data
+    /// feed requires updating based on deviation against API value
+    /// @param deviationReference Reference value that deviation will be
+    /// calculated against
+    /// @param heartbeatInterval Value used to determine if data
+    /// feed requires updating based on time elapsed since last update
+    /// @param root dAPI Management Merkle tree root hash
+    /// @param proof Array of hashes to verify a Merkle tree leaf
+    /// @dev This function should emit the RevertedDapiFallback event upon
+    /// successful execution and requires the caller to be the contract owner.
     function revertDapiFallback(
         bytes32 dapiName,
         bytes32 dataFeedId,
@@ -86,6 +108,8 @@ interface IDapiFallbackV2 {
         bytes32[] calldata proof
     ) external;
 
+    /// @notice Returns the list of dAPIs for which fallback mechanism has been
+    /// exectued.
     function getFallbackedDapis()
         external
         view

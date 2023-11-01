@@ -912,56 +912,41 @@ describe('DapiFallbackV2', function () {
   });
 
   describe('revertDapiFallback', function () {
-    it('executes dAPI fallback', async function () {
-      const {
-        roles,
-        dapiFallbackV2,
-        dapiName,
-        executeDapiFallbackArgs,
-        dapiDataRegistry,
-        dataFeeds,
-        dapiTree,
-        dapiTreeValues,
-      } = await helpers.loadFixture(deploy);
-      const [dataFeed] = dataFeeds;
-      const { airnodes, templateIds } = dataFeed.reduce(
-        (acc, { airnode, templateId }) => ({
-          airnodes: [...acc.airnodes, airnode.address],
-          templateIds: [...acc.templateIds, templateId],
-        }),
-        { airnodes: [], templateIds: [] }
-      );
-      const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
-        ['address[]', 'bytes32[]'],
-        [airnodes, templateIds]
-      );
-      await dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData);
-
-      const deviationThresholdInPercentage = hre.ethers.BigNumber.from(HUNDRED_PERCENT / 50); // 2%
-      const deviationReference = hre.ethers.constants.Zero; // Not used in Airseeker V1
-      const heartbeatInterval = hre.ethers.BigNumber.from(86400); // 24 hrs
-
-      const [dapiTreeValue] = dapiTreeValues;
-      const [, beaconSetId, sponsorWallet] = dapiTreeValue;
-      await dapiDataRegistry
-        .connect(roles.api3Market)
-        .addDapi(
-          hre.ethers.utils.formatBytes32String(dapiName),
-          beaconSetId,
-          sponsorWallet,
-          deviationThresholdInPercentage,
-          deviationReference,
-          heartbeatInterval,
-          dapiTree.root,
-          dapiTree.getProof(dapiTreeValue)
+    context('dAPI fallback has been executed', function () {
+      it('executes dAPI fallback', async function () {
+        const {
+          roles,
+          dapiFallbackV2,
+          dapiName,
+          executeDapiFallbackArgs,
+          dapiDataRegistry,
+          dataFeeds,
+          dapiTree,
+          dapiTreeValues,
+        } = await helpers.loadFixture(deploy);
+        const [dataFeed] = dataFeeds;
+        const { airnodes, templateIds } = dataFeed.reduce(
+          (acc, { airnode, templateId }) => ({
+            airnodes: [...acc.airnodes, airnode.address],
+            templateIds: [...acc.templateIds, templateId],
+          }),
+          { airnodes: [], templateIds: [] }
         );
-      await dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs);
-      expect(await dapiFallbackV2.getFallbackedDapis()).to.deep.equal([hre.ethers.utils.formatBytes32String(dapiName)]);
+        const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+          ['address[]', 'bytes32[]'],
+          [airnodes, templateIds]
+        );
+        await dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData);
 
-      await expect(
-        dapiFallbackV2
-          .connect(roles.dapiFallbackV2Owner)
-          .revertDapiFallback(
+        const deviationThresholdInPercentage = hre.ethers.BigNumber.from(HUNDRED_PERCENT / 50); // 2%
+        const deviationReference = hre.ethers.constants.Zero; // Not used in Airseeker V1
+        const heartbeatInterval = hre.ethers.BigNumber.from(86400); // 24 hrs
+
+        const [dapiTreeValue] = dapiTreeValues;
+        const [, beaconSetId, sponsorWallet] = dapiTreeValue;
+        await dapiDataRegistry
+          .connect(roles.api3Market)
+          .addDapi(
             hre.ethers.utils.formatBytes32String(dapiName),
             beaconSetId,
             sponsorWallet,
@@ -970,11 +955,82 @@ describe('DapiFallbackV2', function () {
             heartbeatInterval,
             dapiTree.root,
             dapiTree.getProof(dapiTreeValue)
-          )
-      )
-        .to.emit(dapiFallbackV2, 'RevertedDapiFallback')
-        .withArgs(hre.ethers.utils.formatBytes32String(dapiName), beaconSetId, sponsorWallet);
-      expect(await dapiFallbackV2.getFallbackedDapis()).to.deep.equal([]);
+          );
+        await dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs);
+        expect(await dapiFallbackV2.getFallbackedDapis()).to.deep.equal([
+          hre.ethers.utils.formatBytes32String(dapiName),
+        ]);
+
+        await expect(
+          dapiFallbackV2
+            .connect(roles.dapiFallbackV2Owner)
+            .revertDapiFallback(
+              hre.ethers.utils.formatBytes32String(dapiName),
+              beaconSetId,
+              sponsorWallet,
+              deviationThresholdInPercentage,
+              deviationReference,
+              heartbeatInterval,
+              dapiTree.root,
+              dapiTree.getProof(dapiTreeValue)
+            )
+        )
+          .to.emit(dapiFallbackV2, 'RevertedDapiFallback')
+          .withArgs(hre.ethers.utils.formatBytes32String(dapiName), beaconSetId, sponsorWallet);
+        expect(await dapiFallbackV2.getFallbackedDapis()).to.deep.equal([]);
+      });
+    });
+    context('dAPI fallback has been executed', function () {
+      it('reverts', async function () {
+        const { roles, dapiFallbackV2, dapiName, dapiDataRegistry, dataFeeds, dapiTree, dapiTreeValues } =
+          await helpers.loadFixture(deploy);
+        const [dataFeed] = dataFeeds;
+        const { airnodes, templateIds } = dataFeed.reduce(
+          (acc, { airnode, templateId }) => ({
+            airnodes: [...acc.airnodes, airnode.address],
+            templateIds: [...acc.templateIds, templateId],
+          }),
+          { airnodes: [], templateIds: [] }
+        );
+        const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+          ['address[]', 'bytes32[]'],
+          [airnodes, templateIds]
+        );
+        await dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData);
+
+        const deviationThresholdInPercentage = hre.ethers.BigNumber.from(HUNDRED_PERCENT / 50); // 2%
+        const deviationReference = hre.ethers.constants.Zero; // Not used in Airseeker V1
+        const heartbeatInterval = hre.ethers.BigNumber.from(86400); // 24 hrs
+
+        const [dapiTreeValue] = dapiTreeValues;
+        const [, beaconSetId, sponsorWallet] = dapiTreeValue;
+        await dapiDataRegistry
+          .connect(roles.api3Market)
+          .addDapi(
+            hre.ethers.utils.formatBytes32String(dapiName),
+            beaconSetId,
+            sponsorWallet,
+            deviationThresholdInPercentage,
+            deviationReference,
+            heartbeatInterval,
+            dapiTree.root,
+            dapiTree.getProof(dapiTreeValue)
+          );
+        await expect(
+          dapiFallbackV2
+            .connect(roles.dapiFallbackV2Owner)
+            .revertDapiFallback(
+              hre.ethers.utils.formatBytes32String(dapiName),
+              beaconSetId,
+              sponsorWallet,
+              deviationThresholdInPercentage,
+              deviationReference,
+              heartbeatInterval,
+              dapiTree.root,
+              dapiTree.getProof(dapiTreeValue)
+            )
+        ).to.be.revertedWith('dAPI fallback has not been executed');
+      });
     });
   });
 });

@@ -186,15 +186,23 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         emit ExecutedDapiFallback(args.dapiName, args.dataFeedId, msg.sender);
     }
 
-    // This function requires the root and a proof from the dAPI management
-    // Merkle tree and that the fallback dAPI function was previously executed.
-    // TODO: Only the contract owner can execute this function to switch back to
-    // previous payed dAPI subscription. Why anyone can call executeDapiFallback?
-    // We used to have a onlyByDapiFallbackExecutorWithInd modifier to have only
-    // a group of people be able to execute this function. I know that data from
-    // merkle trees has been reviewed and signed by other people but anyone that
-    // gets a hold of the json files with the merkle trees or by just clicking on
-    // the dapi management UI can still switch to fallback at any given time?
+    /// @notice Reverts the dAPI fallback execution by setting the dAPI back to a
+    /// managed data feed. It uses Merkle tree root and proof for verification
+    /// and it also requires that the executeDapiFallback function was previously
+    /// called
+    /// @dev Only the contract owner can execute this function to switch back to
+    /// managed data feed
+    /// @param dapiName dAPI name
+    /// @param dataFeedId Data feed ID the dAPI will point to
+    /// @param sponsorWallet Sponsor wallet address used to trigger updates
+    /// @param deviationThresholdInPercentage Value used to determine if data
+    /// feed requires updating based on deviation against API value
+    /// @param deviationReference Reference value that deviation will be
+    /// calculated against
+    /// @param heartbeatInterval Value used to determine if data
+    /// feed requires updating based on time elapsed since last update
+    /// @param root dAPI Management Merkle tree root hash
+    /// @param proof Array of hashes to verify a Merkle tree leaf
     function revertDapiFallback(
         bytes32 dapiName,
         bytes32 dataFeedId,
