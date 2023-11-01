@@ -223,6 +223,10 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
     }
 
     /// @notice Returns the dAPIs for which fallback has been executed
+    /// @dev Fallback data feeds are single sourced and self funded data feeds
+    /// with deviation threshold of 1% and heartbeat interval of 1 day (in secs).
+    /// Information about Airnode address or templateId for these data feeds can
+    /// be read from Nodary.io
     function getFallbackedDapis()
         external
         view
@@ -230,10 +234,6 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         returns (bytes32[] memory dapis)
     {
         dapis = fallbackedDapis.values();
-
-        // TODO: This function is intended to be used by the UI to still be able to display fallbacked dAPIs
-        //       Should we store the dataFeedId and sponsorWallet used on executeDapiFallback? update params
-        //       are fixed at 1% deviation and 1 day heartbeat so might not be needed to be stored on-chain
     }
 
     /// @notice Validates the Merkle tree structure by verifying its root and proofs.
