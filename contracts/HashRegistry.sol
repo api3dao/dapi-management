@@ -27,9 +27,9 @@ contract HashRegistry is Ownable, EIP712, SelfMulticall, IHashRegistry {
     mapping(bytes32 => EnumerableSet.AddressSet) private _hashTypeToSigners;
 
     /// @notice Hashes by type (i.e. a merkle tree root, etc)
-    mapping(bytes32 => bytes32) public hashTypeToHash;
+    mapping(bytes32 => bytes32) public override hashTypeToHash;
     /// @notice Timestamps representing when each hash was signed
-    mapping(bytes32 => uint256) public hashTypeToTimestamp;
+    mapping(bytes32 => uint256) public override hashTypeToTimestamp;
 
     bytes32 private constant _SIGNED_HASH_TYPE_HASH =
         keccak256(
