@@ -1,7 +1,5 @@
-import { join } from 'path';
-import { readFileSync } from 'fs';
 import { ethers } from 'ethers';
-import z from 'zod';
+import { z } from 'zod';
 import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
 import { BadgeInfoIcon } from 'lucide-react';
 import RootLayout from '~/components/root-layout';
@@ -9,6 +7,8 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~
 import { Button } from '~/components/ui/button';
 import { TreeStatusBadge, TreeRootBadge, SignatureTable } from '~/components/merkle-tree-elements';
 import { useWeb3Data } from '~/contexts/web3-data-context';
+import { readTreeDataFrom, readSignerDataFrom } from '~/lib/server/file-utils';
+import { validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { InferGetServerSidePropsType } from 'next';
 
 const merkleTreeSchema = z.object({
@@ -18,21 +18,16 @@ const merkleTreeSchema = z.object({
   }),
 });
 
-const signersSchema = z.object({
-  hashSigners: z.array(z.string()),
-});
-
 export function getServerSideProps() {
-  const currentTreePath = join(process.cwd(), '../data/dapi-fallback-merkle-tree-root/current-hash.json');
-  const signersPath = join(process.cwd(), '../data/dapi-fallback-merkle-tree-root/hash-signers.json');
-  const currentTree = JSON.parse(readFileSync(currentTreePath, 'utf8'));
-  const signers = JSON.parse(readFileSync(signersPath, 'utf8'));
+  const { data: currentTree } = readTreeDataFrom({
+    subfolder: 'dapi-fallback-merkle-tree-root',
+    file: 'current-hash.json',
+    schema: merkleTreeSchema,
+  });
+  const { data: signers } = readSignerDataFrom('dapi-fallback-merkle-tree-root');
 
   return {
-    props: {
-      currentTree: merkleTreeSchema.parse(currentTree),
-      signers: signersSchema.parse(signers).hashSigners,
-    },
+    props: { currentTree, signers },
   };
 }
 
@@ -44,7 +39,7 @@ export default function DapiFallbackTree(props: Props) {
 
   const merkleTree = StandardMerkleTree.of(currentTree.merkleTreeValues.values, ['bytes32', 'bytes32', 'address']);
   const merkleTreeRoot = ethers.utils.arrayify(merkleTree.root);
-  const signatures = validateSignatures(merkleTreeRoot, currentTree.signatures, signers);
+  const signatures = validateTreeRootSignatures(merkleTreeRoot, currentTree.signatures, signers);
 
   const isSigner = !!signatures[address];
   const canSign = signatures[address] === '0x';
@@ -99,22 +94,4 @@ export default function DapiFallbackTree(props: Props) {
       </section>
     </RootLayout>
   );
-}
-
-function validateSignatures(root: Uint8Array, signatures: Record<string, string>, signers: string[]) {
-  return signers.reduce((acc, signer) => {
-    const signature = signatures[signer];
-
-    try {
-      if (signer === ethers.utils.verifyMessage(root, signature)) {
-        acc[signer] = signature;
-        return acc;
-      }
-    } catch {
-      // Do nothing
-    }
-
-    acc[signer] = '0x';
-    return acc;
-  }, {} as Record<string, string>);
 }
