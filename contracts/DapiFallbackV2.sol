@@ -162,6 +162,13 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
 
         IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.dataFeedId);
 
+        require(
+            fallbackedDapis.add(args.dapiName),
+            "dAPI fallback already executed"
+        );
+
+        IDapiDataRegistry(dapiDataRegistry).removeDapi(args.dapiName);
+
         uint256 minSponsorWalletBalance = (args.price * 1 days) / args.duration;
 
         uint256 sponsorWalletBalance = args.sponsorWallet.balance;
@@ -175,13 +182,6 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
                 msg.sender
             );
         }
-
-        require(
-            fallbackedDapis.add(args.dapiName),
-            "dAPI fallback already executed"
-        );
-
-        IDapiDataRegistry(dapiDataRegistry).removeDapi(args.dapiName);
 
         emit ExecutedDapiFallback(args.dapiName, args.dataFeedId, msg.sender);
     }
