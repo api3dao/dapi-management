@@ -7,16 +7,16 @@ import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
 import { z } from 'zod';
 import { exec } from 'child_process';
 
-const MerkleTrees = z
+const treeTypeSchema = z
   .literal('dapi-fallback')
-  .or(z.literal('dapi-management').or(z.literal('dapi-priciing').or(z.literal('siged-api-url'))));
+  .or(z.literal('dapi-management').or(z.literal('dapi-pricing').or(z.literal('siged-api-url'))));
 
-type TreeType = z.infer<typeof MerkleTrees>;
+type TreeType = z.infer<typeof treeTypeSchema>;
 
 const requestBodySchema = z.object({
   signature: z.string(),
   address: z.string(),
-  tree: MerkleTrees,
+  tree: treeTypeSchema,
 });
 
 interface MerkleTreeData {
@@ -24,12 +24,6 @@ interface MerkleTreeData {
   merkleTreeValues: {
     values: string[][];
   };
-}
-
-interface SignMerkleRootRequest {
-  signature: string;
-  address: string;
-  tree: TreeType;
 }
 
 interface RootSignatureMetadata {
@@ -40,6 +34,12 @@ function getSubfolder(type: TreeType) {
   switch (type) {
     case 'dapi-fallback':
       return 'dapi-fallback-merkle-tree-root';
+    case 'dapi-management':
+      return 'dapi-management-merkle-tree-root';
+    case 'dapi-pricing':
+      return 'dapi-pricing-merkle-tree-root';
+    case 'siged-api-url':
+      return 'siged-api-url-merkle-tree-root';
     default:
       return '';
   }
@@ -52,11 +52,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const parseResult = requestBodySchema.safeParse(req.body);
   if (!parseResult.success) {
-    return res.status(400).send(`Invalid body:\n, ${JSON.stringify(parseResult.error.format())}`);
+    return res.status(400).json(parseResult.error.format());
   }
 
-  const payload: SignMerkleRootRequest = req.body;
-  const { signature, address, tree } = payload;
+  const { signature, address, tree } = parseResult.data;
 
   const subfolder = getSubfolder(tree);
 
@@ -97,12 +96,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   return res.status(200).send('Successfully signed root');
 }
 
-interface JSONObject {
-  [x: string]: JSONValue;
-}
-
-type JSONValue = string | number | boolean | JSONObject | string[] | string[][];
-
-export const writeJsonFile = (path: string, payload: JSONValue) => {
+export const writeJsonFile = (path: string, payload: MerkleTreeData) => {
   writeFileSync(path, JSON.stringify(payload));
 };
