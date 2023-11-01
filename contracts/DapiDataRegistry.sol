@@ -150,7 +150,6 @@ contract DapiDataRegistry is
             // Derive beacon ID
             // https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/DataFeedServer.sol#L83-L92
             dataFeedId = keccak256(abi.encodePacked(airnode, templateId));
-            dataFeeds[dataFeedId] = dataFeed;
         } else {
             require(dataFeed.length != 0, "Data feed is empty");
             // dataFeedId maps to a beaconSet
@@ -172,9 +171,11 @@ contract DapiDataRegistry is
             // Derive beacon set ID
             // https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/DataFeedServer.sol#L94-L102
             dataFeedId = keccak256(abi.encode(beaconIds));
-            dataFeeds[dataFeedId] = abi.encode(airnodes, templateIds);
         }
-        emit RegisteredDataFeed(dataFeedId, dataFeeds[dataFeedId]);
+
+        dataFeeds[dataFeedId] = dataFeed;
+
+        emit RegisteredDataFeed(dataFeedId, dataFeed);
     }
 
     /// Called by a registrar or manager to add a dAPI along with update
