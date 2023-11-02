@@ -2,13 +2,7 @@ const hre = require('hardhat');
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const { StandardMerkleTree } = require('@openzeppelin/merkle-tree');
 const { expect } = require('chai');
-const {
-  generateRandomBytes32,
-  generateRandomAddress,
-  buildEIP712Domain,
-  deriveRootRole,
-  generateRandomBytes,
-} = require('./test-utils');
+const { generateRandomBytes32, generateRandomAddress, deriveRootRole, generateRandomBytes } = require('./test-utils');
 
 describe('DapiFallbackV2', function () {
   const HUNDRED_PERCENT = 1e8;
@@ -117,15 +111,6 @@ describe('DapiFallbackV2', function () {
 
     const timestamp = Math.floor(Date.now() / 1000);
     const chainId = (await hashRegistry.provider.getNetwork()).chainId;
-    const domain = buildEIP712Domain('HashRegistry', chainId, hashRegistry.address);
-    const types = {
-      SignedHash: [
-        { name: 'hashType', type: 'bytes32' },
-        { name: 'hash', type: 'bytes32' },
-        { name: 'timestamp', type: 'uint256' },
-      ],
-    };
-
     const dapiName = 'API3/USD';
     const fallbackBeaconTemplateId = generateRandomBytes32();
     const fallbackBeaconId = hre.ethers.utils.solidityKeccak256(
@@ -238,13 +223,11 @@ describe('DapiFallbackV2', function () {
     const dapiTree = StandardMerkleTree.of(dapiTreeValues, ['bytes32', 'bytes32', 'address']);
     const dapiTreeRoot = dapiTree.root;
     const dapiHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI management Merkle tree root']);
-    const dapiValues = {
-      hashType: dapiHashType,
-      hash: dapiTreeRoot,
-      timestamp,
-    };
+    const dapiMessages = hre.ethers.utils.arrayify(
+      hre.ethers.utils.solidityKeccak256(['bytes32', 'bytes32', 'uint256'], [dapiHashType, dapiTreeRoot, timestamp])
+    );
     const dapiTreeRootSignatures = await Promise.all(
-      dapiFallbackRootSigners.map(async (rootSigner) => await rootSigner._signTypedData(domain, types, dapiValues))
+      dapiFallbackRootSigners.map(async (rootSigner) => await rootSigner.signMessage(dapiMessages))
     );
 
     await hashRegistry.connect(roles.hashRegistryOwner).setupSigners(
@@ -285,8 +268,6 @@ describe('DapiFallbackV2', function () {
       fallbackRoot,
       fallbackProof,
       fallbackSignatures,
-      domain,
-      types,
       timestamp,
       priceRoot,
       priceProof,
