@@ -13,8 +13,10 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   { sticky?: boolean } & React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, sticky, ...props }, ref) => {
-  const stickyClassName = sticky ? '[&_th]:sticky [&_th]:top-0 [&_th]:z-[1]' : undefined;
-  return <thead ref={ref} className={cn('[&_th]:bg-gray-50 [&_tr]:border-b', stickyClassName, className)} {...props} />;
+  const stickyClassName = sticky ? '[&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_th]:backdrop-blur-sm' : undefined;
+  return (
+    <thead ref={ref} className={cn('[&_th]:bg-muted/60 [&_tr]:border-b', stickyClassName, className)} {...props} />
+  );
 });
 TableHeader.displayName = 'TableHeader';
 
