@@ -18,7 +18,8 @@ import "./interfaces/IHashRegistry.sol";
 /// has been registered in this contract.
 /// @dev This contract inherits SelfMulticall meaning that all external functions
 /// can be called via multicall() or tryMulticall(). Hashes are expected to be
-/// signed following the EIP-712 signature specification.
+/// signed following the ERC-191: Signed Data Standard (version 0x45 (E)).
+/// https://eips.ethereum.org/EIPS/eip-191
 contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     using ECDSA for bytes32;
     using EnumerableSet for EnumerableSet.AddressSet;
