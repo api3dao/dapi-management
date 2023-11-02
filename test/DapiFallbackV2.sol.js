@@ -102,18 +102,19 @@ describe('DapiFallbackV2', function () {
     const fallbackProof = fallbackTree.getProof(fallbackTreeEntry);
 
     const dapiFallbackHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI fallback Merkle tree root']);
-    const fallbackValues = {
-      hashType: dapiFallbackHashType,
-      hash: fallbackRoot,
-      timestamp,
-    };
     const dapiFallbackRootSigners = [
       roles.dapiFallbackRootSigner1,
       roles.dapiFallbackRootSigner2,
       roles.dapiFallbackRootSigner3,
     ];
+    const fallbackMessages = hre.ethers.utils.arrayify(
+      hre.ethers.utils.solidityKeccak256(
+        ['bytes32', 'bytes32', 'uint256'],
+        [dapiFallbackHashType, fallbackRoot, timestamp]
+      )
+    );
     const fallbackSignatures = await Promise.all(
-      dapiFallbackRootSigners.map(async (rootSigner) => await rootSigner._signTypedData(domain, types, fallbackValues))
+      dapiFallbackRootSigners.map(async (rootSigner) => await rootSigner.signMessage(fallbackMessages))
     );
 
     await hashRegistry.connect(roles.hashRegistryOwner).setupSigners(
@@ -146,16 +147,13 @@ describe('DapiFallbackV2', function () {
     const priceProof = priceTree.getProof(priceTreeEntry);
 
     const priceHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI pricing Merkle tree root']);
-    const priceValues = {
-      hashType: priceHashType,
-      hash: priceRoot,
-      timestamp,
-    };
     const priceRootSigners = [roles.priceRootSigner1, roles.priceRootSigner2, roles.priceRootSigner3];
-    const priceSignatures = await Promise.all(
-      priceRootSigners.map(async (rootSigner) => await rootSigner._signTypedData(domain, types, priceValues))
+    const priceMessages = hre.ethers.utils.arrayify(
+      hre.ethers.utils.solidityKeccak256(['bytes32', 'bytes32', 'uint256'], [priceHashType, priceRoot, timestamp])
     );
-
+    const priceSignatures = await Promise.all(
+      priceRootSigners.map(async (rootSigner) => await rootSigner.signMessage(priceMessages))
+    );
     await hashRegistry.connect(roles.hashRegistryOwner).setupSigners(
       priceHashType,
       priceRootSigners.map((rootSigner) => rootSigner.address)

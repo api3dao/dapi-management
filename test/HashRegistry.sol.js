@@ -43,24 +43,14 @@ describe('HashRegistry', function () {
     const tree = StandardMerkleTree.of(treeValues, ['bytes32', 'bytes32', 'address']);
     const root = tree.root;
     const timestamp = Math.floor(Date.now() / 1000);
-    const chainId = (await hashRegistry.provider.getNetwork()).chainId;
-    const domain = buildEIP712Domain('HashRegistry', chainId, hashRegistry.address);
-    const types = {
-      SignedHash: [
-        { name: 'hashType', type: 'bytes32' },
-        { name: 'hash', type: 'bytes32' },
-        { name: 'timestamp', type: 'uint256' },
-      ],
-    };
+
     const dapiFallbackHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI fallback root']);
-    const values = {
-      hashType: dapiFallbackHashType,
-      hash: root,
-      timestamp,
-    };
+    const messages = hre.ethers.utils.arrayify(
+      hre.ethers.utils.solidityKeccak256(['bytes32', 'bytes32', 'uint256'], [dapiFallbackHashType, root, timestamp])
+    );
     const signatures = await Promise.all(
       [roles.dapiFallbackRootSigner1, roles.dapiFallbackRootSigner2, roles.dapiFallbackRootSigner3].map(
-        async (rootSigner) => await rootSigner._signTypedData(domain, types, values)
+        async (rootSigner) => await rootSigner.signMessage(messages)
       )
     );
 
@@ -71,11 +61,11 @@ describe('HashRegistry', function () {
       fallbackBeaconTemplateId,
       fallbackBeaconId,
       fallbackSponsorWalletAddress,
-      domain,
       types,
       dapiFallbackHashType,
       root,
       timestamp,
+      messages,
       signatures,
     };
   };
@@ -360,8 +350,17 @@ describe('HashRegistry', function () {
           });
           context('All signatures do not match', function () {
             it('reverts', async function () {
-              const { roles, hashRegistry, domain, types, dapiFallbackHashType, root, timestamp, signatures } =
-                await helpers.loadFixture(deploy);
+              const {
+                roles,
+                hashRegistry,
+                domain,
+                types,
+                dapiFallbackHashType,
+                root,
+                timestamp,
+                signatures,
+                messages,
+              } = await helpers.loadFixture(deploy);
               const signers = [
                 roles.dapiFallbackRootSigner1.address,
                 roles.dapiFallbackRootSigner2.address,
@@ -377,22 +376,20 @@ describe('HashRegistry', function () {
               // Signed by a different signer
               await expect(
                 hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, [
-                  await roles.randomPerson._signTypedData(domain, types, {
-                    hashType: dapiFallbackHashType,
-                    hash: root,
-                    timestamp,
-                  }),
+                  await roles.randomPerson.signMessage(messages),
                   ...signatures.slice(1),
                 ])
               ).to.be.revertedWith('Signature mismatch');
               // Signed a different root
+              const wrongRootMessages = hre.ethers.utils.arrayify(
+                hre.ethers.utils.solidityKeccak256(
+                  ['bytes32', 'bytes32', 'uint256'],
+                  [dapiFallbackHashType, generateRandomBytes32(), timestamp]
+                )
+              );
               await expect(
                 hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, [
-                  await roles.dapiFallbackRootSigner1._signTypedData(domain, types, {
-                    hashType: dapiFallbackHashType,
-                    hash: generateRandomBytes32(),
-                    timestamp,
-                  }),
+                  await roles.dapiFallbackRootSigner1.signMessage(wrongRootMessages),
                   ...signatures.slice(1),
                 ])
               ).to.be.revertedWith('Signature mismatch');

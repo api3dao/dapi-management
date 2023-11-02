@@ -4,7 +4,6 @@ pragma solidity 0.8.18;
 import "@api3/airnode-protocol-v1/contracts/utils/SelfMulticall.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./interfaces/IHashRegistry.sol";
 
@@ -20,7 +19,7 @@ import "./interfaces/IHashRegistry.sol";
 /// @dev This contract inherits SelfMulticall meaning that all external functions
 /// can be called via multicall() or tryMulticall(). Hashes are expected to be
 /// signed following the EIP-712 signature specification.
-contract HashRegistry is Ownable, EIP712, SelfMulticall, IHashRegistry {
+contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     using ECDSA for bytes32;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -31,12 +30,7 @@ contract HashRegistry is Ownable, EIP712, SelfMulticall, IHashRegistry {
     /// @notice Timestamps representing when each hash was signed
     mapping(bytes32 => uint256) public override hashTypeToTimestamp;
 
-    bytes32 private constant _SIGNED_HASH_TYPE_HASH =
-        keccak256(
-            "SignedHash(bytes32 hashType,bytes32 hash,uint256 timestamp)"
-        );
-
-    constructor() EIP712("HashRegistry", "1.0.0") {}
+    constructor() {}
 
     /// @notice Called by the owner to set the hash signers
     /// @param hashType Hash representing a hash type
@@ -132,15 +126,9 @@ contract HashRegistry is Ownable, EIP712, SelfMulticall, IHashRegistry {
         );
         for (uint256 ind = 0; ind < signersCount; ind++) {
             require(
-                _hashTypedDataV4(
-                    keccak256(
-                        abi.encode(
-                            _SIGNED_HASH_TYPE_HASH,
-                            hashType,
-                            hash,
-                            timestamp
-                        )
-                    )
+                (
+                    keccak256(abi.encode(hashType, hash, timestamp))
+                        .toEthSignedMessageHash()
                 ).recover(signatures[ind]) == signers.at(ind),
                 "Signature mismatch"
             );
