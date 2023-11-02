@@ -7,7 +7,6 @@ const {
   generateRandomAddress,
   deriveRootRole,
   deriveRole,
-  buildEIP712Domain,
   generateRandomBytes,
   signData,
 } = require('./test-utils');
