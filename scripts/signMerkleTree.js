@@ -26,36 +26,16 @@ if (!chainIdArg || isNaN(parseInt(chainIdArg))) {
   console.error('You must provide a valid chainId as an argument!');
   process.exit(1);
 }
-const chainId = parseInt(chainIdArg);
-
-const domain = {
-  name: 'HashRegistry',
-  version: '1.0.0',
-  chainId: chainId,
-  verifyingContract: '0x0000000000000000000000000000000000000000',
-};
-
-const types = {
-  SignedHash: [
-    { name: 'hashType', type: 'bytes32' },
-    { name: 'hash', type: 'bytes32' },
-    { name: 'timestamp', type: 'uint256' },
-  ],
-};
-
-async function signEIP712Message(hashType, hash, timestamp) {
-  const message = {
-    hashType: hashType,
-    hash: hash,
-    timestamp: timestamp,
-  };
-
-  const signature = await wallet._signTypedData(domain, types, message);
-  return signature;
-}
 
 function constructMerkleTree(values, dataTypes) {
   return StandardMerkleTree.of(values, dataTypes);
+}
+
+async function signMessage(privateKey, message) {
+  const wallet = new ethers.Wallet(privateKey);
+  const messageHash = ethers.utils.hashMessage(message);
+  const signature = await wallet.signMessage(ethers.utils.arrayify(messageHash));
+  return signature;
 }
 
 const HASH_TYPE_DATA_TYPES = {
@@ -88,7 +68,7 @@ async function signMerkleTree(merkleTreeName) {
 
   const hashType = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(merkleTreeName));
 
-  const signature = await signEIP712Message(hashType, merkleRoot, timestamp);
+  const signature = await signMessage(hashType, merkleRoot, timestamp);
   const signerAddress = wallet.address;
 
   currentHashData = {
@@ -109,4 +89,4 @@ signMerkleTree(merkleType).catch((error) => {
   process.exit(1);
 });
 
-module.exports = { signEIP712Message, constructMerkleTree };
+module.exports = { signMerkleTree, constructMerkleTree };
