@@ -7,7 +7,6 @@ const {
   generateRandomAddress,
   deriveRootRole,
   deriveRole,
-  buildEIP712Domain,
   generateRandomBytes,
   signData,
 } = require('./test-utils');
@@ -139,15 +138,6 @@ describe('DapiDataRegistry', function () {
       .grantRole(await api3ServerV1.dapiNameSetterRole(), dapiDataRegistry.address);
 
     const timestamp = Math.floor(Date.now() / 1000);
-    const chainId = (await hashRegistry.provider.getNetwork()).chainId;
-    const domain = buildEIP712Domain('HashRegistry', chainId, hashRegistry.address);
-    const types = {
-      SignedHash: [
-        { name: 'hashType', type: 'bytes32' },
-        { name: 'hash', type: 'bytes32' },
-        { name: 'timestamp', type: 'uint256' },
-      ],
-    };
 
     const baseUrl = 'https://example.com/';
     const apiTreeValues = [
@@ -160,15 +150,11 @@ describe('DapiDataRegistry', function () {
     const apiTree = StandardMerkleTree.of(apiTreeValues, ['address', 'string']);
     const apiHashType = hre.ethers.utils.solidityKeccak256(['string'], ['Signed API URL Merkle tree root']);
     const rootSigners = [roles.rootSigner1, roles.rootSigner2, roles.rootSigner3];
+    const apiMessages = hre.ethers.utils.arrayify(
+      hre.ethers.utils.solidityKeccak256(['bytes32', 'bytes32', 'uint256'], [apiHashType, apiTree.root, timestamp])
+    );
     const apiTreeRootSignatures = await Promise.all(
-      rootSigners.map(
-        async (rootSigner) =>
-          await rootSigner._signTypedData(domain, types, {
-            hashType: apiHashType,
-            hash: apiTree.root,
-            timestamp,
-          })
-      )
+      rootSigners.map(async (rootSigner) => await rootSigner.signMessage(apiMessages))
     );
     await hashRegistry.connect(roles.owner).setupSigners(
       apiHashType,
@@ -205,15 +191,11 @@ describe('DapiDataRegistry', function () {
     const dapiTree = StandardMerkleTree.of(dapiTreeValues, ['bytes32', 'bytes32', 'address']);
     const dapiTreeRoot = dapiTree.root;
     const dapiHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI management Merkle tree root']);
+    const dapiMessages = hre.ethers.utils.arrayify(
+      hre.ethers.utils.solidityKeccak256(['bytes32', 'bytes32', 'uint256'], [dapiHashType, dapiTreeRoot, timestamp])
+    );
     const dapiTreeRootSignatures = await Promise.all(
-      rootSigners.map(
-        async (rootSigner) =>
-          await rootSigner._signTypedData(domain, types, {
-            hashType: dapiHashType,
-            hash: dapiTreeRoot,
-            timestamp,
-          })
-      )
+      rootSigners.map(async (rootSigner) => await rootSigner.signMessage(dapiMessages))
     );
 
     await hashRegistry.connect(roles.owner).setupSigners(
@@ -847,26 +829,18 @@ describe('DapiDataRegistry', function () {
                       ['string'],
                       ['dAPI management Merkle tree root']
                     );
-                    const chainId = (await hashRegistry.provider.getNetwork()).chainId;
-                    const domain = buildEIP712Domain('HashRegistry', chainId, hashRegistry.address);
-                    const types = {
-                      SignedHash: [
-                        { name: 'hashType', type: 'bytes32' },
-                        { name: 'hash', type: 'bytes32' },
-                        { name: 'timestamp', type: 'uint256' },
-                      ],
-                    };
 
                     await new Promise((resolve) => setTimeout(resolve, 1000));
                     const timestamp = Math.floor(Date.now() / 1000);
+                    const dapiMessages = hre.ethers.utils.arrayify(
+                      hre.ethers.utils.solidityKeccak256(
+                        ['bytes32', 'bytes32', 'uint256'],
+                        [dapiHashType, newDapiTreeRoot, timestamp]
+                      )
+                    );
                     const dapiTreeRootSignatures = await Promise.all(
                       [roles.rootSigner1, roles.rootSigner2, roles.rootSigner3].map(
-                        async (rootSigner) =>
-                          await rootSigner._signTypedData(domain, types, {
-                            hashType: dapiHashType,
-                            hash: newDapiTreeRoot,
-                            timestamp,
-                          })
+                        async (rootSigner) => await rootSigner.signMessage(dapiMessages)
                       )
                     );
                     await hashRegistry.registerHash(dapiHashType, newDapiTreeRoot, timestamp, dapiTreeRootSignatures);
