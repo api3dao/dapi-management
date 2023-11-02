@@ -25,9 +25,9 @@ interface IApi3Market {
     struct Dapi {
         bytes32 name;
         address payable sponsorWallet;
-        bytes updateParams;
         uint256 price;
         uint256 duration;
+        bytes updateParams;
     }
 
     struct BuyDapiArgs {
@@ -39,6 +39,15 @@ interface IApi3Market {
         bytes32[] dapiProof;
         bytes32 priceRoot;
         bytes32[] priceProof;
+    }
+
+    struct Purchase {
+        uint256 deviationThreshold;
+        uint256 heartbeatInterval;
+        uint256 price;
+        uint256 duration;
+        uint256 start;
+        uint256 end;
     }
 
     function hashRegistry() external view returns (address);
