@@ -1,7 +1,10 @@
+import { useEffect } from 'react';
 import some from 'lodash/some';
+import { Diff2HtmlUI } from 'diff2html/lib/ui/js/diff2html-ui';
 import { ShieldCheckIcon, ShieldEllipsisIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { cn } from '~/lib/utils';
+import 'diff2html/bundles/css/diff2html.min.css';
 
 interface TreeStatusBadgeProps {
   signatures: Record<string, string>;
@@ -50,7 +53,7 @@ export function SignatureTable(props: SignatureTableProps) {
   const { signers, signatures } = props;
 
   return (
-    <Table className="min-w-[120ch] table-fixed">
+    <Table className="table-fixed">
       <TableHeader>
         <TableRow>
           <TableHead className="w-[46ch]">Signer</TableHead>
@@ -79,5 +82,36 @@ export function SignatureTable(props: SignatureTableProps) {
         })}
       </TableBody>
     </Table>
+  );
+}
+
+interface TreeDiffProps {
+  diff: string;
+}
+
+export function TreeDiff(props: TreeDiffProps) {
+  const { diff } = props;
+
+  useEffect(() => {
+    const element = document.getElementById('tree-diff-container')!;
+    const ui = new Diff2HtmlUI(element, diff, {
+      drawFileList: false,
+      fileContentToggle: false,
+      synchronisedScroll: true,
+      outputFormat: 'side-by-side',
+      rawTemplates: { 'tag-file-renamed': '' },
+    });
+    ui.draw();
+    ui.highlightCode();
+  }, [diff]);
+
+  return (
+    <>
+      <p className="my-4 text-sm text-gray-500">
+        Shows the difference between the <span className="font-bold">previous-hash.json</span> and the{' '}
+        <span className="font-bold">current-hash.json</span> files.
+      </p>
+      <div id="tree-diff-container" className="w-full overflow-x-auto" />
+    </>
   );
 }

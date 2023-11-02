@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { z } from 'zod';
 
 type TreeSubFolder =
@@ -35,6 +35,11 @@ export function readTreeDataFrom<T>(options: { subfolder: TreeSubFolder; file: T
 export function readTreeDataFrom(options: { subfolder: TreeSubFolder; file: TreeFile; schema?: z.ZodSchema }) {
   const { subfolder, file, schema = merkleTreeSchema } = options;
   const path = join(process.cwd(), '../data', subfolder, file);
+
+  if (file === 'previous-hash.json' && !existsSync(path)) {
+    return { path, data: null };
+  }
+
   const data = JSON.parse(readFileSync(path, 'utf8'));
   return {
     path,
