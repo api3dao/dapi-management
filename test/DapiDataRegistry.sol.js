@@ -795,15 +795,6 @@ describe('DapiDataRegistry', function () {
                       ['string'],
                       ['dAPI management Merkle tree root']
                     );
-                    const chainId = (await hashRegistry.provider.getNetwork()).chainId;
-                    const domain = buildEIP712Domain('HashRegistry', chainId, hashRegistry.address);
-                    const types = {
-                      SignedHash: [
-                        { name: 'hashType', type: 'bytes32' },
-                        { name: 'hash', type: 'bytes32' },
-                        { name: 'timestamp', type: 'uint256' },
-                      ],
-                    };
 
                     await new Promise((resolve) => setTimeout(resolve, 1000));
                     const timestamp = Math.floor(Date.now() / 1000);

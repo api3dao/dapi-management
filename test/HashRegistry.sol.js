@@ -2,7 +2,7 @@ const hre = require('hardhat');
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const { StandardMerkleTree } = require('@openzeppelin/merkle-tree');
 const { expect } = require('chai');
-const { generateRandomBytes32, generateRandomAddress, buildEIP712Domain } = require('./test-utils');
+const { generateRandomBytes32, generateRandomAddress } = require('./test-utils');
 
 describe('HashRegistry', function () {
   const deploy = async () => {
@@ -61,7 +61,6 @@ describe('HashRegistry', function () {
       fallbackBeaconTemplateId,
       fallbackBeaconId,
       fallbackSponsorWalletAddress,
-      types,
       dapiFallbackHashType,
       root,
       timestamp,
@@ -350,17 +349,8 @@ describe('HashRegistry', function () {
           });
           context('All signatures do not match', function () {
             it('reverts', async function () {
-              const {
-                roles,
-                hashRegistry,
-                domain,
-                types,
-                dapiFallbackHashType,
-                root,
-                timestamp,
-                signatures,
-                messages,
-              } = await helpers.loadFixture(deploy);
+              const { roles, hashRegistry, dapiFallbackHashType, root, timestamp, signatures, messages } =
+                await helpers.loadFixture(deploy);
               const signers = [
                 roles.dapiFallbackRootSigner1.address,
                 roles.dapiFallbackRootSigner2.address,
