@@ -5,6 +5,7 @@ import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3Serve
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/proxies/interfaces/IProxyFactory.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IApi3Market.sol";
 import "./interfaces/IDapiDataRegistry.sol";
 import "./interfaces/IHashRegistry.sol";
@@ -24,13 +25,7 @@ contract Api3Market is IApi3Market {
     /// @notice Api3ServerV1 contract address
     address public immutable override api3ServerV1;
 
-    /// @notice Managed data feed updates end date
-    mapping(bytes32 => uint256) dapiToEndDate;
-
-    //mapping(bytes32 => Purchase) dapiToPurchase; // New purchase or upgrade
-    mapping(bytes32 => Purchase) dapiToPurchase; // New purchase or upgrade
-    //mapping(bytes32 => Purchase) public override dapiToNextPurchase; // Extend current purchase or downgrade
-    mapping(bytes32 => Purchase) dapiToNextPurchase; // Extend current purchase or downgrade
+    mapping(bytes32 => Purchase[]) public dapiToPurchases;
 
     /// @param _hashRegistry HashRegistry contract address
     /// @param _dapiDataRegistry DapiDataRegistry contract address
@@ -199,155 +194,119 @@ contract Api3Market is IApi3Market {
     ) private {
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapi.name));
         uint256 priceToPay = dapi.price;
-        Purchase storage currentPurchase = dapiToPurchase[dapiNameHash];
-        Purchase storage nextPurchase = dapiToNextPurchase[dapiNameHash];
-        uint256 newPurchaseEnd = block.timestamp + dapi.duration;
+        uint256 purchaseEnd = block.timestamp + dapi.duration;
 
-        if (block.timestamp < currentPurchase.end) {
-            // There is a current purchase so determine if trying to extend, upgrade or downgrade
-            if (
-                deviationThresholdInPercentage >=
-                currentPurchase.deviationThreshold &&
-                heartbeatInterval >= currentPurchase.heartbeatInterval
-            ) {
-                // New purchase is an extension or downgrade so calculate price
-                // based on period after current purchase ends
-                require(
-                    nextPurchase.start >= currentPurchase.end,
-                    "There is already a pending extension or downgrade"
-                );
-                require(
-                    newPurchaseEnd > currentPurchase.end,
-                    "Does not extends nor downgrades current purchase"
-                );
-                uint256 periodAfterCurrentEnds = newPurchaseEnd -
-                    currentPurchase.end;
-                priceToPay =
-                    (periodAfterCurrentEnds * dapi.price) /
-                    dapi.duration;
-                dapiToNextPurchase[dapiNameHash] = Purchase(
+        uint256 index = _findCurrentDapiPurchaseIndex(dapiNameHash);
+
+        if (index == 0) {
+            // Scenerio 1: No previous purchases
+            dapiToPurchases[dapiNameHash].push(
+                Purchase(
                     deviationThresholdInPercentage,
                     heartbeatInterval,
-                    priceToPay,
-                    periodAfterCurrentEnds,
-                    currentPurchase.end,
-                    newPurchaseEnd
-                );
-            } else {
-                // New purchase is an upgrade so calculate price based on full
-                // price but deduct what is left in the current purchase
-                uint256 periodBeforeCurrentEnds = currentPurchase.end -
-                    block.timestamp;
-                uint256 currentToDeduct = (periodBeforeCurrentEnds *
-                    currentPurchase.price) / currentPurchase.duration;
-                priceToPay -= currentToDeduct;
-                if (newPurchaseEnd > nextPurchase.start) {
-                    // Also deduct from pending extension or downgrade if overlap
-                    // or goes beyond next purchase
-                    if (newPurchaseEnd <= nextPurchase.end) {
-                        // New purchase ends before pending extension or downgrade
-                        // ends
-                        uint256 periodOverlapedWithNext = nextPurchase.end -
-                            currentPurchase.end;
-                        priceToPay -=
-                            (periodOverlapedWithNext * nextPurchase.price) /
-                            nextPurchase.duration;
-                        dapiToNextPurchase[dapiNameHash] = Purchase(
-                            deviationThresholdInPercentage,
-                            heartbeatInterval,
-                            priceToPay,
-                            nextPurchase.duration - periodOverlapedWithNext,
-                            nextPurchase.start + periodOverlapedWithNext,
-                            nextPurchase.end
-                        );
-                    } else {
-                        // New purchase ends after pending extension or downgrade
-                        // ends
-                        priceToPay -=
-                            ((dapi.duration +
-                                block.timestamp -
-                                currentPurchase.end) * nextPurchase.price) /
-                            nextPurchase.duration;
-                        delete dapiToNextPurchase[dapiNameHash];
-                    }
-                }
-                dapiToPurchase[dapiNameHash] = Purchase(
-                    deviationThresholdInPercentage,
-                    heartbeatInterval,
-                    priceToPay,
+                    dapi.price,
                     dapi.duration,
                     block.timestamp,
-                    newPurchaseEnd
-                );
-            }
+                    purchaseEnd
+                )
+            );
         } else {
-            // There no previous purchases or current has expired
-            if (block.timestamp < nextPurchase.end) {
-                // but there is a valid extension or downgrade purchase that hasn't
-                if (
-                    deviationThresholdInPercentage >=
-                    nextPurchase.deviationThreshold &&
-                    heartbeatInterval >= nextPurchase.heartbeatInterval
-                ) {
-                    // New purchase is an extension or downgrade of the previous extension or downgrade
-                    uint256 periodBeforeNextEnds = nextPurchase.end -
-                        block.timestamp;
-                    priceToPay -=
-                        (periodBeforeNextEnds * dapi.price) /
-                        dapi.duration;
-                    dapiToNextPurchase[dapiNameHash] = Purchase(
+            Purchase storage current = dapiToPurchases[dapiNameHash][index];
+            Purchase storage downgrade = current;
+            uint256 purchasesLength = dapiToPurchases[dapiNameHash].length;
+            if (index == purchasesLength - 1) {
+                // We only allow a single downgrade after last purchase
+                downgrade = dapiToPurchases[dapiNameHash][purchasesLength];
+            }
+
+            // Scenario 2: New purchase is downgrade or extension
+            // TODO: is it OK to restrict purchases to end after current period ends?
+            require(
+                purchaseEnd > current.end,
+                "Does not extends nor downgrades current purchase"
+            );
+
+            if (
+                // TODO: not 100% sure this is the right way to determine if upgrade
+                // or downgrade but this is the way it's currently being done in
+                // operation-database backend
+                deviationThresholdInPercentage >= current.deviationThreshold &&
+                heartbeatInterval >= current.heartbeatInterval
+            ) {
+                require(
+                    downgrade.end != current.end,
+                    "There is already a pending extension or downgrade"
+                );
+                uint256 downgradeDuration = purchaseEnd - current.end;
+                priceToPay = (downgradeDuration * dapi.price) / dapi.duration;
+                dapiToPurchases[dapiNameHash].push(
+                    Purchase(
                         deviationThresholdInPercentage,
                         heartbeatInterval,
                         priceToPay,
-                        dapi.duration - periodBeforeNextEnds,
-                        nextPurchase.end,
-                        newPurchaseEnd
-                    );
-                    dapiToPurchase[dapiNameHash] = nextPurchase;
-                } else {
-                    // New purchase is an upgrade of the previous extension or downgrade
-                    if (newPurchaseEnd < nextPurchase.end) {
-                        // but it ends before the previous extension or downgrade ends
-                        priceToPay -=
-                            (dapi.duration * nextPurchase.price) /
-                            nextPurchase.duration;
-                        dapiToPurchase[dapiNameHash] = Purchase(
-                            deviationThresholdInPercentage,
-                            heartbeatInterval,
-                            priceToPay,
-                            dapi.duration,
-                            block.timestamp,
-                            newPurchaseEnd
-                        );
+                        downgradeDuration,
+                        block.timestamp,
+                        purchaseEnd
+                    )
+                );
+            } else {
+                // Scenario 3: New purchase is upgrade
+                uint256 currentOverlapDuration = current.end - block.timestamp;
+                priceToPay -=
+                    (currentOverlapDuration * current.price) /
+                    current.duration;
+
+                if (downgrade.end != current.end) {
+                    // Also deduct and adjust downgrade
+                    uint256 downgradeOverlapDuration = Math.min(
+                        purchaseEnd,
+                        downgrade.end
+                    ) - downgrade.start;
+                    priceToPay -=
+                        (downgradeOverlapDuration * downgrade.price) /
+                        downgrade.duration;
+                    if (downgradeOverlapDuration == downgrade.duration) {
+                        // Purchase upgrades the downgrade completely
+                        delete dapiToPurchases[dapiNameHash][purchasesLength];
                     } else {
-                        // or it ends at the same time or after previous extension
-                        // or downgrade
-                        priceToPay -=
-                            ((nextPurchase.end - block.timestamp) *
-                                nextPurchase.price) /
-                            nextPurchase.duration;
-                        dapiToPurchase[dapiNameHash] = Purchase(
-                            deviationThresholdInPercentage,
-                            heartbeatInterval,
-                            priceToPay,
-                            dapi.duration,
-                            block.timestamp,
-                            newPurchaseEnd
-                        );
-                        delete dapiToNextPurchase[dapiNameHash];
+                        // Adjust downgrade
+                        uint256 updatedDowngradeDuration = (downgrade.duration -
+                            downgradeOverlapDuration);
+                        downgrade.price =
+                            (updatedDowngradeDuration * downgrade.price) /
+                            downgrade.duration;
+                        downgrade.duration = updatedDowngradeDuration;
+                        downgrade.start += updatedDowngradeDuration;
                     }
                 }
-            } else {
-                dapiToPurchase[dapiNameHash] = Purchase(
-                    deviationThresholdInPercentage,
-                    heartbeatInterval,
-                    priceToPay,
-                    dapi.duration,
-                    block.timestamp,
-                    newPurchaseEnd
+
+                dapiToPurchases[dapiNameHash].push(
+                    Purchase(
+                        deviationThresholdInPercentage,
+                        heartbeatInterval,
+                        priceToPay,
+                        dapi.duration,
+                        block.timestamp,
+                        purchaseEnd
+                    )
                 );
             }
         }
         require(msg.value >= priceToPay, "Insufficient payment");
+    }
+
+    function _findCurrentDapiPurchaseIndex(
+        bytes32 dapiNameHash
+    ) private view returns (uint256 index) {
+        Purchase[] storage purchases = dapiToPurchases[dapiNameHash];
+        for (uint256 ind = purchases.length - 1; ind >= 0; ind--) {
+            Purchase storage purchase = purchases[ind];
+            if (
+                block.timestamp >= purchase.start &&
+                block.timestamp < purchase.end
+            ) {
+                index = ind;
+            }
+        }
     }
 }
