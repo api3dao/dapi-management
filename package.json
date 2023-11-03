@@ -24,6 +24,7 @@
     "test:gas": "REPORT_GAS=TRUE hardhat test",
     "write-env-example": "node scripts/write-env-example.js",
     "sign": "node scripts/signMerkleTree.js",
+    "update:dapi-fallback": "node scripts/update-hash/updateDapiFallbackHash.js",
     "frontend:dev": "cd frontend && next dev",
     "frontend:build": "cd frontend && next build",
     "frontend:start": "cd frontend && next start",
