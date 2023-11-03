@@ -86,13 +86,15 @@ export function SignatureTable(props: SignatureTableProps) {
 }
 
 interface TreeDiffProps {
-  diff: string;
+  diff: string | null;
 }
 
 export function TreeDiff(props: TreeDiffProps) {
   const { diff } = props;
 
   useEffect(() => {
+    if (!diff) return;
+
     const element = document.getElementById('tree-diff-container')!;
     const ui = new Diff2HtmlUI(element, diff, {
       drawFileList: false,
@@ -105,13 +107,33 @@ export function TreeDiff(props: TreeDiffProps) {
     ui.highlightCode();
   }, [diff]);
 
+  const previousFile = <span className="font-semibold">previous-hash.json</span>;
+  const currentFile = <span className="font-semibold">current-hash.json</span>;
+
   return (
-    <>
-      <p className="my-4 text-sm text-gray-500">
-        Shows the difference between the <span className="font-bold">previous-hash.json</span> and the{' '}
-        <span className="font-bold">current-hash.json</span> files.
-      </p>
-      <div id="tree-diff-container" className="w-full overflow-x-auto" />
-    </>
+    <div>
+      {diff == null ? (
+        <p className="my-4 text-sm text-gray-500">
+          There is no {previousFile} file to compare the {currentFile} file with.
+        </p>
+      ) : diff === '' ? (
+        <p className="my-4 text-sm text-gray-500">
+          The contents of {previousFile} and {currentFile} are identical.
+        </p>
+      ) : (
+        <>
+          <p className="my-4 text-sm text-gray-500">
+            Shows the difference between the {previousFile} and the {currentFile} files.
+          </p>
+          <div
+            id="tree-diff-container"
+            className="w-full overflow-x-auto"
+            style={{
+              '--d2h-file-header-bg-color': 'hsl(var(--muted))',
+            }}
+          />
+        </>
+      )}
+    </div>
   );
 }
