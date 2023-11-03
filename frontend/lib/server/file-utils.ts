@@ -1,6 +1,10 @@
 import { join } from 'path';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { promisify } from 'util';
+import { exec } from 'child_process';
 import { z } from 'zod';
+
+const execute = promisify(exec);
 
 type TreeSubFolder =
   | 'dapi-fallback-merkle-tree-root'
@@ -58,4 +62,9 @@ export function readSignerDataFrom(subfolder: TreeSubFolder) {
 
 export function writeMerkleTreeData(path: string, data: MerkleTreeData) {
   writeFileSync(path, JSON.stringify(data));
+}
+
+export async function createFileDiff(pathA: string, pathB: string) {
+  const result = await execute(`git diff --no-index ${pathA} ${pathB} | cat`);
+  return result.stdout;
 }

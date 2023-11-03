@@ -1,5 +1,3 @@
-import { promisify } from 'util';
-import { exec } from 'child_process';
 import { ethers } from 'ethers';
 import { z } from 'zod';
 import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
@@ -10,11 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { Button } from '~/components/ui/button';
 import { TreeStatusBadge, TreeRootBadge, SignatureTable, TreeDiff } from '~/components/merkle-tree-elements';
 import { useWeb3Data } from '~/contexts/web3-data-context';
-import { readTreeDataFrom, readSignerDataFrom } from '~/lib/server/file-utils';
+import { readTreeDataFrom, readSignerDataFrom, createFileDiff } from '~/lib/server/file-utils';
 import { validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { InferGetServerSidePropsType } from 'next';
-
-const execute = promisify(exec);
 
 const merkleTreeSchema = z.object({
   signatures: z.record(z.string()),
@@ -36,12 +32,7 @@ export async function getServerSideProps() {
   });
   const { data: signers } = readSignerDataFrom('dapi-fallback-merkle-tree-root');
 
-  let treeDiff = '';
-  if (previousTree) {
-    const result = await execute(`git diff --no-index ${previousTreePath} ${currentTreePath} | cat`);
-    treeDiff = result.stdout;
-  }
-
+  const treeDiff = previousTree ? await createFileDiff(previousTreePath, currentTreePath) : null;
   return {
     props: { currentTree, signers, treeDiff },
   };
@@ -86,13 +77,13 @@ export default function DapiFallbackTree(props: Props) {
         <SignatureTable signers={signers} signatures={signatures} />
       </div>
 
-      <Tabs defaultValue="mt-values">
+      <Tabs defaultValue="0">
         <TabsList>
-          <TabsTrigger value="mt-values">Tree Values</TabsTrigger>
-          <TabsTrigger value="mt-diff">Tree Diff</TabsTrigger>
+          <TabsTrigger value="0">Tree Values</TabsTrigger>
+          <TabsTrigger value="1">Tree Diff</TabsTrigger>
         </TabsList>
-        <TabsContent value="mt-values">
-          <Table>
+        <TabsContent value="0">
+          <Table className="mt-4">
             <TableHeader sticky>
               <TableRow>
                 <TableHead className="w-[15ch] whitespace-nowrap">dAPI Name</TableHead>
@@ -111,7 +102,7 @@ export default function DapiFallbackTree(props: Props) {
             </TableBody>
           </Table>
         </TabsContent>
-        <TabsContent value="mt-diff" forceMount>
+        <TabsContent value="1" forceMount>
           <TreeDiff diff={props.treeDiff} />
         </TabsContent>
       </Tabs>
