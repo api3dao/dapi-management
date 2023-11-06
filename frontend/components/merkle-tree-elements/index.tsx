@@ -125,13 +125,7 @@ export function TreeDiff(props: TreeDiffProps) {
           <p className="my-4 text-sm text-gray-500">
             Shows the difference between the {previousFile} and the {currentFile} files.
           </p>
-          <div
-            id="tree-diff-container"
-            className="w-full overflow-x-auto"
-            style={{
-              '--d2h-file-header-bg-color': 'hsl(var(--muted))',
-            }}
-          />
+          <div id="tree-diff-container" className="w-full overflow-x-auto" />
         </>
       )}
     </div>
