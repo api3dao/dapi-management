@@ -80,13 +80,13 @@ keccak256(abi.encodePacked('Signed API URL Merkle tree root'));
 1. Run the script by specifying the Merkle tree's name as follows:
 
 ```bash
-yarn update:dapi-fallback [MerkleTreeName]
+yarn sync-tree-values [MerkleTreeName]
 ```
 
 For instance, to update the current-hash fo `dAPI fallback Merkle tree` Merkle tree, you would use:
 
 ```bash
-yarn update:dapi-fallback "dapi fallback"
+yarn sync-tree-values "dapi fallback"
 ```
 
 This command checks the values in `current-hash.json` and compares it with what `@nodary/utilities` has. If they are not equal

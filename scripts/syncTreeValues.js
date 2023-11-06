@@ -14,17 +14,32 @@ const MERKLE_TREE_MAPPING = {
   'api integration': 'signed-api-url-merkle-tree-root',
 };
 
+function getExistingTreeValues(merkleTreeName) {
+  switch (merkleTreeName) {
+    case 'dapi fallback':
+      return getNodaryFallbackValues();
+    case 'dapi management':
+      return [];
+    case 'price':
+      return [];
+    case 'api integration':
+      return [];
+    default:
+      break;
+  }
+}
+
 if (!MERKLE_TREE_MAPPING[merkleType]) {
   console.error('You must provide a valid Merkle type as an argument!');
   process.exit(1);
 }
 
-async function updateDapiFallbackHash(merkleTreeName) {
+async function syncTreeValues(merkleTreeName) {
   const folderName = MERKLE_TREE_MAPPING[merkleTreeName];
 
   // Read metadata to get the root signers
-  const currentHashPath = path.join(__dirname, '../..', 'data', folderName, 'current-hash.json');
-  const previousHashPath = path.join(__dirname, '../..', 'data', folderName, 'previous-hash.json');
+  const currentHashPath = path.join(__dirname, '..', 'data', folderName, 'current-hash.json');
+  const previousHashPath = path.join(__dirname, '..', 'data', folderName, 'previous-hash.json');
   if (!fs.existsSync(currentHashPath)) {
     console.info('Current hash file not found');
     process.exit(1);
@@ -33,7 +48,7 @@ async function updateDapiFallbackHash(merkleTreeName) {
   const currentHashData = JSON.parse(fs.readFileSync(currentHashPath, 'utf8'));
   const currentHashValues = currentHashData.merkleTreeValues ? currentHashData.merkleTreeValues.values : [];
 
-  const values = getNodaryFallbackValues();
+  const values = getExistingTreeValues(merkleTreeName);
 
   if (isEqual(currentHashValues, values)) {
     console.info('Current hash file is up to date!');
@@ -53,6 +68,7 @@ async function updateDapiFallbackHash(merkleTreeName) {
   }
 }
 
+//#region DAPI Fallback values fetch
 // See https://github.com/nodaryio/utilities/issues/14
 const ONE_PERCENT_NORMALIZED = 1 * 1e6;
 const ONE_DAY_IN_SECONDS = 24 * 60 * 60;
@@ -67,9 +83,11 @@ function getNodaryFallbackValues() {
   });
 }
 
-updateDapiFallbackHash(merkleType).catch((error) => {
+//#endregion
+
+syncTreeValues(merkleType).catch((error) => {
   console.error(`Error processing ${merkleType}:`, error);
   process.exit(1);
 });
 
-module.exports = { updateDapiFallbackHash };
+module.exports = { syncTreeValues };
