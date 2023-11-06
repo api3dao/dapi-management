@@ -47,6 +47,8 @@ contract Api3Market is IApi3Market {
         hashRegistry = _hashRegistry;
         dapiDataRegistry = _dapiDataRegistry;
         proxyFactory = _proxyFactory;
+        // TODO: should this contract get the Api3ServerV1 address from
+        // DapiDataRegistry or from ProxyFactory contracts instead?
         api3ServerV1 = _api3ServerV1;
     }
 
