@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3ServerV1.sol";
+import "@api3/airnode-protocol-v1/contracts/access-control-registry/AccessControlRegistryAdminnedWithManager.sol";
 import "./interfaces/IHashRegistry.sol";
 import "./interfaces/IDapiFallbackV2.sol";
 import "./interfaces/IDapiDataRegistry.sol";
@@ -15,9 +15,23 @@ import "./interfaces/IDapiDataRegistry.sol";
 /// and ensuring data feed continuity by utilizing Merkle proofs for verification.
 /// @dev The contract inherits from the Ownable contract of the OpenZeppelin library
 /// @dev which provides basic authorization control functions.
-contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
+contract DapiFallbackV2 is
+    AccessControlRegistryAdminnedWithManager,
+    IDapiFallbackV2
+{
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
+    /// @notice dAPI adder role description
+    string public constant override FALLBACK_EXECUTER_ROLE_DESCRIPTION =
+        "Fallback executer";
+    /// @notice dAPI remover role description
+    string public constant override FALLBACK_REVERTER_ROLE_DESCRIPTION =
+        "Fallback reverter";
+
+    /// @notice dAPI adder role
+    bytes32 public immutable override fallbackExecuterRole;
+    /// @notice dAPI remover role
+    bytes32 public immutable override fallbackReverterRole;
     /// @notice Api3ServerV1 contract address
     address public immutable override api3ServerV1;
     /// @notice HashRegistry contract address
@@ -36,15 +50,27 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
     EnumerableSet.Bytes32Set private fallbackedDapis;
 
     /// @notice Initializes the contract setting the api3ServerV1 and hashRegistry addresses.
+    /// @param _accessControlRegistry AccessControlRegistry contract address
+    /// @param _adminRoleDescription Admin role description
+    /// @param _manager Manager address
     /// @param _api3ServerV1 The address of the Api3ServerV1 contract.
     /// @param _hashRegistry The address of the HashRegistry contract.
     /// @param _dapiDataRegistry The address of the DapiDataRegistry contract.
     /// @dev The constructor requires non-zero addresses for the api3ServerV1 and hashRegistry contracts.
     constructor(
+        address _accessControlRegistry,
+        string memory _adminRoleDescription,
+        address _manager,
         address _api3ServerV1,
         address _hashRegistry,
         address _dapiDataRegistry
-    ) {
+    )
+        AccessControlRegistryAdminnedWithManager(
+            _accessControlRegistry,
+            _adminRoleDescription,
+            _manager
+        )
+    {
         require(
             _api3ServerV1 != address(0),
             "api3ServerV1 Address cannot be zero"
@@ -61,6 +87,14 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
             _dapiDataRegistry != address(0),
             "dapiDataRegistry Address cannot be zero"
         );
+        fallbackExecuterRole = _deriveRole(
+            _deriveAdminRole(manager),
+            FALLBACK_EXECUTER_ROLE_DESCRIPTION
+        );
+        fallbackReverterRole = _deriveRole(
+            _deriveAdminRole(manager),
+            FALLBACK_REVERTER_ROLE_DESCRIPTION
+        );
         api3ServerV1 = _api3ServerV1;
         hashRegistry = _hashRegistry;
         dapiDataRegistry = _dapiDataRegistry;
@@ -72,7 +106,8 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
 
     /// @notice Allows the contract owner to withdraw funds from the contract.
     /// @param amount The amount of funds to withdraw.
-    function withdraw(uint256 amount) external override onlyOwner {
+    function withdraw(uint256 amount) external override {
+        require(msg.sender == manager, "Sender is not manager role");
         require(amount != 0, "Amount zero");
         Address.sendValue(payable(msg.sender), amount);
         emit Withdrawn(msg.sender, amount, address(this).balance);
@@ -100,6 +135,14 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
     function executeDapiFallback(
         ExecuteDapiFallbackArgs calldata args
     ) external override {
+        require(
+            msg.sender == manager ||
+                IAccessControlRegistry(accessControlRegistry).hasRole(
+                    fallbackExecuterRole,
+                    msg.sender
+                ),
+            "Sender is not manager or has fallback executer role"
+        );
         require(args.dapiName != bytes32(0), "Dapi name is zero");
         require(args.dataFeedId != bytes32(0), "Data feed ID is zero");
         require(args.updateParams.length != 0, "Update params empty");
@@ -190,7 +233,7 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
     /// managed data feed. It uses Merkle tree root and proof for verification
     /// and it also requires that the executeDapiFallback function was previously
     /// called
-    /// @dev Only the contract owner can execute this function to switch back to
+    /// @dev Only the fallback reverter or manager can execute this function to switch back to
     /// managed data feed
     /// @param dapiName dAPI name
     /// @param dataFeedId Data feed ID the dAPI will point to
@@ -212,7 +255,15 @@ contract DapiFallbackV2 is Ownable, IDapiFallbackV2 {
         uint32 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
-    ) external override onlyOwner {
+    ) external override {
+        require(
+            msg.sender == manager ||
+                IAccessControlRegistry(accessControlRegistry).hasRole(
+                    fallbackReverterRole,
+                    msg.sender
+                ),
+            "Sender is not manager or has fallback reverter role"
+        );
         require(
             fallbackedDapis.remove(dapiName),
             "dAPI fallback has not been executed"

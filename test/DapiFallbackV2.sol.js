@@ -2,7 +2,13 @@ const hre = require('hardhat');
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const { StandardMerkleTree } = require('@openzeppelin/merkle-tree');
 const { expect } = require('chai');
-const { generateRandomBytes32, generateRandomAddress, deriveRootRole, generateRandomBytes } = require('./test-utils');
+const {
+  generateRandomBytes32,
+  generateRandomAddress,
+  deriveRole,
+  deriveRootRole,
+  generateRandomBytes,
+} = require('./test-utils');
 
 describe('DapiFallbackV2', function () {
   const HUNDRED_PERCENT = 1e8;
@@ -12,6 +18,8 @@ describe('DapiFallbackV2', function () {
       'deployer',
       'manager',
       'dapiFallbackV2Owner',
+      'fallbackExecuter',
+      'fallbackReverter',
       'hashRegistryOwner',
       'accessControlRegistry',
       'dapiFallbackRootSigner1',
@@ -58,16 +66,33 @@ describe('DapiFallbackV2', function () {
       api3ServerV1.address
     );
 
+    const dapiFallbackAdminRoleDescription = 'DapiDataRegistry admin';
     const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
     const dapiFallbackV2 = await DapiFallbackV2.deploy(
+      accessControlRegistry.address,
+      dapiFallbackAdminRoleDescription,
+      roles.manager.address,
       api3ServerV1.address,
       hashRegistry.address,
       dapiDataRegistry.address
     );
-    await dapiFallbackV2.connect(roles.deployer).transferOwnership(roles.dapiFallbackV2Owner.address);
 
     const rootRole = deriveRootRole(roles.manager.address);
+    const dapiFallbackAdminRole = deriveRole(rootRole, dapiFallbackAdminRoleDescription);
+    const fallbackExecuterRoleDescription = await dapiFallbackV2.FALLBACK_EXECUTER_ROLE_DESCRIPTION();
+    const fallbackExecuterRole = deriveRole(dapiFallbackAdminRole, fallbackExecuterRoleDescription);
+    const fallbackReverterRoleDescription = await dapiFallbackV2.FALLBACK_REVERTER_ROLE_DESCRIPTION();
+    const fallbackReverterRole = deriveRole(dapiFallbackAdminRole, fallbackReverterRoleDescription);
 
+    await accessControlRegistry
+      .connect(roles.manager)
+      .initializeRoleAndGrantToSender(rootRole, dapiFallbackAdminRoleDescription);
+    await accessControlRegistry
+      .connect(roles.manager)
+      .initializeRoleAndGrantToSender(dapiFallbackAdminRole, fallbackExecuterRoleDescription);
+    await accessControlRegistry
+      .connect(roles.manager)
+      .initializeRoleAndGrantToSender(dapiFallbackAdminRole, fallbackReverterRoleDescription);
     await accessControlRegistry
       .connect(roles.manager)
       .initializeRoleAndGrantToSender(rootRole, api3ServerV1AdminRoleDescription);
@@ -96,6 +121,9 @@ describe('DapiFallbackV2', function () {
         await dapiDataRegistry.adminRole(),
         await dapiDataRegistry.DAPI_REMOVER_ROLE_DESCRIPTION()
       );
+
+    await accessControlRegistry.connect(roles.manager).grantRole(fallbackExecuterRole, roles.fallbackExecuter.address);
+    await accessControlRegistry.connect(roles.manager).grantRole(fallbackReverterRole, roles.fallbackReverter.address);
     await accessControlRegistry
       .connect(roles.manager)
       .grantRole(await api3ServerV1.dapiNameSetterRole(), dapiDataRegistry.address);
@@ -287,8 +315,7 @@ describe('DapiFallbackV2', function () {
   describe('constructor', function () {
     context('Address is not zero', function () {
       it('constructs', async function () {
-        const { roles, api3ServerV1, dapiFallbackV2, hashRegistry } = await helpers.loadFixture(deploy);
-        expect(await dapiFallbackV2.owner()).to.equal(roles.dapiFallbackV2Owner.address);
+        const { api3ServerV1, dapiFallbackV2, hashRegistry } = await helpers.loadFixture(deploy);
         expect(await dapiFallbackV2.api3ServerV1()).to.equal(api3ServerV1.address);
         expect(await dapiFallbackV2.hashRegistry()).to.equal(hashRegistry.address);
       });
@@ -296,22 +323,16 @@ describe('DapiFallbackV2', function () {
   });
 
   describe('withdraw', function () {
-    context('Sender is the owner', function () {
+    context('Sender is the manager', function () {
       context('Recipient address is not zero', function () {
         context('Amount is not zero', function () {
           context('Contract have funds', function () {
             context('Low level call succeeds', function () {
               it('withdraws the requested amount', async function () {
                 const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
-                await expect(
-                  dapiFallbackV2.connect(roles.dapiFallbackV2Owner).withdraw(hre.ethers.utils.parseEther('1'))
-                )
+                await expect(dapiFallbackV2.connect(roles.manager).withdraw(hre.ethers.utils.parseEther('1')))
                   .to.emit(dapiFallbackV2, 'Withdrawn')
-                  .withArgs(
-                    roles.dapiFallbackV2Owner.address,
-                    hre.ethers.utils.parseEther('1'),
-                    hre.ethers.utils.parseEther('32')
-                  );
+                  .withArgs(roles.manager.address, hre.ethers.utils.parseEther('1'), hre.ethers.utils.parseEther('32'));
               });
             });
           });
@@ -319,7 +340,7 @@ describe('DapiFallbackV2', function () {
             it('reverts', async function () {
               const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
               await expect(
-                dapiFallbackV2.connect(roles.dapiFallbackV2Owner).withdraw(hre.ethers.utils.parseEther('34'))
+                dapiFallbackV2.connect(roles.manager).withdraw(hre.ethers.utils.parseEther('34'))
               ).to.be.revertedWith('Address: insufficient balance');
             });
           });
@@ -327,19 +348,17 @@ describe('DapiFallbackV2', function () {
         context('Amount is zero', function () {
           it('reverts', async function () {
             const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
-            await expect(dapiFallbackV2.connect(roles.dapiFallbackV2Owner).withdraw(0)).to.be.revertedWith(
-              'Amount zero'
-            );
+            await expect(dapiFallbackV2.connect(roles.manager).withdraw(0)).to.be.revertedWith('Amount zero');
           });
         });
       });
     });
-    context('Sender is not the owner', function () {
+    context('Sender is not the manager', function () {
       it('reverts', async function () {
         const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
         await expect(
           dapiFallbackV2.connect(roles.randomPerson).withdraw(hre.ethers.utils.parseEther('33'))
-        ).to.be.revertedWith('Ownable: caller is not the owner');
+        ).to.be.revertedWith('Sender is not manager role');
       });
     });
   });
@@ -410,13 +429,15 @@ describe('DapiFallbackV2', function () {
                                   dapiTree.getProof(dapiTreeValue)
                                 );
                               await expect(
-                                dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
+                                dapiFallbackV2
+                                  .connect(roles.fallbackExecuter)
+                                  .executeDapiFallback(executeDapiFallbackArgs)
                               )
                                 .to.emit(dapiFallbackV2, 'ExecutedDapiFallback')
                                 .withArgs(
                                   hre.ethers.utils.formatBytes32String(dapiName),
                                   fallbackBeaconId,
-                                  roles.randomPerson.address
+                                  roles.fallbackExecuter.address
                                 );
                               const finalBalanceOfSponsor = await hre.ethers.provider.getBalance(
                                 fallbackSponsorWalletAddress
@@ -478,7 +499,9 @@ describe('DapiFallbackV2', function () {
                                 sponsorWallet: fallbackSponsorWalletAddress,
                               };
                               await expect(
-                                dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
+                                dapiFallbackV2
+                                  .connect(roles.fallbackExecuter)
+                                  .executeDapiFallback(executeDapiFallbackArgs)
                               ).to.be.revertedWith('Invalid tree proof');
                             });
                           });
@@ -526,7 +549,9 @@ describe('DapiFallbackV2', function () {
                               sponsorWallet: fallbackSponsorWalletAddress,
                             };
                             await expect(
-                              dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
+                              dapiFallbackV2
+                                .connect(roles.fallbackExecuter)
+                                .executeDapiFallback(executeDapiFallbackArgs)
                             ).to.be.revertedWith('Tree has not been registered');
                           });
                         });
@@ -559,7 +584,7 @@ describe('DapiFallbackV2', function () {
                             sponsorWallet: fallbackSponsorWalletAddress,
                           };
                           await expect(
-                            dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
+                            dapiFallbackV2.connect(roles.fallbackExecuter).executeDapiFallback(executeDapiFallbackArgs)
                           ).to.be.revertedWith('Root is zero');
                         });
                       });
@@ -592,7 +617,7 @@ describe('DapiFallbackV2', function () {
                           sponsorWallet: fallbackSponsorWalletAddress,
                         };
                         await expect(
-                          dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
+                          dapiFallbackV2.connect(roles.fallbackExecuter).executeDapiFallback(executeDapiFallbackArgs)
                         ).to.be.revertedWith('Proof is empty');
                       });
                     });
@@ -672,7 +697,7 @@ describe('DapiFallbackV2', function () {
                       sponsorWallet: fallbackSponsorWalletAddress,
                     };
                     await expect(
-                      dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
+                      dapiFallbackV2.connect(roles.fallbackExecuter).executeDapiFallback(executeDapiFallbackArgs)
                     ).to.be.revertedWith('Update params does not match');
                   });
                 });
@@ -706,7 +731,7 @@ describe('DapiFallbackV2', function () {
                     sponsorWallet: zeroAddress,
                   };
                   await expect(
-                    dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
+                    dapiFallbackV2.connect(roles.fallbackExecuter).executeDapiFallback(executeDapiFallbackArgs)
                   ).to.be.revertedWith('Zero address');
                 });
               });
@@ -739,7 +764,7 @@ describe('DapiFallbackV2', function () {
                   sponsorWallet: fallbackSponsorWalletAddress,
                 };
                 await expect(
-                  dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
+                  dapiFallbackV2.connect(roles.fallbackExecuter).executeDapiFallback(executeDapiFallbackArgs)
                 ).to.be.revertedWith('Price is zero');
               });
             });
@@ -772,7 +797,7 @@ describe('DapiFallbackV2', function () {
                 sponsorWallet: fallbackSponsorWalletAddress,
               };
               await expect(
-                dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
+                dapiFallbackV2.connect(roles.fallbackExecuter).executeDapiFallback(executeDapiFallbackArgs)
               ).to.be.revertedWith('Duration is zero');
             });
           });
@@ -806,7 +831,7 @@ describe('DapiFallbackV2', function () {
               sponsorWallet: fallbackSponsorWalletAddress,
             };
             await expect(
-              dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
+              dapiFallbackV2.connect(roles.fallbackExecuter).executeDapiFallback(executeDapiFallbackArgs)
             ).to.be.revertedWith('Update params empty');
           });
         });
@@ -840,7 +865,7 @@ describe('DapiFallbackV2', function () {
             sponsorWallet: fallbackSponsorWalletAddress,
           };
           await expect(
-            dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
+            dapiFallbackV2.connect(roles.fallbackExecuter).executeDapiFallback(executeDapiFallbackArgs)
           ).to.be.revertedWith('Data feed ID is zero');
         });
       });
@@ -884,7 +909,7 @@ describe('DapiFallbackV2', function () {
           sponsorWallet: fallbackSponsorWalletAddress,
         };
         await expect(
-          dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
+          dapiFallbackV2.connect(roles.fallbackExecuter).executeDapiFallback(executeDapiFallbackArgs)
         ).to.be.revertedWith('Dapi name is zero');
       });
     });
@@ -935,14 +960,14 @@ describe('DapiFallbackV2', function () {
             dapiTree.root,
             dapiTree.getProof(dapiTreeValue)
           );
-        await dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs);
+        await dapiFallbackV2.connect(roles.fallbackExecuter).executeDapiFallback(executeDapiFallbackArgs);
         expect(await dapiFallbackV2.getFallbackedDapis()).to.deep.equal([
           hre.ethers.utils.formatBytes32String(dapiName),
         ]);
 
         await expect(
           dapiFallbackV2
-            .connect(roles.dapiFallbackV2Owner)
+            .connect(roles.fallbackReverter)
             .revertDapiFallback(
               hre.ethers.utils.formatBytes32String(dapiName),
               beaconSetId,
@@ -997,7 +1022,7 @@ describe('DapiFallbackV2', function () {
           );
         await expect(
           dapiFallbackV2
-            .connect(roles.dapiFallbackV2Owner)
+            .connect(roles.fallbackReverter)
             .revertDapiFallback(
               hre.ethers.utils.formatBytes32String(dapiName),
               beaconSetId,

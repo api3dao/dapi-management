@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
+import "@api3/airnode-protocol-v1/contracts/access-control-registry/interfaces/IAccessControlRegistryAdminnedWithManager.sol";
+
 /// @title IDapiFallbackV2 - Interface defining the contract for dAPI's fallback mechanisms.
 /// @notice This interface declares the events and functions required to manage and execute dAPI fallbacks.
-interface IDapiFallbackV2 {
+interface IDapiFallbackV2 is IAccessControlRegistryAdminnedWithManager {
     /// @notice Defines the arguments required to execute a dAPI fallback.
     /// These arguments include various parameters and Merkle proofs necessary for the fallback process.
     struct ExecuteDapiFallbackArgs {
@@ -61,6 +63,20 @@ interface IDapiFallbackV2 {
         bytes32 indexed dataFeedId,
         address sponsorWallet
     );
+
+    function FALLBACK_EXECUTER_ROLE_DESCRIPTION()
+        external
+        view
+        returns (string memory);
+
+    function FALLBACK_REVERTER_ROLE_DESCRIPTION()
+        external
+        view
+        returns (string memory);
+
+    function fallbackExecuterRole() external view returns (bytes32);
+
+    function fallbackReverterRole() external view returns (bytes32);
 
     /// @notice Returns the address of the Api3ServerV1 contract.
     function api3ServerV1() external view returns (address);
