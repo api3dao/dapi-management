@@ -75,19 +75,15 @@ The following code snippet shows how we derive the type of Signed API URL Merkle
 keccak256(abi.encodePacked('Signed API URL Merkle tree root'));
 ```
 
-## Usage Of Update DApi Fallback hash
+## How to update the dAPI Fallback Merkle Tree
 
-1. Run the script by specifying the Merkle tree's name as follows:
+1. Update the @nodary/utilities package to the desired version.
 
-```bash
-yarn sync-tree-values [MerkleTreeName]
-```
-
-For instance, to update the current-hash fo `dAPI fallback Merkle tree` Merkle tree, you would use:
+2. Run the `sync-dapi-fallback-values` script as follows:
 
 ```bash
-yarn sync-tree-values "dapi fallback"
+yarn sync-dapi-fallback-values
 ```
 
 This command checks the values in `current-hash.json` and compares it with what `@nodary/utilities` has. If they are not equal
-It saves the `current-hash.json` to `previous-hash.json` and updates `current-hash.json` with the new values.
+it saves the `current-hash.json` to `previous-hash.json` and updates `current-hash.json` with the new values.

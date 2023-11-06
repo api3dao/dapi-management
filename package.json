@@ -24,7 +24,7 @@
     "test:gas": "REPORT_GAS=TRUE hardhat test",
     "write-env-example": "node scripts/write-env-example.js",
     "sign": "node scripts/signMerkleTree.js",
-    "sync-tree-values": "node scripts/syncTreeValues.js",
+    "sync-dapi-fallback-values": "node scripts/sync-dapi-fallback-values.js",
     "frontend:dev": "cd frontend && next dev",
     "frontend:build": "cd frontend && next build",
     "frontend:start": "cd frontend && next start",
@@ -69,6 +69,7 @@
   },
   "dependencies": {
     "@api3/airnode-protocol-v1": "^2.10.0",
+    "@nodary/utilities": "^0.7.1",
     "@openzeppelin/contracts": "4.9.3",
     "@openzeppelin/merkle-tree": "^1.0.5",
     "@radix-ui/react-popover": "^1.0.7",
