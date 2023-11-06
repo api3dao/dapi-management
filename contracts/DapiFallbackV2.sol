@@ -13,24 +13,22 @@ import "./interfaces/IDapiDataRegistry.sol";
 /// @title DapiFallbackV2 contract for handling dAPI fallbacks in case of primary data feed failure.
 /// @notice This contract contains the logic for executing dAPI fallbacks
 /// and ensuring data feed continuity by utilizing Merkle proofs for verification.
-/// @dev The contract inherits from the Ownable contract of the OpenZeppelin library
-/// @dev which provides basic authorization control functions.
 contract DapiFallbackV2 is
     AccessControlRegistryAdminnedWithManager,
     IDapiFallbackV2
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
-    /// @notice dAPI adder role description
+    /// @notice Fallback executer role description
     string public constant override FALLBACK_EXECUTER_ROLE_DESCRIPTION =
         "Fallback executer";
-    /// @notice dAPI remover role description
+    /// @notice Fallback reverter role description
     string public constant override FALLBACK_REVERTER_ROLE_DESCRIPTION =
         "Fallback reverter";
 
-    /// @notice dAPI adder role
+    /// @notice Fallback executer role
     bytes32 public immutable override fallbackExecuterRole;
-    /// @notice dAPI remover role
+    /// @notice Fallback reverter role
     bytes32 public immutable override fallbackReverterRole;
     /// @notice Api3ServerV1 contract address
     address public immutable override api3ServerV1;
@@ -56,7 +54,6 @@ contract DapiFallbackV2 is
     /// @param _api3ServerV1 The address of the Api3ServerV1 contract.
     /// @param _hashRegistry The address of the HashRegistry contract.
     /// @param _dapiDataRegistry The address of the DapiDataRegistry contract.
-    /// @dev The constructor requires non-zero addresses for the api3ServerV1 and hashRegistry contracts.
     constructor(
         address _accessControlRegistry,
         string memory _adminRoleDescription,
@@ -104,7 +101,7 @@ contract DapiFallbackV2 is
     /// @dev The receive function is executed on a call to the contract with empty calldata.
     receive() external payable {}
 
-    /// @notice Allows the contract owner to withdraw funds from the contract.
+    /// @notice Allows the contract manager to withdraw funds from the contract.
     /// @param amount The amount of funds to withdraw.
     function withdraw(uint256 amount) external override {
         require(msg.sender == manager, "Sender is not manager role");
