@@ -190,8 +190,8 @@ contract Api3Market is IApi3Market {
                 Purchase(
                     updateParams.deviationThresholdInPercentage,
                     updateParams.heartbeatInterval,
-                    dapi.price,
-                    dapi.duration,
+                    updatedPrice,
+                    updatedDuration,
                     block.timestamp,
                     purchaseEnd
                 )
@@ -272,7 +272,7 @@ contract Api3Market is IApi3Market {
                         updateParams.deviationThresholdInPercentage,
                         updateParams.heartbeatInterval,
                         updatedPrice,
-                        dapi.duration,
+                        updatedDuration,
                         block.timestamp,
                         purchaseEnd
                     )
