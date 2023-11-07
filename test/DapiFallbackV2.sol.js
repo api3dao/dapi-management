@@ -985,7 +985,7 @@ describe('DapiFallbackV2', function () {
             );
           await dapiFallbackV2.connect(roles.fallbackExecuter).executeDapiFallback(executeDapiFallbackArgs);
           expect(await dapiFallbackV2.getFallbackedDapis()).to.deep.equal([
-            hre.ethers.utils.formatBytes32String(dapiName),
+            hre.ethers.utils.keccak256(hre.ethers.utils.formatBytes32String(dapiName)),
           ]);
 
           await expect(

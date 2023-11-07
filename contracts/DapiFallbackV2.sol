@@ -203,7 +203,7 @@ contract DapiFallbackV2 is
         IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.dataFeedId);
 
         require(
-            fallbackedDapis.add(args.dapiName),
+            fallbackedDapis.add(keccak256(abi.encodePacked(args.dapiName))),
             "dAPI fallback already executed"
         );
 
@@ -262,7 +262,7 @@ contract DapiFallbackV2 is
             "Sender is not manager or has fallback reverter role"
         );
         require(
-            fallbackedDapis.remove(dapiName),
+            fallbackedDapis.remove(keccak256(abi.encodePacked(dapiName))),
             "dAPI fallback has not been executed"
         );
         IDapiDataRegistry(dapiDataRegistry).addDapi(

@@ -71,11 +71,11 @@ describe('Api3Market', function () {
 
   describe('constructor', function () {
     it('constructs', async function () {
-      const { hashRegistry, dapiDataRegistry, proxyFactory, api3ServerV1, api3Market } = await helpers.loadFixture(
-        deploy
-      );
+      const { hashRegistry, dapiDataRegistry, dapiFallbackV2, proxyFactory, api3ServerV1, api3Market } =
+        await helpers.loadFixture(deploy);
       expect(await api3Market.hashRegistry()).to.equal(hashRegistry.address);
       expect(await api3Market.dapiDataRegistry()).to.equal(dapiDataRegistry.address);
+      expect(await api3Market.dapiFallbackV2()).to.equal(dapiFallbackV2.address);
       expect(await api3Market.proxyFactory()).to.equal(proxyFactory.address);
       expect(await api3Market.api3ServerV1()).to.equal(api3ServerV1.address);
     });
