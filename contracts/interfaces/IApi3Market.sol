@@ -50,6 +50,12 @@ interface IApi3Market {
         uint256 end;
     }
 
+    struct UpdateParams {
+        uint256 deviationThresholdInPercentage;
+        int224 deviationReference;
+        uint32 heartbeatInterval;
+    }
+
     function hashRegistry() external view returns (address);
 
     function dapiDataRegistry() external view returns (address);

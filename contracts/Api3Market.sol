@@ -100,18 +100,16 @@ contract Api3Market is IApi3Market {
         //       should only pay for 1% for 3 months and the dAPI to be
         //       downgraded to 1% after 3 months
         // TODO: Need to use some sort of Checkpoint or Queue data structure to store subscriptions?
-        (
-            uint256 deviationThresholdInPercentage,
-            int224 deviationReference,
-            uint32 heartbeatInterval
-        ) = abi.decode(args.dapi.updateParams, (uint256, int224, uint32));
+        UpdateParams memory updateParams = _decodeUpdateParams(
+            args.dapi.updateParams
+        );
 
-        _processPayment(
+        (uint256 updatedPrice, uint256 updatedDuration) = _processPayment(
             dapiNameHash,
             args.dapi.price,
             args.dapi.duration,
-            deviationThresholdInPercentage,
-            heartbeatInterval
+            updateParams.deviationThresholdInPercentage,
+            updateParams.heartbeatInterval
         );
 
         // Store Signed API URLs for all the Airnodes used by the constituent beacons of the beaconSet
@@ -138,9 +136,9 @@ contract Api3Market is IApi3Market {
             args.dapi.name,
             dataFeedId,
             args.dapi.sponsorWallet,
-            deviationThresholdInPercentage,
-            deviationReference,
-            heartbeatInterval,
+            updateParams.deviationThresholdInPercentage,
+            updateParams.deviationReference,
+            updateParams.heartbeatInterval,
             args.dapiRoot,
             args.dapiProof
         );
@@ -154,7 +152,11 @@ contract Api3Market is IApi3Market {
         }
 
         // Update the dAPI with signed API data (if it hasn't been updated recently)
-        _updateDataFeed(dataFeedId, heartbeatInterval, args.beacons);
+        _updateDataFeed(
+            dataFeedId,
+            updateParams.heartbeatInterval,
+            args.beacons
+        );
 
         // This is done last because it is less trusted than other external calls
         Address.sendValue(args.dapi.sponsorWallet, msg.value);
@@ -163,8 +165,8 @@ contract Api3Market is IApi3Market {
             args.dapi.name,
             dataFeedId,
             dapiProxyAddress,
-            args.dapi.price, // TODO: this should be the adjusted price charged
-            args.dapi.duration,
+            updatedPrice,
+            updatedDuration,
             args.dapi.updateParams,
             args.dapi.sponsorWallet.balance,
             msg.sender
@@ -177,8 +179,9 @@ contract Api3Market is IApi3Market {
         uint256 dapiDuration,
         uint256 deviationThresholdInPercentage,
         uint32 heartbeatInterval
-    ) private {
-        uint256 priceToPay = dapiPrice;
+    ) private returns (uint256 updatedPrice, uint256 updatedDuration) {
+        updatedPrice = dapiPrice;
+        updatedDuration = dapiDuration;
         uint256 purchaseEnd = block.timestamp + dapiDuration;
 
         uint256 index = _findCurrentDapiPurchaseIndex(dapiNameHash);
@@ -222,14 +225,14 @@ contract Api3Market is IApi3Market {
                     downgrade.end != current.end,
                     "There is already a pending extension or downgrade"
                 );
-                uint256 downgradeDuration = purchaseEnd - current.end;
-                priceToPay = (downgradeDuration * dapiPrice) / dapiDuration;
+                updatedDuration = purchaseEnd - current.end;
+                updatedPrice = (updatedDuration * dapiPrice) / dapiDuration;
                 dapiToPurchases[dapiNameHash].push(
                     Purchase(
                         deviationThresholdInPercentage,
                         heartbeatInterval,
-                        priceToPay,
-                        downgradeDuration,
+                        updatedPrice,
+                        updatedDuration,
                         block.timestamp,
                         purchaseEnd
                     )
@@ -237,7 +240,7 @@ contract Api3Market is IApi3Market {
             } else {
                 // Scenario 3: New purchase is upgrade
                 uint256 currentOverlapDuration = current.end - block.timestamp;
-                priceToPay -=
+                updatedPrice -=
                     (currentOverlapDuration * current.price) /
                     current.duration;
 
@@ -247,7 +250,7 @@ contract Api3Market is IApi3Market {
                         purchaseEnd,
                         downgrade.end
                     ) - downgrade.start;
-                    priceToPay -=
+                    updatedPrice -=
                         (downgradeOverlapDuration * downgrade.price) /
                         downgrade.duration;
                     if (downgradeOverlapDuration == downgrade.duration) {
@@ -269,7 +272,7 @@ contract Api3Market is IApi3Market {
                     Purchase(
                         deviationThresholdInPercentage,
                         heartbeatInterval,
-                        priceToPay,
+                        updatedPrice,
                         dapiDuration,
                         block.timestamp,
                         purchaseEnd
@@ -277,7 +280,7 @@ contract Api3Market is IApi3Market {
                 );
             }
         }
-        require(msg.value >= priceToPay, "Insufficient payment");
+        require(msg.value >= updatedPrice, "Insufficient payment");
     }
 
     function _findCurrentDapiPurchaseIndex(
@@ -303,8 +306,23 @@ contract Api3Market is IApi3Market {
         }
     }
 
+    function _decodeUpdateParams(
+        bytes calldata updateParams_
+    ) private pure returns (UpdateParams memory updateParams) {
+        (
+            uint256 deviationThresholdInPercentage,
+            int224 deviationReference,
+            uint32 heartbeatInterval
+        ) = abi.decode(updateParams_, (uint256, int224, uint32));
+        updateParams = UpdateParams(
+            deviationThresholdInPercentage,
+            deviationReference,
+            heartbeatInterval
+        );
+    }
+
     function _registerDataFeed(
-        Beacon[] memory beacons
+        Beacon[] calldata beacons
     ) private returns (bytes32 dataFeedId) {
         if (beacons.length == 1) {
             dataFeedId = IDapiDataRegistry(dapiDataRegistry).registerDataFeed(
@@ -326,7 +344,7 @@ contract Api3Market is IApi3Market {
     function _updateDataFeed(
         bytes32 dataFeedId,
         uint256 heartbeatInterval,
-        Beacon[] memory beacons
+        Beacon[] calldata beacons
     ) private {
         (, uint32 timestamp) = IApi3ServerV1(api3ServerV1).dataFeeds(
             dataFeedId
