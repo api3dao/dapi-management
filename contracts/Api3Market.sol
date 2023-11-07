@@ -106,10 +106,8 @@ contract Api3Market is IApi3Market {
 
         (uint256 updatedPrice, uint256 updatedDuration) = _processPayment(
             dapiNameHash,
-            args.dapi.price,
-            args.dapi.duration,
-            updateParams.deviationThresholdInPercentage,
-            updateParams.heartbeatInterval
+            args.dapi,
+            updateParams
         );
 
         // Store Signed API URLs for all the Airnodes used by the constituent beacons of the beaconSet
@@ -175,25 +173,25 @@ contract Api3Market is IApi3Market {
 
     function _processPayment(
         bytes32 dapiNameHash,
-        uint256 dapiPrice,
-        uint256 dapiDuration,
-        uint256 deviationThresholdInPercentage,
-        uint32 heartbeatInterval
+        Dapi calldata dapi,
+        UpdateParams memory updateParams
     ) private returns (uint256 updatedPrice, uint256 updatedDuration) {
-        updatedPrice = dapiPrice;
-        updatedDuration = dapiDuration;
-        uint256 purchaseEnd = block.timestamp + dapiDuration;
+        updatedPrice = dapi.price;
+        updatedDuration = dapi.duration;
+        uint256 purchaseEnd = block.timestamp + dapi.duration;
 
-        uint256 index = _findCurrentDapiPurchaseIndex(dapiNameHash);
+        (bool found, uint256 index) = _findCurrentDapiPurchaseIndex(
+            dapiNameHash
+        );
 
-        if (index == 0) {
+        if (!found) {
             // Scenerio 1: No previous purchases
             dapiToPurchases[dapiNameHash].push(
                 Purchase(
-                    deviationThresholdInPercentage,
-                    heartbeatInterval,
-                    dapiPrice,
-                    dapiDuration,
+                    updateParams.deviationThresholdInPercentage,
+                    updateParams.heartbeatInterval,
+                    dapi.price,
+                    dapi.duration,
                     block.timestamp,
                     purchaseEnd
                 )
@@ -218,19 +216,20 @@ contract Api3Market is IApi3Market {
                 // TODO: not 100% sure this is the right way to determine if upgrade
                 // or downgrade but this is the way it's currently being done in
                 // operation-database backend
-                deviationThresholdInPercentage >= current.deviationThreshold &&
-                heartbeatInterval >= current.heartbeatInterval
+                updateParams.deviationThresholdInPercentage >=
+                current.deviationThreshold &&
+                updateParams.heartbeatInterval >= current.heartbeatInterval
             ) {
                 require(
                     downgrade.end != current.end,
                     "There is already a pending extension or downgrade"
                 );
                 updatedDuration = purchaseEnd - current.end;
-                updatedPrice = (updatedDuration * dapiPrice) / dapiDuration;
+                updatedPrice = (updatedDuration * dapi.price) / dapi.duration;
                 dapiToPurchases[dapiNameHash].push(
                     Purchase(
-                        deviationThresholdInPercentage,
-                        heartbeatInterval,
+                        updateParams.deviationThresholdInPercentage,
+                        updateParams.heartbeatInterval,
                         updatedPrice,
                         updatedDuration,
                         block.timestamp,
@@ -270,10 +269,10 @@ contract Api3Market is IApi3Market {
 
                 dapiToPurchases[dapiNameHash].push(
                     Purchase(
-                        deviationThresholdInPercentage,
-                        heartbeatInterval,
+                        updateParams.deviationThresholdInPercentage,
+                        updateParams.heartbeatInterval,
                         updatedPrice,
-                        dapiDuration,
+                        dapi.duration,
                         block.timestamp,
                         purchaseEnd
                     )
@@ -285,15 +284,19 @@ contract Api3Market is IApi3Market {
 
     function _findCurrentDapiPurchaseIndex(
         bytes32 dapiNameHash
-    ) private view returns (uint256 index) {
+    ) private view returns (bool found, uint256 index) {
         Purchase[] storage purchases = dapiToPurchases[dapiNameHash];
-        for (uint256 ind = purchases.length - 1; ind >= 0; ind--) {
-            Purchase storage purchase = purchases[ind];
-            if (
-                block.timestamp >= purchase.start &&
-                block.timestamp < purchase.end
-            ) {
-                index = ind;
+        if (purchases.length > 0) {
+            for (uint256 ind = purchases.length - 1; ind >= 0; ind--) {
+                Purchase storage purchase = purchases[ind];
+                if (
+                    block.timestamp >= purchase.start &&
+                    block.timestamp < purchase.end
+                ) {
+                    found = true;
+                    index = ind;
+                    break;
+                }
             }
         }
     }
