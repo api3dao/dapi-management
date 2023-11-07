@@ -21,7 +21,7 @@ contract Api3Market is IApi3Market {
     address public immutable override hashRegistry;
     /// @notice DapiDataRegistry contract address
     address public immutable override dapiDataRegistry;
-    /// @notice DapiDataRegistry contract address
+    /// @notice DapiFallbackV2 contract address
     address public immutable override dapiFallbackV2;
     /// @notice ProxyFactory contract address
     address public immutable override proxyFactory;
@@ -49,7 +49,7 @@ contract Api3Market is IApi3Market {
         );
         require(
             _dapiFallbackV2 != address(0),
-            "DapiDataRegistry address is zero"
+            "DapiFallbackV2 address is zero"
         );
         require(_proxyFactory != address(0), "ProxyFactory address is zero");
         require(_api3ServerV1 != address(0), "Api3ServerV1 address is zero");
@@ -64,7 +64,8 @@ contract Api3Market is IApi3Market {
 
     // This function must use the 3 Merkle trees to store the data needed for running a managed dAPI
     function buyDapi(BuyDapiArgs calldata args) external payable override {
-        _isFallbacked(args.dapi.name);
+        bytes32 dapiNameHash = keccak256(abi.encodePacked(args.dapi.name));
+        _isFallbacked(dapiNameHash);
         require(args.beacons.length != 0, "Beacons is empty");
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(
@@ -106,7 +107,9 @@ contract Api3Market is IApi3Market {
         ) = abi.decode(args.dapi.updateParams, (uint256, int224, uint32));
 
         _processPayment(
-            args.dapi,
+            dapiNameHash,
+            args.dapi.price,
+            args.dapi.duration,
             deviationThresholdInPercentage,
             heartbeatInterval
         );
@@ -128,22 +131,7 @@ contract Api3Market is IApi3Market {
         }
 
         // Store the actual data used to derive each beaconId (if more than one then it will also be used to derive the beaconSetId)
-        bytes32 dataFeedId;
-        if (args.beacons.length == 1) {
-            dataFeedId = IDapiDataRegistry(dapiDataRegistry).registerDataFeed(
-                abi.encode(args.beacons[0].airnode, args.beacons[0].templateId)
-            );
-        } else {
-            address[] memory airnodes = new address[](args.beacons.length);
-            bytes32[] memory templateIds = new bytes32[](args.beacons.length);
-            for (uint ind = 0; ind < args.beacons.length; ind++) {
-                airnodes[ind] = args.beacons[ind].airnode;
-                templateIds[ind] = args.beacons[ind].templateId;
-            }
-            dataFeedId = IDapiDataRegistry(dapiDataRegistry).registerDataFeed(
-                abi.encode(airnodes, templateIds)
-            );
-        }
+        bytes32 dataFeedId = _registerDataFeed(args.beacons);
 
         // Add the dAPI to the DapiDataRegistry for managed data feed updates
         IDapiDataRegistry(dapiDataRegistry).addDapi(
@@ -166,23 +154,7 @@ contract Api3Market is IApi3Market {
         }
 
         // Update the dAPI with signed API data (if it hasn't been updated recently)
-        (, uint32 timestamp) = IApi3ServerV1(api3ServerV1).dataFeeds(
-            dataFeedId
-        );
-        if (timestamp + heartbeatInterval <= block.timestamp) {
-            bytes32[] memory beaconIds = new bytes32[](args.beacons.length);
-            for (uint ind = 0; ind < args.beacons.length; ind++) {
-                beaconIds[ind] = IApi3ServerV1(api3ServerV1)
-                    .updateBeaconWithSignedData(
-                        args.beacons[ind].airnode,
-                        args.beacons[ind].templateId,
-                        args.beacons[ind].timestamp, // Signature timestamp
-                        args.beacons[ind].data, // Update data (an `int256` encoded in contract ABI)
-                        args.beacons[ind].signature // Template ID, timestamp and the update data signed by the Airnode
-                    );
-            }
-            IApi3ServerV1(api3ServerV1).updateBeaconSetWithBeacons(beaconIds);
-        }
+        _updateDataFeed(dataFeedId, heartbeatInterval, args.beacons);
 
         // This is done last because it is less trusted than other external calls
         Address.sendValue(args.dapi.sponsorWallet, msg.value);
@@ -191,7 +163,7 @@ contract Api3Market is IApi3Market {
             args.dapi.name,
             dataFeedId,
             dapiProxyAddress,
-            args.dapi.price,
+            args.dapi.price, // TODO: this should be the adjusted price charged
             args.dapi.duration,
             args.dapi.updateParams,
             args.dapi.sponsorWallet.balance,
@@ -200,13 +172,14 @@ contract Api3Market is IApi3Market {
     }
 
     function _processPayment(
-        Dapi memory dapi,
+        bytes32 dapiNameHash,
+        uint256 dapiPrice,
+        uint256 dapiDuration,
         uint256 deviationThresholdInPercentage,
         uint32 heartbeatInterval
     ) private {
-        bytes32 dapiNameHash = keccak256(abi.encodePacked(dapi.name));
-        uint256 priceToPay = dapi.price;
-        uint256 purchaseEnd = block.timestamp + dapi.duration;
+        uint256 priceToPay = dapiPrice;
+        uint256 purchaseEnd = block.timestamp + dapiDuration;
 
         uint256 index = _findCurrentDapiPurchaseIndex(dapiNameHash);
 
@@ -216,8 +189,8 @@ contract Api3Market is IApi3Market {
                 Purchase(
                     deviationThresholdInPercentage,
                     heartbeatInterval,
-                    dapi.price,
-                    dapi.duration,
+                    dapiPrice,
+                    dapiDuration,
                     block.timestamp,
                     purchaseEnd
                 )
@@ -250,7 +223,7 @@ contract Api3Market is IApi3Market {
                     "There is already a pending extension or downgrade"
                 );
                 uint256 downgradeDuration = purchaseEnd - current.end;
-                priceToPay = (downgradeDuration * dapi.price) / dapi.duration;
+                priceToPay = (downgradeDuration * dapiPrice) / dapiDuration;
                 dapiToPurchases[dapiNameHash].push(
                     Purchase(
                         deviationThresholdInPercentage,
@@ -297,7 +270,7 @@ contract Api3Market is IApi3Market {
                         deviationThresholdInPercentage,
                         heartbeatInterval,
                         priceToPay,
-                        dapi.duration,
+                        dapiDuration,
                         block.timestamp,
                         purchaseEnd
                     )
@@ -327,6 +300,51 @@ contract Api3Market is IApi3Market {
             .getFallbackedDapis();
         for (uint256 i = 0; i < fallbackedDapis.length; i++) {
             require(fallbackedDapis[i] != dapiNameHash, "Dapi is fallbacked");
+        }
+    }
+
+    function _registerDataFeed(
+        Beacon[] memory beacons
+    ) private returns (bytes32 dataFeedId) {
+        if (beacons.length == 1) {
+            dataFeedId = IDapiDataRegistry(dapiDataRegistry).registerDataFeed(
+                abi.encode(beacons[0].airnode, beacons[0].templateId)
+            );
+        } else {
+            address[] memory airnodes = new address[](beacons.length);
+            bytes32[] memory templateIds = new bytes32[](beacons.length);
+            for (uint ind = 0; ind < beacons.length; ind++) {
+                airnodes[ind] = beacons[ind].airnode;
+                templateIds[ind] = beacons[ind].templateId;
+            }
+            dataFeedId = IDapiDataRegistry(dapiDataRegistry).registerDataFeed(
+                abi.encode(airnodes, templateIds)
+            );
+        }
+    }
+
+    function _updateDataFeed(
+        bytes32 dataFeedId,
+        uint256 heartbeatInterval,
+        Beacon[] memory beacons
+    ) private {
+        (, uint32 timestamp) = IApi3ServerV1(api3ServerV1).dataFeeds(
+            dataFeedId
+        );
+        if (timestamp + heartbeatInterval <= block.timestamp) {
+            bytes32[] memory beaconIds = new bytes32[](beacons.length);
+            for (uint ind = 0; ind < beacons.length; ind++) {
+                beaconIds[ind] = IApi3ServerV1(api3ServerV1)
+                    .updateBeaconWithSignedData(
+                        beacons[ind].airnode,
+                        beacons[ind].templateId,
+                        beacons[ind].timestamp, // Signature timestamp
+                        beacons[ind].data, // Update data (an `int256` encoded in contract ABI)
+                        beacons[ind].signature // Template ID, timestamp and the update data signed by the Airnode
+                    );
+            }
+            // TODO: only do this if beacons.length > 1?
+            IApi3ServerV1(api3ServerV1).updateBeaconSetWithBeacons(beaconIds);
         }
     }
 }
