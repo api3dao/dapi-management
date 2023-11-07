@@ -7,7 +7,6 @@ const {
   generateRandomAddress,
   deriveRootRole,
   deriveRole,
-  buildEIP712Domain,
   generateRandomBytes,
   signData,
 } = require('./test-utils');
@@ -62,6 +61,7 @@ describe('DapiDataRegistry', function () {
       'deployer',
       'manager',
       'owner',
+      'dapiFallbackV2',
       'api3MarketContract',
       'rootSigner1',
       'rootSigner2',
@@ -105,17 +105,24 @@ describe('DapiDataRegistry', function () {
 
     const rootRole = deriveRootRole(roles.manager.address);
     const dapiDataRegistryAdminRole = deriveRole(rootRole, dapiDataRegistryAdminRoleDescription);
-    const registrarRoleDescription = await dapiDataRegistry.REGISTRAR_ROLE_DESCRIPTION();
-    const registrarRole = deriveRole(dapiDataRegistryAdminRole, registrarRoleDescription);
+    const dapiAdderRoleDescription = await dapiDataRegistry.DAPI_ADDER_ROLE_DESCRIPTION();
+    const dapiAdderRole = deriveRole(dapiDataRegistryAdminRole, dapiAdderRoleDescription);
+    const dapiRemoverRoleDescription = await dapiDataRegistry.DAPI_REMOVER_ROLE_DESCRIPTION();
+    const dapiRemoverRole = deriveRole(dapiDataRegistryAdminRole, dapiRemoverRoleDescription);
 
     await accessControlRegistry
       .connect(roles.manager)
       .initializeRoleAndGrantToSender(rootRole, dapiDataRegistryAdminRoleDescription);
     await accessControlRegistry
       .connect(roles.manager)
-      .initializeRoleAndGrantToSender(dapiDataRegistryAdminRole, registrarRoleDescription);
+      .initializeRoleAndGrantToSender(dapiDataRegistryAdminRole, dapiAdderRoleDescription);
+    await accessControlRegistry
+      .connect(roles.manager)
+      .initializeRoleAndGrantToSender(dapiDataRegistryAdminRole, dapiRemoverRoleDescription);
 
-    await accessControlRegistry.connect(roles.manager).grantRole(registrarRole, roles.api3MarketContract.address);
+    await accessControlRegistry.connect(roles.manager).grantRole(dapiAdderRole, roles.api3MarketContract.address);
+    await accessControlRegistry.connect(roles.manager).grantRole(dapiAdderRole, roles.dapiFallbackV2.address);
+    await accessControlRegistry.connect(roles.manager).grantRole(dapiRemoverRole, roles.dapiFallbackV2.address);
 
     await accessControlRegistry
       .connect(roles.manager)
@@ -131,15 +138,6 @@ describe('DapiDataRegistry', function () {
       .grantRole(await api3ServerV1.dapiNameSetterRole(), dapiDataRegistry.address);
 
     const timestamp = Math.floor(Date.now() / 1000);
-    const chainId = (await hashRegistry.provider.getNetwork()).chainId;
-    const domain = buildEIP712Domain('HashRegistry', chainId, hashRegistry.address);
-    const types = {
-      SignedHash: [
-        { name: 'hashType', type: 'bytes32' },
-        { name: 'hash', type: 'bytes32' },
-        { name: 'timestamp', type: 'uint256' },
-      ],
-    };
 
     const baseUrl = 'https://example.com/';
     const apiTreeValues = [
@@ -152,15 +150,11 @@ describe('DapiDataRegistry', function () {
     const apiTree = StandardMerkleTree.of(apiTreeValues, ['address', 'string']);
     const apiHashType = hre.ethers.utils.solidityKeccak256(['string'], ['Signed API URL Merkle tree root']);
     const rootSigners = [roles.rootSigner1, roles.rootSigner2, roles.rootSigner3];
+    const apiMessages = hre.ethers.utils.arrayify(
+      hre.ethers.utils.solidityKeccak256(['bytes32', 'bytes32', 'uint256'], [apiHashType, apiTree.root, timestamp])
+    );
     const apiTreeRootSignatures = await Promise.all(
-      rootSigners.map(
-        async (rootSigner) =>
-          await rootSigner._signTypedData(domain, types, {
-            hashType: apiHashType,
-            hash: apiTree.root,
-            timestamp,
-          })
-      )
+      rootSigners.map(async (rootSigner) => await rootSigner.signMessage(apiMessages))
     );
     await hashRegistry.connect(roles.owner).setupSigners(
       apiHashType,
@@ -197,16 +191,11 @@ describe('DapiDataRegistry', function () {
     const dapiTree = StandardMerkleTree.of(dapiTreeValues, ['bytes32', 'bytes32', 'address']);
     const dapiTreeRoot = dapiTree.root;
     const dapiHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI management Merkle tree root']);
-    // TODO: should I use a different set of signer addresses here?
+    const dapiMessages = hre.ethers.utils.arrayify(
+      hre.ethers.utils.solidityKeccak256(['bytes32', 'bytes32', 'uint256'], [dapiHashType, dapiTreeRoot, timestamp])
+    );
     const dapiTreeRootSignatures = await Promise.all(
-      rootSigners.map(
-        async (rootSigner) =>
-          await rootSigner._signTypedData(domain, types, {
-            hashType: dapiHashType,
-            hash: dapiTreeRoot,
-            timestamp, // TODO: use different timestamp?
-          })
-      )
+      rootSigners.map(async (rootSigner) => await rootSigner.signMessage(dapiMessages))
     );
 
     await hashRegistry.connect(roles.owner).setupSigners(
@@ -218,7 +207,8 @@ describe('DapiDataRegistry', function () {
     return {
       roles,
       dapiDataRegistryAdminRole,
-      registrarRole,
+      dapiAdderRole,
+      dapiRemoverRole,
       accessControlRegistry,
       dapiDataRegistry,
       hashRegistry,
@@ -236,7 +226,8 @@ describe('DapiDataRegistry', function () {
     it('constructs', async function () {
       const {
         roles,
-        registrarRole,
+        dapiAdderRole,
+        dapiRemoverRole,
         accessControlRegistry,
         dapiDataRegistry,
         hashRegistry,
@@ -246,7 +237,8 @@ describe('DapiDataRegistry', function () {
       expect(await dapiDataRegistry.accessControlRegistry()).to.equal(accessControlRegistry.address);
       expect(await dapiDataRegistry.adminRoleDescription()).to.equal(dapiDataRegistryAdminRoleDescription);
       expect(await dapiDataRegistry.manager()).to.equal(roles.manager.address);
-      expect(await dapiDataRegistry.registrarRole()).to.equal(registrarRole);
+      expect(await dapiDataRegistry.dapiAdderRole()).to.equal(dapiAdderRole);
+      expect(await dapiDataRegistry.dapiRemoverRole()).to.equal(dapiRemoverRole);
       expect(await dapiDataRegistry.hashRegistry()).to.equal(hashRegistry.address);
       expect(await dapiDataRegistry.api3ServerV1()).to.equal(api3ServerV1.address);
     });
@@ -460,7 +452,7 @@ describe('DapiDataRegistry', function () {
     context('dAPI name is not zero', function () {
       context('Data feed ID is not zero', function () {
         context('Sponsor wallet is not zero', function () {
-          context('Sender is manager or needs Registrar role', function () {
+          context('Sender is manager or needs dAPI adder role', function () {
             context('Root has been registered', function () {
               context('Data feed ID has been registered', function () {
                 context('Proof is valid', function () {
@@ -543,6 +535,31 @@ describe('DapiDataRegistry', function () {
                       hre.ethers.utils.keccak256(hre.ethers.utils.defaultAbiCoder.encode(['bytes32[]'], [beaconIds]))
                     ).to.deep.equal(beaconSetId);
                     expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));
+
+                    // dapiFallbackV2 was also granted the dAPI adder role
+                    await expect(
+                      dapiDataRegistry
+                        .connect(roles.dapiFallbackV2)
+                        .addDapi(
+                          dapiName,
+                          beaconSetId,
+                          sponsorWallet,
+                          deviationThresholdInPercentage,
+                          deviationReference,
+                          heartbeatInterval,
+                          dapiTree.root,
+                          dapiTree.getProof(dapiTreeValue)
+                        )
+                    )
+                      .to.emit(dapiDataRegistry, 'AddedDapi')
+                      .withArgs(
+                        dapiName,
+                        beaconSetId,
+                        sponsorWallet,
+                        deviationThresholdInPercentage,
+                        deviationReference,
+                        heartbeatInterval
+                      );
                   });
                 });
                 context('Proof is not valid', function () {
@@ -636,7 +653,7 @@ describe('DapiDataRegistry', function () {
               });
             });
           });
-          context('Sender is manager or needs Registrar role', function () {
+          context('Sender is manager or needs dAPI adder role', function () {
             it('reverts', async function () {
               const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
@@ -653,7 +670,7 @@ describe('DapiDataRegistry', function () {
                     generateRandomBytes32(),
                     [generateRandomBytes32(), generateRandomBytes32(), generateRandomBytes32()]
                   )
-              ).to.be.revertedWith('Sender is not manager or has Registrar role');
+              ).to.be.revertedWith('Sender is not manager or has dAPI adder role');
             });
           });
         });
@@ -812,26 +829,18 @@ describe('DapiDataRegistry', function () {
                       ['string'],
                       ['dAPI management Merkle tree root']
                     );
-                    const chainId = (await hashRegistry.provider.getNetwork()).chainId;
-                    const domain = buildEIP712Domain('HashRegistry', chainId, hashRegistry.address);
-                    const types = {
-                      SignedHash: [
-                        { name: 'hashType', type: 'bytes32' },
-                        { name: 'hash', type: 'bytes32' },
-                        { name: 'timestamp', type: 'uint256' },
-                      ],
-                    };
 
                     await new Promise((resolve) => setTimeout(resolve, 1000));
                     const timestamp = Math.floor(Date.now() / 1000);
+                    const dapiMessages = hre.ethers.utils.arrayify(
+                      hre.ethers.utils.solidityKeccak256(
+                        ['bytes32', 'bytes32', 'uint256'],
+                        [dapiHashType, newDapiTreeRoot, timestamp]
+                      )
+                    );
                     const dapiTreeRootSignatures = await Promise.all(
                       [roles.rootSigner1, roles.rootSigner2, roles.rootSigner3].map(
-                        async (rootSigner) =>
-                          await rootSigner._signTypedData(domain, types, {
-                            hashType: dapiHashType,
-                            hash: newDapiTreeRoot,
-                            timestamp,
-                          })
+                        async (rootSigner) => await rootSigner.signMessage(dapiMessages)
                       )
                     );
                     await hashRegistry.registerHash(dapiHashType, newDapiTreeRoot, timestamp, dapiTreeRootSignatures);
@@ -1122,7 +1131,7 @@ describe('DapiDataRegistry', function () {
 
   describe('removeDapi', function () {
     context('dAPI name is not zero', function () {
-      context('Sender is manager or needs Registrar role', function () {
+      context('Sender is manager or needs dAPI remover role', function () {
         context('dAPI name has been added', function () {
           it('removes dAPI', async function () {
             const { roles, dapiDataRegistry, apiTree, apiTreeValues, dataFeeds, dapiTree, dapiTreeValues } =
@@ -1133,7 +1142,7 @@ describe('DapiDataRegistry', function () {
               apiTreeValues.map(([airnode, url]) => {
                 const apiTreeProof = apiTree.getProof([airnode, url]);
                 return dapiDataRegistry
-                  .connect(roles.api3MarketContract)
+                  .connect(roles.randomPerson)
                   .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof);
               })
             );
@@ -1172,9 +1181,9 @@ describe('DapiDataRegistry', function () {
                 dapiTree.getProof(dapiTreeValue)
               );
 
-            await expect(dapiDataRegistry.connect(roles.api3MarketContract).removeDapi(dapiName))
+            await expect(dapiDataRegistry.connect(roles.dapiFallbackV2).removeDapi(dapiName))
               .to.emit(dapiDataRegistry, 'RemovedDapi')
-              .withArgs(dapiName, roles.api3MarketContract.address);
+              .withArgs(dapiName, roles.dapiFallbackV2.address);
           });
         });
         context('dAPI name has not been added', function () {
@@ -1182,18 +1191,18 @@ describe('DapiDataRegistry', function () {
             const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
             await expect(
-              dapiDataRegistry.connect(roles.api3MarketContract).removeDapi(generateRandomBytes32())
+              dapiDataRegistry.connect(roles.dapiFallbackV2).removeDapi(generateRandomBytes32())
             ).to.be.revertedWith('dAPI name has not been added');
           });
         });
       });
-      context('Sender is not manager or has Registrar role', function () {
+      context('Sender is not manager or has dAPI remover role', function () {
         it('reverts', async function () {
           const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
           await expect(
             dapiDataRegistry.connect(roles.randomPerson).removeDapi(generateRandomBytes32())
-          ).to.be.revertedWith('Sender is not manager or has Registrar role');
+          ).to.be.revertedWith('Sender is not manager or has dAPI remover role');
         });
       });
     });
@@ -1202,7 +1211,7 @@ describe('DapiDataRegistry', function () {
         const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
         await expect(
-          dapiDataRegistry.connect(roles.api3MarketContract).removeDapi(hre.ethers.constants.HashZero)
+          dapiDataRegistry.connect(roles.dapiFallbackV2).removeDapi(hre.ethers.constants.HashZero)
         ).to.be.revertedWith('dAPI name has not been added');
       });
     });

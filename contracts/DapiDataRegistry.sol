@@ -33,11 +33,16 @@ contract DapiDataRegistry is
     /// @notice Number that represents 100%
     uint256 public constant override HUNDRED_PERCENT = 1e8;
 
-    /// @notice Registrar role description
-    string public constant override REGISTRAR_ROLE_DESCRIPTION = "Registrar";
+    /// @notice dAPI adder role description
+    string public constant override DAPI_ADDER_ROLE_DESCRIPTION = "dAPI adder";
+    /// @notice dAPI remover role description
+    string public constant override DAPI_REMOVER_ROLE_DESCRIPTION =
+        "dAPI remover";
 
-    /// @notice Registrar role
-    bytes32 public immutable override registrarRole;
+    /// @notice dAPI adder role
+    bytes32 public immutable override dapiAdderRole;
+    /// @notice dAPI remover role
+    bytes32 public immutable override dapiRemoverRole;
 
     /// @notice HashRegistry contract address
     address public immutable override hashRegistry;
@@ -67,18 +72,6 @@ contract DapiDataRegistry is
     bytes32 private constant SIGNED_API_URL_MERKLE_TREE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("Signed API URL Merkle tree root"));
 
-    modifier onlyRegistrarOrManager() {
-        require(
-            msg.sender == manager ||
-                IAccessControlRegistry(accessControlRegistry).hasRole(
-                    registrarRole,
-                    msg.sender
-                ),
-            "Sender is not manager or has Registrar role"
-        );
-        _;
-    }
-
     /// @param _accessControlRegistry AccessControlRegistry contract address
     /// @param _adminRoleDescription Admin role description
     /// @param _manager Manager address
@@ -99,9 +92,13 @@ contract DapiDataRegistry is
     {
         require(_hashRegistry != address(0), "HashRegistry address is zero");
         require(_api3ServerV1 != address(0), "Api3ServerV1 address is zero");
-        registrarRole = _deriveRole(
+        dapiAdderRole = _deriveRole(
             _deriveAdminRole(manager),
-            REGISTRAR_ROLE_DESCRIPTION
+            DAPI_ADDER_ROLE_DESCRIPTION
+        );
+        dapiRemoverRole = _deriveRole(
+            _deriveAdminRole(manager),
+            DAPI_REMOVER_ROLE_DESCRIPTION
         );
         hashRegistry = _hashRegistry;
         api3ServerV1 = _api3ServerV1;
@@ -206,7 +203,15 @@ contract DapiDataRegistry is
         uint32 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
-    ) external override onlyRegistrarOrManager {
+    ) external override {
+        require(
+            msg.sender == manager ||
+                IAccessControlRegistry(accessControlRegistry).hasRole(
+                    dapiAdderRole,
+                    msg.sender
+                ),
+            "Sender is not manager or has dAPI adder role"
+        );
         require(dapiName != bytes32(0), "dAPI name is zero");
         require(dataFeedId != bytes32(0), "Data feed ID is zero");
         require(sponsorWallet != address(0), "Sponsor wallet is zero");
@@ -251,9 +256,15 @@ contract DapiDataRegistry is
 
     /// @notice Called by a registrar or manager to remove a dAPI
     /// @param dapiName dAPI name
-    function removeDapi(
-        bytes32 dapiName
-    ) external override onlyRegistrarOrManager {
+    function removeDapi(bytes32 dapiName) public override {
+        require(
+            msg.sender == manager ||
+                IAccessControlRegistry(accessControlRegistry).hasRole(
+                    dapiRemoverRole,
+                    msg.sender
+                ),
+            "Sender is not manager or has dAPI remover role"
+        );
         require(dapis.remove(dapiName), "dAPI name has not been added");
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         delete dapiNameToUpdateParameters[dapiNameHash];
