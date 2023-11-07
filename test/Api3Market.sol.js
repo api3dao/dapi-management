@@ -2,7 +2,7 @@ const hre = require('hardhat');
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const { expect } = require('chai');
 
-describe('DapiDataRegistry', function () {
+describe('Api3Market', function () {
   const deploy = async () => {
     const roleNames = ['deployer', 'owner', 'manager', 'randomPerson'];
     const accounts = await hre.ethers.getSigners();
@@ -35,6 +35,17 @@ describe('DapiDataRegistry', function () {
       api3ServerV1.address
     );
 
+    const dapiFallbackV2AdminRoleDescription = 'DapiFallbackV2 admin';
+    const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
+    const dapiFallbackV2 = await DapiFallbackV2.deploy(
+      accessControlRegistry.address,
+      dapiFallbackV2AdminRoleDescription,
+      roles.manager.address,
+      api3ServerV1.address,
+      hashRegistry.address,
+      dapiDataRegistry.address
+    );
+
     const proxyFactoryFactory = await hre.ethers.getContractFactory('ProxyFactory', roles.deployer);
     const proxyFactory = await proxyFactoryFactory.deploy(api3ServerV1.address);
 
@@ -42,6 +53,7 @@ describe('DapiDataRegistry', function () {
     const api3Market = await Api3Market.deploy(
       hashRegistry.address,
       dapiDataRegistry.address,
+      dapiFallbackV2.address,
       proxyFactory.address,
       api3ServerV1.address
     );
@@ -50,6 +62,7 @@ describe('DapiDataRegistry', function () {
       roles,
       hashRegistry,
       dapiDataRegistry,
+      dapiFallbackV2,
       proxyFactory,
       api3ServerV1,
       api3Market,
