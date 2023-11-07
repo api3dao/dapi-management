@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IApi3Market.sol";
 import "./interfaces/IDapiDataRegistry.sol";
+import "./interfaces/IDapiFallbackV2.sol";
 import "./interfaces/IHashRegistry.sol";
 
 /// @title
@@ -20,6 +21,8 @@ contract Api3Market is IApi3Market {
     address public immutable override hashRegistry;
     /// @notice DapiDataRegistry contract address
     address public immutable override dapiDataRegistry;
+    /// @notice DapiDataRegistry contract address
+    address public immutable override dapiFallbackV2;
     /// @notice ProxyFactory contract address
     address public immutable override proxyFactory;
     /// @notice Api3ServerV1 contract address
@@ -29,11 +32,13 @@ contract Api3Market is IApi3Market {
 
     /// @param _hashRegistry HashRegistry contract address
     /// @param _dapiDataRegistry DapiDataRegistry contract address
+    /// @param _dapiFallbackV2 DapiFallbackV2 contract address
     /// @param _proxyFactory ProxyFactory contract address
     /// @param _api3ServerV1 Api3ServerV1 contract address
     constructor(
         address _hashRegistry,
         address _dapiDataRegistry,
+        address _dapiFallbackV2,
         address _proxyFactory,
         address _api3ServerV1
     ) {
@@ -42,10 +47,15 @@ contract Api3Market is IApi3Market {
             _dapiDataRegistry != address(0),
             "DapiDataRegistry address is zero"
         );
+        require(
+            _dapiFallbackV2 != address(0),
+            "DapiDataRegistry address is zero"
+        );
         require(_proxyFactory != address(0), "ProxyFactory address is zero");
         require(_api3ServerV1 != address(0), "Api3ServerV1 address is zero");
         hashRegistry = _hashRegistry;
         dapiDataRegistry = _dapiDataRegistry;
+        dapiFallbackV2 = _dapiFallbackV2;
         proxyFactory = _proxyFactory;
         // TODO: should this contract get the Api3ServerV1 address from
         // DapiDataRegistry or from ProxyFactory contracts instead?
@@ -54,8 +64,8 @@ contract Api3Market is IApi3Market {
 
     // This function must use the 3 Merkle trees to store the data needed for running a managed dAPI
     function buyDapi(BuyDapiArgs calldata args) external payable override {
+        _isFallbacked(args.dapi.name);
         require(args.beacons.length != 0, "Beacons is empty");
-
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(
                 DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE
@@ -309,6 +319,14 @@ contract Api3Market is IApi3Market {
             ) {
                 index = ind;
             }
+        }
+    }
+
+    function _isFallbacked(bytes32 dapiNameHash) private view {
+        bytes32[] memory fallbackedDapis = IDapiFallbackV2(dapiFallbackV2)
+            .getFallbackedDapis();
+        for (uint256 i = 0; i < fallbackedDapis.length; i++) {
+            require(fallbackedDapis[i] != dapiNameHash, "Dapi is fallbacked");
         }
     }
 }

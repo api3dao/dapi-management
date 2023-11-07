@@ -54,6 +54,8 @@ interface IApi3Market {
 
     function dapiDataRegistry() external view returns (address);
 
+    function dapiFallbackV2() external view returns (address);
+
     function proxyFactory() external view returns (address);
 
     function api3ServerV1() external view returns (address);
