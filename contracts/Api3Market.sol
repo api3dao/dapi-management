@@ -287,14 +287,14 @@ contract Api3Market is IApi3Market {
     ) private view returns (bool found, uint256 index) {
         Purchase[] storage purchases = dapiToPurchases[dapiNameHash];
         if (purchases.length > 0) {
-            for (uint256 ind = purchases.length - 1; ind >= 0; ind--) {
-                Purchase storage purchase = purchases[ind];
+            for (uint256 ind = purchases.length; ind > 0; ind--) {
+                Purchase storage purchase = purchases[ind - 1];
                 if (
                     block.timestamp >= purchase.start &&
                     block.timestamp < purchase.end
                 ) {
                     found = true;
-                    index = ind;
+                    index = ind - 1;
                     break;
                 }
             }

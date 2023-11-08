@@ -2,14 +2,7 @@ const hre = require('hardhat');
 const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const { StandardMerkleTree } = require('@openzeppelin/merkle-tree');
 const { expect } = require('chai');
-const {
-  generateRandomBytes32,
-  generateRandomAddress,
-  generateRandomBytes,
-  signData,
-  deriveRootRole,
-  deriveRole,
-} = require('./test-utils');
+const { generateRandomBytes32, generateRandomAddress, signData, deriveRootRole, deriveRole } = require('./test-utils');
 
 describe('Api3Market', function () {
   function generateRandomString(length) {
