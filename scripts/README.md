@@ -17,18 +17,18 @@
 2. Run the script by specifying the Merkle tree's name and the `chainId` as follows:
 
 ```bash
-yarn sign [MerkleTreeName] [chainId]
+yarn sign [MerkleTreeName]
 ```
 
-For instance, to sign the `dAPI fallback Merkle tree` Merkle tree for a network with a `chainId` of 1, you would use:
+For instance, to sign the `dAPI fallback Merkle tree` Merkle tree, you would use:
 
 ```bash
-yarn sign "dapi fallback" 1
+yarn sign "dAPI fallback Merkle tree"
 ```
 
 This command constructs the Merkle tree based on the data, signs the root, and updates `current-hash.json` in the specified directory.
 
-3. After running the script, confirm that `current-hash.json` is updated with the new Merkle root and the signature.
+3. After running the script, confirm that `current-hash.json` is updated with the new signature.
 
 ## Data File Details
 
