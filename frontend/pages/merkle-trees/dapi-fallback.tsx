@@ -32,9 +32,9 @@ export async function getServerSideProps() {
   });
   const { data: signers } = readSignerDataFrom('dapi-fallback-merkle-tree-root');
 
-  const treeDiff = previousTree ? await createFileDiff(previousTreePath, currentTreePath) : null;
+  const diffResult = previousTree ? await createFileDiff(previousTreePath, currentTreePath) : null;
   return {
-    props: { currentTree, signers, treeDiff },
+    props: { currentTree, signers, diffResult },
   };
 }
 
@@ -103,7 +103,7 @@ export default function DapiFallbackTree(props: Props) {
           </Table>
         </TabsContent>
         <TabsContent value="1" forceMount>
-          <TreeDiff diff={props.treeDiff} />
+          <TreeDiff diffResult={props.diffResult} />
         </TabsContent>
       </Tabs>
     </RootLayout>

@@ -86,37 +86,41 @@ export function SignatureTable(props: SignatureTableProps) {
 }
 
 interface TreeDiffProps {
-  diff: string | null;
+  diffResult: null | { diff: string; status: 'success' } | { status: 'error' };
 }
 
 export function TreeDiff(props: TreeDiffProps) {
-  const { diff } = props;
+  const { diffResult } = props;
 
   useEffect(() => {
-    if (!diff) return;
-
-    const element = document.getElementById('tree-diff-container')!;
-    const ui = new Diff2HtmlUI(element, diff, {
-      drawFileList: false,
-      fileContentToggle: false,
-      synchronisedScroll: true,
-      outputFormat: 'side-by-side',
-      rawTemplates: { 'tag-file-renamed': '' },
-    });
-    ui.draw();
-    ui.highlightCode();
-  }, [diff]);
+    if (diffResult?.status === 'success' && diffResult.diff) {
+      const element = document.getElementById('tree-diff-container')!;
+      const ui = new Diff2HtmlUI(element, diffResult.diff, {
+        drawFileList: false,
+        fileContentToggle: false,
+        synchronisedScroll: true,
+        outputFormat: 'side-by-side',
+        rawTemplates: { 'tag-file-renamed': '' },
+      });
+      ui.draw();
+      ui.highlightCode();
+    }
+  }, [diffResult]);
 
   const previousFile = <span className="font-semibold">previous-hash.json</span>;
   const currentFile = <span className="font-semibold">current-hash.json</span>;
 
   return (
     <div>
-      {diff == null ? (
+      {diffResult == null ? (
         <p className="my-4 text-sm text-gray-500">
           There is no {previousFile} file to compare the {currentFile} file with.
         </p>
-      ) : diff === '' ? (
+      ) : diffResult.status === 'error' ? (
+        <p className="my-4 inline-block rounded bg-red-100 px-4 py-3 text-sm text-red-700">
+          Something went wrong comparing {previousFile} and {currentFile}.
+        </p>
+      ) : diffResult.diff === '' ? (
         <p className="my-4 text-sm text-gray-500">
           The contents of {previousFile} and {currentFile} are identical.
         </p>

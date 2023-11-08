@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { z } from 'zod';
+import isObject from 'lodash/isObject';
 
 const execute = promisify(exec);
 
@@ -65,6 +66,32 @@ export function writeMerkleTreeData(path: string, data: MerkleTreeData) {
 }
 
 export async function createFileDiff(pathA: string, pathB: string) {
-  const result = await execute(`git diff --no-index ${pathA} ${pathB} | cat`);
-  return result.stdout;
+  try {
+    const result = await execute(`git diffs --no-index ${pathA} ${pathB}`);
+    return { diff: result.stdout, status: 'success' } as const;
+  } catch (resultOrError) {
+    if (isGitDiffResult(resultOrError)) {
+      return { diff: resultOrError.stdout, status: 'success' } as const;
+    }
+    console.error(resultOrError);
+    return { status: 'error' } as const;
+  }
+}
+
+interface GitDiffResult {
+  code: 1;
+  stderr: '';
+  stdout: string;
+}
+
+function isGitDiffResult(res: unknown): res is GitDiffResult {
+  return (
+    isObject(res) &&
+    'code' in res &&
+    res.code === 1 &&
+    'stderr' in res &&
+    res.stderr === '' &&
+    'stdout' in res &&
+    !!res.stdout
+  );
 }
