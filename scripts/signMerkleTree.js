@@ -33,6 +33,7 @@ if (!MERKLE_TREE_MAPPING[merkleTreeName]) {
   process.exit(1);
 }
 
+// FIXME: Update this function to sign with the hash type, merkle root, and timestamp
 async function signMessage(message) {
   const messageHash = ethers.utils.hashMessage(message);
   const signature = await wallet.signMessage(ethers.utils.arrayify(messageHash));

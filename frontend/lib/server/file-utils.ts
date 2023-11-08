@@ -41,6 +41,7 @@ export function readTreeDataFrom(options: { subfolder: TreeSubFolder; file: Tree
   const { subfolder, file, schema = merkleTreeSchema } = options;
   const path = join(process.cwd(), '../data', subfolder, file);
 
+  // The previous hash file isn't required, so we return if it doesn't exist
   if (file === 'previous-hash.json' && !existsSync(path)) {
     return { path, data: null };
   }
@@ -67,6 +68,14 @@ export function writeMerkleTreeData(path: string, data: MerkleTreeData) {
 
 export async function createFileDiff(pathA: string, pathB: string) {
   try {
+    /*
+     * This command produces an exit code of
+     *   0: when the file contents are identical
+     *   1: when the files contents differ.
+     *
+     * The exit code of 1 means that the execute() function will throw an error when the contents differ,
+     * so we need to handle the error and distinguish a legit diff result from an actual error.
+     */
     const result = await execute(`git diff --no-index ${pathA} ${pathB}`);
     return { diff: result.stdout, status: 'success' } as const;
   } catch (resultOrError) {
@@ -85,6 +94,14 @@ interface GitDiffResult {
 }
 
 function isGitDiffResult(res: unknown): res is GitDiffResult {
+  /*
+   * The result object where a diff was found will have the shape:
+   * {
+   *   code: 1,
+   *   stderr: '',
+   *   stdout: '<some diff text>'
+   * }
+   */
   return (
     isObject(res) &&
     'code' in res &&
