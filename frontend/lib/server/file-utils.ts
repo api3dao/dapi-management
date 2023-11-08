@@ -67,7 +67,7 @@ export function writeMerkleTreeData(path: string, data: MerkleTreeData) {
 
 export async function createFileDiff(pathA: string, pathB: string) {
   try {
-    const result = await execute(`git diffs --no-index ${pathA} ${pathB}`);
+    const result = await execute(`git diff --no-index ${pathA} ${pathB}`);
     return { diff: result.stdout, status: 'success' } as const;
   } catch (resultOrError) {
     if (isGitDiffResult(resultOrError)) {

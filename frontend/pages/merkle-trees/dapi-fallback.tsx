@@ -1,6 +1,5 @@
 import { ethers } from 'ethers';
 import { z } from 'zod';
-import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
 import { BadgeInfoIcon } from 'lucide-react';
 import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
@@ -9,7 +8,7 @@ import { Button } from '~/components/ui/button';
 import { TreeStatusBadge, TreeRootBadge, SignatureTable, TreeDiff } from '~/components/merkle-tree-elements';
 import { useWeb3Data } from '~/contexts/web3-data-context';
 import { readTreeDataFrom, readSignerDataFrom, createFileDiff } from '~/lib/server/file-utils';
-import { validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
+import { createDapiFallbackMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { InferGetServerSidePropsType } from 'next';
 
 const merkleTreeSchema = z.object({
@@ -44,7 +43,7 @@ export default function DapiFallbackTree(props: Props) {
   const { currentTree, signers } = props;
   const { address } = useWeb3Data();
 
-  const merkleTree = StandardMerkleTree.of(currentTree.merkleTreeValues.values, ['bytes32', 'bytes32', 'address']);
+  const merkleTree = createDapiFallbackMerkleTree(currentTree.merkleTreeValues.values);
   const merkleTreeRoot = ethers.utils.arrayify(merkleTree.root);
   const signatures = validateTreeRootSignatures(merkleTreeRoot, currentTree.signatures, signers);
 
@@ -94,7 +93,7 @@ export default function DapiFallbackTree(props: Props) {
             <TableBody>
               {currentTree.merkleTreeValues.values.map((fallback, i) => (
                 <TableRow key={i}>
-                  <TableCell>{ethers.utils.parseBytes32String(fallback[0])}</TableCell>
+                  <TableCell>{fallback[0]}</TableCell>
                   <TableCell>{fallback[1]}</TableCell>
                   <TableCell>{fallback[2]}</TableCell>
                 </TableRow>

@@ -1,8 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { ethers } from 'ethers';
-import { validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
+import {
+  createDapiManagementMerkleTree,
+  createDapiPricingMerkleTree,
+  createDapiFallbackMerkleTree,
+  createSignedApiUrlMerkleTree,
+  validateTreeRootSignatures,
+} from '~/lib/merkle-tree-utils';
 import { readSignerDataFrom, readTreeDataFrom, writeMerkleTreeData } from '~/lib/server/file-utils';
-import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
 import { z } from 'zod';
 import { exec } from 'child_process';
 
@@ -51,7 +56,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(403).send(`Address not part of hash signers for tree ${tree}`);
   }
 
-  const merkleTree = StandardMerkleTree.of(currentHash.merkleTreeValues.values, ['bytes32', 'bytes32', 'address']);
+  const merkleTree = createMerkleTree(tree, currentHash.merkleTreeValues.values);
   const root = ethers.utils.arrayify(merkleTree.root);
 
   // Set a new signature belonging to the signing address
@@ -60,7 +65,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   // for every signer check if the signature is valid and if not replace it with "0x"
   const validatedRootSignatures = validateTreeRootSignatures(root, currentHash.signatures, hashSigners);
 
-  const validatedCurrentHash = { ...currentHash, signatures: validatedRootSignatures };
+  const validatedCurrentHash = { ...currentHash, hash: merkleTree.root, signatures: validatedRootSignatures };
 
   // Write updated signatures to the file
   writeMerkleTreeData(currentHashPath, validatedCurrentHash);
@@ -68,4 +73,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   exec('yarn prettier');
 
   return res.status(200).send('Successfully signed root');
+}
+
+function createMerkleTree(type: TreeType, values: string[][]) {
+  switch (type) {
+    case 'dapi-fallback':
+      return createDapiFallbackMerkleTree(values);
+    case 'dapi-management':
+      return createDapiManagementMerkleTree(values);
+    case 'dapi-pricing':
+      return createDapiPricingMerkleTree(values);
+    case 'signed-api-url':
+      return createSignedApiUrlMerkleTree(values);
+  }
 }
