@@ -85,7 +85,7 @@ export default function DapiFallbackTree(props: Props) {
           <Table className="mt-4">
             <TableHeader sticky>
               <TableRow>
-                <TableHead className="w-[15ch] whitespace-nowrap">dAPI Name</TableHead>
+                <TableHead>dAPI Name</TableHead>
                 <TableHead>Beacon ID</TableHead>
                 <TableHead>Sponsor Wallet Address</TableHead>
               </TableRow>
