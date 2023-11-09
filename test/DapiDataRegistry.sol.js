@@ -363,6 +363,13 @@ describe('DapiDataRegistry', function () {
             .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
             .withArgs(beaconSetId, encodedBeaconSetData);
           expect(await dapiDataRegistry.dataFeeds(beaconSetId)).to.deep.equal(encodedBeaconSetData);
+
+          // If try to register same data feed data for same data feed ID then no update nor event emitted
+          await expect(
+            dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData)
+          ).to.have.not.emit(dapiDataRegistry, 'RegisteredDataFeed');
+          expect(await dapiDataRegistry.dataFeeds(beaconSetId)).to.deep.equal(encodedBeaconSetData);
+        });
       });
       context('Encoded data feed is not valid 32 bytes pairs', function () {
         it('reverts', async function () {

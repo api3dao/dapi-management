@@ -178,9 +178,14 @@ contract DapiDataRegistry is
             dataFeedId = keccak256(abi.encode(beaconIds));
         }
 
-        dataFeeds[dataFeedId] = dataFeed;
+        if (
+            keccak256(abi.encodePacked((dataFeeds[dataFeedId]))) !=
+            keccak256(abi.encodePacked((dataFeed)))
+        ) {
+            dataFeeds[dataFeedId] = dataFeed;
 
-        emit RegisteredDataFeed(dataFeedId, dataFeed);
+            emit RegisteredDataFeed(dataFeedId, dataFeed);
+        }
     }
 
     /// Called by a registrar or manager to add a dAPI along with update
