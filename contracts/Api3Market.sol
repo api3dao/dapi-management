@@ -123,6 +123,7 @@ contract Api3Market is IApi3Market {
         bytes32 dataFeedId = _registerDataFeed(args.beacons);
 
         // Add the dAPI to the DapiDataRegistry for managed data feed updates
+        // TODO: do not call if downgrade. Worker needs to call this function when downgrade period starts to update the update parameters used by Airseeker
         IDapiDataRegistry(dapiDataRegistry).addDapi(
             args.dapi.name,
             dataFeedId,
@@ -142,7 +143,7 @@ contract Api3Market is IApi3Market {
             IProxyFactory(proxyFactory).deployDapiProxy(args.dapi.name, "");
         }
 
-        // Update the dAPI with signed API data (if it hasn't been updated recently)
+        // Update the dAPI beacons with signed API data
         _updateDataFeed(
             dataFeedId,
             updateParams.heartbeatInterval,
@@ -350,6 +351,7 @@ contract Api3Market is IApi3Market {
         (, uint32 timestamp) = IApi3ServerV1(api3ServerV1).dataFeeds(
             dataFeedId
         );
+        // Only update data feed values if they haven't been updated recently
         if (timestamp + heartbeatInterval <= block.timestamp) {
             bytes32[] memory beaconIds = new bytes32[](beacons.length);
             bytes[] memory calldatas = new bytes[](beacons.length + 1);
@@ -360,7 +362,6 @@ contract Api3Market is IApi3Market {
                         beacons[ind].templateId
                     )
                 );
-
                 calldatas[ind] = abi.encodeCall(
                     IBeaconUpdatesWithSignedData.updateBeaconWithSignedData,
                     (
@@ -380,7 +381,7 @@ contract Api3Market is IApi3Market {
                 );
             }
 
-            IDapiDataRegistry(dapiDataRegistry).tryMulticall(calldatas);
+            IApi3ServerV1(api3ServerV1).tryMulticall(calldatas);
         }
     }
 
