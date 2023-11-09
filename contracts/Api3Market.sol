@@ -300,7 +300,10 @@ contract Api3Market is IApi3Market {
         bytes32[] memory fallbackedDapis = IDapiFallbackV2(dapiFallbackV2)
             .getFallbackedDapis();
         for (uint256 i = 0; i < fallbackedDapis.length; i++) {
-            require(fallbackedDapis[i] != dapiNameHash, "Dapi is fallbacked");
+            require(
+                keccak256(abi.encodePacked(fallbackedDapis[i])) != dapiNameHash,
+                "Dapi is fallbacked"
+            );
         }
     }
 
