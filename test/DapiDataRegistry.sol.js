@@ -260,6 +260,14 @@ describe('DapiDataRegistry', function () {
               .to.emit(dapiDataRegistry, 'RegisteredSignedApiUrl')
               .withArgs(airnode, url);
             expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
+
+            // If try to register same URL for same Airnode then no update nor event emitted
+            await expect(
+              dapiDataRegistry
+                .connect(roles.api3MarketContract)
+                .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof)
+            ).to.have.not.emit(dapiDataRegistry, 'RegisteredSignedApiUrl');
+            expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
           });
         });
         context('Proof is not valid', function () {
@@ -334,7 +342,7 @@ describe('DapiDataRegistry', function () {
             .withArgs(dataFeedId, encodedBeaconData);
           expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconData);
         });
-        it('registers beaconSet data feed', async function () {
+        it.only('registers beaconSet data feed', async function () {
           const { roles, dapiDataRegistry, dataFeeds, dapiTreeValues } = await helpers.loadFixture(deploy);
 
           const [dataFeed] = dataFeeds;
@@ -355,7 +363,6 @@ describe('DapiDataRegistry', function () {
             .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
             .withArgs(beaconSetId, encodedBeaconSetData);
           expect(await dapiDataRegistry.dataFeeds(beaconSetId)).to.deep.equal(encodedBeaconSetData);
-        });
       });
       context('Encoded data feed is not valid 32 bytes pairs', function () {
         it('reverts', async function () {

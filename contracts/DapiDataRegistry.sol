@@ -127,9 +127,14 @@ contract DapiDataRegistry is
         );
         require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
 
-        airnodeToSignedApiUrl[airnode] = url;
+        if (
+            keccak256(abi.encodePacked((airnodeToSignedApiUrl[airnode]))) !=
+            keccak256(abi.encodePacked((url)))
+        ) {
+            airnodeToSignedApiUrl[airnode] = url;
 
-        emit RegisteredSignedApiUrl(airnode, url);
+            emit RegisteredSignedApiUrl(airnode, url);
+        }
     }
 
     /// @notice Called to register data about a data feed
