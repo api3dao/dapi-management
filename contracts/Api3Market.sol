@@ -2,6 +2,8 @@
 pragma solidity 0.8.18;
 
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3ServerV1.sol";
+import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IBeaconUpdatesWithSignedData.sol";
+import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IDataFeedServer.sol";
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/proxies/interfaces/IProxyFactory.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
@@ -111,20 +113,11 @@ contract Api3Market is IApi3Market {
         );
 
         // Store Signed API URLs for all the Airnodes used by the constituent beacons of the beaconSet
-        require(
-            args.beacons.length == args.signedApiUrlProofs.length,
-            "Signed API URL proofs length is incorrect"
+        _registerSignedApiUrl(
+            args.beacons,
+            args.signedApiUrlRoot,
+            args.signedApiUrlProofs
         );
-        for (uint ind = 0; ind < args.signedApiUrlProofs.length; ind++) {
-            // TODO: This is very naive and does not check if url being registered is the same for the current airnode
-            //       Should we add that check to avoid re-setting the same value to state if values are equal?
-            IDapiDataRegistry(dapiDataRegistry).registerAirnodeSignedApiUrl(
-                args.beacons[ind].airnode,
-                args.beacons[ind].url,
-                args.signedApiUrlRoot,
-                args.signedApiUrlProofs[ind]
-            );
-        }
 
         // Store the actual data used to derive each beaconId (if more than one then it will also be used to derive the beaconSetId)
         bytes32 dataFeedId = _registerDataFeed(args.beacons);
@@ -157,6 +150,8 @@ contract Api3Market is IApi3Market {
         );
 
         // This is done last because it is less trusted than other external calls
+        // TODO: in the case of downgrade/upgrade we must fund sponsorWallet with
+        // updatedPrice and return the rest to the caller?
         Address.sendValue(args.dapi.sponsorWallet, msg.value);
 
         emit BoughtDapi(
@@ -200,8 +195,7 @@ contract Api3Market is IApi3Market {
             Purchase storage current = dapiToPurchases[dapiNameHash][index];
             Purchase storage downgrade = current;
             uint256 purchasesLength = dapiToPurchases[dapiNameHash].length;
-            if (index == purchasesLength - 1) {
-                // We only allow a single downgrade after last purchase
+            if (purchasesLength > 1 && index == purchasesLength - 2) {
                 downgrade = dapiToPurchases[dapiNameHash][purchasesLength];
             }
 
@@ -220,8 +214,9 @@ contract Api3Market is IApi3Market {
                 current.deviationThreshold &&
                 updateParams.heartbeatInterval >= current.heartbeatInterval
             ) {
+                // We only allow a single downgrade after last purchase
                 require(
-                    downgrade.end != current.end,
+                    downgrade.end == current.end,
                     "There is already a pending extension or downgrade"
                 );
                 updatedDuration = purchaseEnd - current.end;
@@ -354,18 +349,69 @@ contract Api3Market is IApi3Market {
         );
         if (timestamp + heartbeatInterval <= block.timestamp) {
             bytes32[] memory beaconIds = new bytes32[](beacons.length);
-            for (uint ind = 0; ind < beacons.length; ind++) {
-                beaconIds[ind] = IApi3ServerV1(api3ServerV1)
-                    .updateBeaconWithSignedData(
+            bytes[] memory calldatas = new bytes[](beacons.length + 1);
+            for (uint256 ind = 0; ind < beacons.length; ind++) {
+                beaconIds[ind] = keccak256(
+                    abi.encodePacked(
+                        beacons[ind].airnode,
+                        beacons[ind].templateId
+                    )
+                );
+
+                calldatas[ind] = abi.encodeCall(
+                    IBeaconUpdatesWithSignedData.updateBeaconWithSignedData,
+                    (
                         beacons[ind].airnode,
                         beacons[ind].templateId,
                         beacons[ind].timestamp, // Signature timestamp
                         beacons[ind].data, // Update data (an `int256` encoded in contract ABI)
                         beacons[ind].signature // Template ID, timestamp and the update data signed by the Airnode
+                    )
+                );
+            }
+
+            if (beacons.length > 1) {
+                calldatas[beacons.length] = abi.encodeCall(
+                    IDataFeedServer.updateBeaconSetWithBeacons,
+                    (beaconIds)
+                );
+            }
+
+            IDapiDataRegistry(dapiDataRegistry).tryMulticall(calldatas);
+        }
+    }
+
+    function _registerSignedApiUrl(
+        Beacon[] memory beacons,
+        bytes32 signedApiUrlRoot,
+        bytes32[][] memory signedApiUrlProofs
+    ) private {
+        require(
+            beacons.length == signedApiUrlProofs.length,
+            "Signed API URL proofs length is incorrect"
+        );
+        bytes[] memory calldatas = new bytes[](signedApiUrlProofs.length);
+        for (uint ind = 0; ind < signedApiUrlProofs.length; ind++) {
+            calldatas[ind] = abi.encodeCall(
+                IDapiDataRegistry.airnodeToSignedApiUrl,
+                (beacons[ind].airnode)
+            );
+        }
+        bytes[] memory returndatas = IDapiDataRegistry(dapiDataRegistry)
+            .multicall(calldatas);
+        for (uint ind = 0; ind < signedApiUrlProofs.length; ind++) {
+            if (
+                returndatas[ind].length == 0 ||
+                (keccak256(abi.encodePacked((returndatas[ind]))) !=
+                    keccak256(abi.encodePacked((beacons[ind].url)))) // TODO: bytes(beacons[ind].url)???
+            ) {
+                IDapiDataRegistry(dapiDataRegistry).registerAirnodeSignedApiUrl(
+                        beacons[ind].airnode,
+                        beacons[ind].url,
+                        signedApiUrlRoot,
+                        signedApiUrlProofs[ind]
                     );
             }
-            // TODO: only do this if beacons.length > 1?
-            IApi3ServerV1(api3ServerV1).updateBeaconSetWithBeacons(beaconIds);
         }
     }
 }

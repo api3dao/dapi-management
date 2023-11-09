@@ -185,7 +185,7 @@ describe('Api3Market', function () {
 
     // dAPI pricing Merkle tree
     const duration = 7776000; // 90 days in seconds
-    const price = hre.ethers.utils.parseEther('5.5');
+    const price = hre.ethers.utils.parseEther('5.2');
     const deviationThresholdInPercentage = hre.ethers.utils.parseUnits('1', 6); // 1e6 represents 1%
     const deviationReference = 0;
     const heartbeatInterval = 86400; // 1 day in seconds
@@ -193,13 +193,16 @@ describe('Api3Market', function () {
       ['uint256', 'int224', 'uint32'],
       [deviationThresholdInPercentage, deviationReference, heartbeatInterval]
     );
-    const priceTreeValues = dapiNamesWithSponsorWallets.map(([dapiName]) => [
-      hre.ethers.utils.formatBytes32String(dapiName),
-      chainId,
-      updateParams,
-      duration,
-      price,
-    ]);
+    const updateParamsDowngrade = hre.ethers.utils.defaultAbiCoder.encode(
+      ['uint256', 'int224', 'uint32'],
+      [deviationThresholdInPercentage * 2, deviationReference, heartbeatInterval]
+    );
+    const priceTreeValues = dapiNamesWithSponsorWallets
+      .map(([dapiName]) => [
+        [hre.ethers.utils.formatBytes32String(dapiName), chainId, updateParams, duration, price],
+        [hre.ethers.utils.formatBytes32String(dapiName), chainId, updateParamsDowngrade, duration * 2, price.div(2)],
+      ])
+      .flat();
     const priceTree = StandardMerkleTree.of(priceTreeValues, ['bytes32', 'uint256', 'bytes', 'uint256', 'uint256']);
     const priceHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI pricing Merkle tree root']);
     const priceRootSigners = [roles.priceRootSigner1, roles.priceRootSigner2, roles.priceRootSigner3];
@@ -246,7 +249,7 @@ describe('Api3Market', function () {
   });
 
   describe('buyDapi', function () {
-    it('buys a dAPI subscription', async function () {
+    it.only('buys a dAPI subscription', async function () {
       const {
         roles,
         api3Market,
@@ -268,7 +271,7 @@ describe('Api3Market', function () {
       const dapiTreeRoot = dapiTree.root;
       const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-      const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex];
+      const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 2];
       const priceTreeRoot = priceTree.root;
       const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
@@ -309,9 +312,8 @@ describe('Api3Market', function () {
         priceProof: priceTreeProof,
       };
 
-      const value = hre.ethers.utils.parseEther('5.5');
-      const options = { value };
-      await expect(api3Market.connect(roles.randomPerson).buyDapi(args, options))
+      const value = hre.ethers.utils.parseEther('5.2');
+      await expect(api3Market.connect(roles.randomPerson).buyDapi(args, { value }))
         .to.emit(api3Market, 'BoughtDapi')
         .withArgs(
           dapiName,
@@ -321,6 +323,49 @@ describe('Api3Market', function () {
           duration,
           updateParams,
           value,
+          roles.randomPerson.address
+        );
+
+      // TODO: more checks like if beacons were successfully updated
+
+      const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber())).timestamp;
+      const futureNow = now + duration / 2;
+      await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
+
+      // Downgrade from the middle of current subscription
+      const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] = priceTreeValues[randomIndex * 2 + 1];
+      const downgradePriceTreeProof = priceTree.getProof([
+        dapiName,
+        chainId,
+        downgradeUpdateParams,
+        downgradeDuration,
+        downgradePrice,
+      ]);
+      const downgradeDapi = {
+        name: dapiName,
+        sponsorWallet,
+        price: downgradePrice,
+        duration: downgradeDuration,
+        updateParams: downgradeUpdateParams,
+      };
+
+      const downgradeValue = hre.ethers.utils.parseEther('2.6');
+      const expectedPrice = downgradeValue.sub(downgradePrice.mul(duration / 2).div(downgradeDuration));
+      const expectedDuration = downgradeDuration - duration / 2;
+      await expect(
+        api3Market
+          .connect(roles.randomPerson)
+          .buyDapi({ ...args, dapi: downgradeDapi, priceProof: downgradePriceTreeProof }, { value: downgradeValue })
+      )
+        .to.emit(api3Market, 'BoughtDapi')
+        .withArgs(
+          dapiName,
+          dataFeedId,
+          dapiProxyAddress,
+          expectedPrice,
+          expectedDuration,
+          downgradeUpdateParams,
+          value.add(downgradeValue), // sponsorWallet balance
           roles.randomPerson.address
         );
     });
