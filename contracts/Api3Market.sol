@@ -192,11 +192,11 @@ contract Api3Market is IApi3Market {
                 )
             );
         } else {
-            Purchase storage current = dapiToPurchases[dapiNameHash][index];
-            Purchase storage downgrade = current;
+            Purchase memory current = dapiToPurchases[dapiNameHash][index];
+            Purchase memory downgrade = current;
             uint256 purchasesLength = dapiToPurchases[dapiNameHash].length;
             if (purchasesLength > 1 && index == purchasesLength - 2) {
-                downgrade = dapiToPurchases[dapiNameHash][purchasesLength];
+                downgrade = dapiToPurchases[dapiNameHash][purchasesLength - 1];
             }
 
             if (
@@ -226,7 +226,7 @@ contract Api3Market is IApi3Market {
                         updateParams.heartbeatInterval,
                         updatedPrice,
                         updatedDuration,
-                        block.timestamp,
+                        current.end,
                         purchaseEnd
                     )
                 );
@@ -236,7 +236,6 @@ contract Api3Market is IApi3Market {
                 updatedPrice -=
                     (currentOverlapDuration * current.price) /
                     current.duration;
-
                 if (downgrade.end != current.end) {
                     // Also deduct and adjust downgrade
                     uint256 downgradeOverlapDuration = Math.min(
@@ -246,6 +245,7 @@ contract Api3Market is IApi3Market {
                     updatedPrice -=
                         (downgradeOverlapDuration * downgrade.price) /
                         downgrade.duration;
+
                     if (downgradeOverlapDuration == downgrade.duration) {
                         // Purchase upgrades the downgrade completely
                         delete dapiToPurchases[dapiNameHash][purchasesLength];
@@ -416,4 +416,7 @@ contract Api3Market is IApi3Market {
             }
         }
     }
+
+    // TODO: add view function to read current purchase (and pending downgrade if
+    // exists) for a given dAPI name
 }
