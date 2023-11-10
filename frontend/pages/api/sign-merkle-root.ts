@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { ethers } from 'ethers';
 import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
 import {
+  DAPI_FALLBACK_MERKLE_TREE_TYPE,
+  DAPI_MANAGEMENT_MERKLE_TREE_TYPE,
+  DAPI_PRICING_MERKLE_TREE_TYPE,
+  SIGNED_API_URL_MERKLE_TREE_TYPE,
   createDapiManagementMerkleTree,
   createDapiPricingMerkleTree,
   createDapiFallbackMerkleTree,
@@ -13,15 +16,19 @@ import { z } from 'zod';
 import { exec } from 'child_process';
 
 const treeTypeSchema = z
-  .literal('dapi-fallback')
-  .or(z.literal('dapi-management').or(z.literal('dapi-pricing').or(z.literal('signed-api-url'))));
+  .literal(DAPI_FALLBACK_MERKLE_TREE_TYPE)
+  .or(
+    z
+      .literal(DAPI_MANAGEMENT_MERKLE_TREE_TYPE)
+      .or(z.literal(DAPI_PRICING_MERKLE_TREE_TYPE).or(z.literal(SIGNED_API_URL_MERKLE_TREE_TYPE)))
+  );
 
 type TreeType = z.infer<typeof treeTypeSchema>;
 
 const requestBodySchema = z.object({
   signature: z.string(),
   address: z.string(),
-  tree: treeTypeSchema,
+  treeType: treeTypeSchema,
 });
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -29,29 +36,36 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).send('Method not allowed');
   }
 
-  const parseResult = requestBodySchema.safeParse(req.body);
+  const body = JSON.parse(req.body);
+
+  const parseResult = requestBodySchema.safeParse(body);
   if (!parseResult.success) {
     return res.status(400).json(parseResult.error.format());
   }
 
-  const { signature, address, tree } = parseResult.data;
+  const { signature, address, treeType } = parseResult.data;
 
-  const [subfolder, createMerkleTree] = getTreeConfig(tree);
+  const [subfolder, createMerkleTree] = getTreeConfig(treeType);
   const { path: currentHashPath, data: currentHash } = readTreeDataFrom({ subfolder, file: 'current-hash.json' });
   const { data: hashSigners } = readSignerDataFrom(subfolder);
 
   if (!hashSigners.includes(address)) {
-    return res.status(403).send(`Address not part of hash signers for tree ${tree}`);
+    return res.status(403).send(`Address not part of hash signers for ${treeType}`);
   }
 
   const merkleTree = createMerkleTree(currentHash.merkleTreeValues.values);
-  const root = ethers.utils.arrayify(merkleTree.root);
 
   // Set a new signature belonging to the signing address
   currentHash.signatures[address] = signature;
 
   // for every signer check if the signature is valid and if not replace it with "0x"
-  const validatedRootSignatures = validateTreeRootSignatures(root, currentHash.signatures, hashSigners);
+  const validatedRootSignatures = validateTreeRootSignatures(
+    `${treeType} root`,
+    merkleTree.root,
+    currentHash.timestamp,
+    currentHash.signatures,
+    hashSigners
+  );
 
   const validatedCurrentHash = { ...currentHash, hash: merkleTree.root, signatures: validatedRootSignatures };
 
@@ -67,13 +81,13 @@ type MerkleTreeCreator = (values: string[][]) => StandardMerkleTree<string[]>;
 
 function getTreeConfig(type: TreeType): [TreeSubFolder, MerkleTreeCreator] {
   switch (type) {
-    case 'dapi-fallback':
+    case DAPI_FALLBACK_MERKLE_TREE_TYPE:
       return ['dapi-fallback-merkle-tree-root', createDapiFallbackMerkleTree];
-    case 'dapi-management':
+    case DAPI_MANAGEMENT_MERKLE_TREE_TYPE:
       return ['dapi-management-merkle-tree-root', createDapiManagementMerkleTree];
-    case 'dapi-pricing':
+    case DAPI_PRICING_MERKLE_TREE_TYPE:
       return ['dapi-pricing-merkle-tree-root', createDapiPricingMerkleTree];
-    case 'signed-api-url':
+    case SIGNED_API_URL_MERKLE_TREE_TYPE:
       return ['signed-api-url-merkle-tree-root', createSignedApiUrlMerkleTree];
   }
 }

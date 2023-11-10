@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import { Popover, PopoverTrigger, PopoverContent } from './ui/popover';
 import { Button } from './ui/button';
 import { useWeb3Data } from '~/contexts/web3-data-context';
+import { Toaster } from './ui/toast/toaster';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -36,6 +37,7 @@ export default function RootLayout(props: Props) {
       <main role="main" className="ml-[200px] bg-white px-5 py-4" style={{ width: 'calc(100% - 200px)' }}>
         {props.children}
       </main>
+      <Toaster />
     </div>
   );
 }
