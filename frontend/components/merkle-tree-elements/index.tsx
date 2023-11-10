@@ -2,6 +2,7 @@ import some from 'lodash/some';
 import { ShieldCheckIcon, ShieldEllipsisIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { cn } from '~/lib/utils';
+import addressBook from '../../../data/address-book.json';
 
 interface TreeStatusBadgeProps {
   signatures: Record<string, string>;
@@ -31,10 +32,7 @@ interface TreeRootBadgeProps {
 export function TreeRootBadge(props: TreeRootBadgeProps) {
   return (
     <span
-      className={cn(
-        'inline-block whitespace-nowrap break-words rounded-md bg-blue-50 px-3 py-1 text-sm text-blue-900',
-        props.className
-      )}
+      className={cn('inline-block break-all rounded-md bg-blue-50 px-3 py-1 text-sm text-blue-900', props.className)}
     >
       Root: {props.root}
     </span>
@@ -48,12 +46,13 @@ interface SignatureTableProps {
 
 export function SignatureTable(props: SignatureTableProps) {
   const { signers, signatures } = props;
-
+  const isMissingName = signers.some((signer) => !getNameForAddress(signer));
   return (
-    <Table className="min-w-[120ch] table-fixed">
+    // We use a fixed table so that the signatures wrap onto new lines when they don't fit
+    <Table className="min-w-[40ch] table-fixed">
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[46ch]">Signer</TableHead>
+          <TableHead className={isMissingName ? 'lg:w-[46ch]' : 'md:w-[20ch]'}>Signer</TableHead>
           <TableHead>Signature</TableHead>
         </TableRow>
       </TableHeader>
@@ -62,7 +61,9 @@ export function SignatureTable(props: SignatureTableProps) {
           const signature = signatures[signer];
           return (
             <TableRow key={signer} className="text-sm">
-              <TableCell className="break-words align-top text-gray-500">{signer}</TableCell>
+              <TableCell className="break-words align-top text-gray-500">
+                {getNameForAddress(signer) || signer}
+              </TableCell>
               {signature === '0x' ? (
                 <TableCell className="bg-amber-0 border-amber-100 text-amber-600">
                   <ShieldEllipsisIcon className="relative top-[-1px] mr-1 inline w-5 text-amber-400" />
@@ -80,4 +81,8 @@ export function SignatureTable(props: SignatureTableProps) {
       </TableBody>
     </Table>
   );
+}
+
+function getNameForAddress(address: string) {
+  return (addressBook as Record<string, string>)[address];
 }
