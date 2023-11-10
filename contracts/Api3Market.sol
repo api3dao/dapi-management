@@ -199,13 +199,6 @@ contract Api3Market is IApi3Market {
                 downgrade = dapiToPurchases[dapiNameHash][purchasesLength];
             }
 
-            // Scenario 2: New purchase is downgrade or extension
-            // TODO: is it OK to restrict purchases to end after current period ends?
-            require(
-                purchaseEnd > current.end,
-                "Does not extends nor downgrades current purchase"
-            );
-
             if (
                 // TODO: not 100% sure this is the right way to determine if upgrade
                 // or downgrade but this is the way it's currently being done in
@@ -214,6 +207,12 @@ contract Api3Market is IApi3Market {
                 current.deviationThreshold &&
                 updateParams.heartbeatInterval >= current.heartbeatInterval
             ) {
+                // Scenario 2: New purchase is downgrade or extension
+                // TODO: is it OK to restrict purchases to end after current period ends?
+                require(
+                    purchaseEnd > current.end,
+                    "Does not extends nor downgrades current purchase"
+                );
                 // We only allow a single downgrade after last purchase
                 require(
                     downgrade.end == current.end,
