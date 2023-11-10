@@ -33,7 +33,7 @@ export default function RootLayout(props: Props) {
           </div>
         </nav>
       </aside>
-      <main role="main" className="ml-[200px] flex-grow bg-white px-5 py-4">
+      <main role="main" className="ml-[200px] bg-white px-5 py-4" style={{ width: 'calc(100% - 200px)' }}>
         {props.children}
       </main>
     </div>
