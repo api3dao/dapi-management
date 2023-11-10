@@ -96,12 +96,6 @@ contract Api3Market is IApi3Market {
             "Invalid proof"
         );
 
-        // TODO: handle downgrade/upgrade
-        //       say we have 0.25% active for the next 3 months and someone wants
-        //       to come in and buy 1% for the next 6 months, which means they
-        //       should only pay for 1% for 3 months and the dAPI to be
-        //       downgraded to 1% after 3 months
-        // TODO: Need to use some sort of Checkpoint or Queue data structure to store subscriptions?
         UpdateParams memory updateParams = _decodeUpdateParams(
             args.dapi.updateParams
         );
@@ -123,7 +117,9 @@ contract Api3Market is IApi3Market {
         bytes32 dataFeedId = _registerDataFeed(args.beacons);
 
         // Add the dAPI to the DapiDataRegistry for managed data feed updates
-        // TODO: do not call if downgrade. Worker needs to call this function when downgrade period starts to update the update parameters used by Airseeker
+        // TODO: do not call if downgrade. Worker needs to call this function
+        // when downgrade period starts to update the update parameters used by
+        // Airseeker. How to determine current purchase is a downgrade here?
         IDapiDataRegistry(dapiDataRegistry).addDapi(
             args.dapi.name,
             dataFeedId,
@@ -151,9 +147,12 @@ contract Api3Market is IApi3Market {
         );
 
         // This is done last because it is less trusted than other external calls
-        // TODO: in the case of downgrade/upgrade we must fund sponsorWallet with
-        // updatedPrice and return the rest to the caller?
-        Address.sendValue(args.dapi.sponsorWallet, msg.value);
+        if (msg.value - updatedPrice == 0) {
+            Address.sendValue(args.dapi.sponsorWallet, msg.value);
+        } else {
+            Address.sendValue(args.dapi.sponsorWallet, updatedPrice);
+            Address.sendValue(payable(msg.sender), msg.value - updatedPrice);
+        }
 
         emit BoughtDapi(
             args.dapi.name,
@@ -407,7 +406,7 @@ contract Api3Market is IApi3Market {
             if (
                 returndatas[ind].length == 0 ||
                 (keccak256(abi.encodePacked((returndatas[ind]))) !=
-                    keccak256(abi.encodePacked((beacons[ind].url)))) // TODO: bytes(beacons[ind].url)???
+                    keccak256(abi.encodePacked((beacons[ind].url))))
             ) {
                 IDapiDataRegistry(dapiDataRegistry).registerAirnodeSignedApiUrl(
                         beacons[ind].airnode,
