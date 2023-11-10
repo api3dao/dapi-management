@@ -1,6 +1,6 @@
 ## Usage Of Merkle Tree Signing Scripts
 
-1. Navigate to the respective directory under `data/` corresponding to each Merkle tree. Update the current-hash.json file with the necessary values, ensuring it has the following structure:
+1. Navigate to the respective directory under `data/` corresponding to each Merkle tree. Before updating the values of the `current-hash.json` file, please copy the contents of the `current-hash.json` file into the `previous-hash.json` file. Thereafter, you can update the current-hash.json file with the necessary values, ensuring it has the following structure:
 
 ```json
 {
@@ -14,16 +14,16 @@
 }
 ```
 
-2. Run the script by specifying the Merkle tree's name and the `chainId` as follows:
+2. Run the script by specifying the Merkle tree's name as follows:
 
 ```bash
-yarn sign [MerkleTreeName] [chainId]
+yarn sign [MerkleTreeName]
 ```
 
-For instance, to sign the `dAPI fallback Merkle tree` Merkle tree for a network with a `chainId` of 1, you would use:
+For instance, to sign the `dAPI fallback Merkle tree` Merkle tree, you would use:
 
 ```bash
-yarn sign "dapi fallback" 1
+yarn sign "dAPI fallback Merkle tree"
 ```
 
 This command constructs the Merkle tree based on the data, signs the root, and updates `current-hash.json` in the specified directory.
@@ -33,6 +33,8 @@ This command constructs the Merkle tree based on the data, signs the root, and u
 ## Data File Details
 
 - **current-hash.json:** Stores the state of the Merkle tree. Updated by the script with each execution, recording the new Merkle root, its signature, and the timestamp.
+
+- **previous-hash.json:** Stores the state of the previous Merkle tree. This is used to present the user with a diff view between the previous and current states.
 
 - **hash-signers.json:** Holds addresses that are authorized to sign the Merkle root, ensuring the authenticity of the signatures.
 

@@ -1,92 +1,83 @@
-const { StandardMerkleTree } = require('@openzeppelin/merkle-tree');
 const { ethers } = require('ethers');
 const fs = require('fs');
 const path = require('path');
+const { exec } = require('child_process');
+const {
+  createDapiFallbackMerkleTree,
+  createDapiManagementMerkleTree,
+  createDapiPricingMerkleTree,
+  createSignedApiUrlMerkleTree,
+} = require('./utils');
 require('dotenv').config();
+
+// Merkle tree names
+const DAPI_FALLBACK_TREE = 'dAPI fallback Merkle tree';
+const DAPI_MANAGEMENT_TREE = 'dAPI management Merkle tree';
+const DAPI_PRICING_TREE = 'dAPI pricing Merkle tree';
+const SIGNED_API_URL_TREE = 'Signed API URL Merkle tree';
 
 const mnemonic = process.env.MNEMONIC;
 const wallet = ethers.Wallet.fromMnemonic(mnemonic);
 
-const merkleType = process.argv[2];
-const chainIdArg = process.argv[3];
+const merkleTreeName = process.argv[2];
 
 const MERKLE_TREE_MAPPING = {
-  price: 'dapi-pricing-merkle-tree-root',
-  'dapi management': 'dapi-management-merkle-tree-root',
-  'dapi fallback': 'dapi-fallback-merkle-tree-root',
-  'api integration': 'signed-api-url-merkle-tree-root',
+  [DAPI_FALLBACK_TREE]: ['dapi-fallback-merkle-tree-root', createDapiFallbackMerkleTree],
+  [DAPI_MANAGEMENT_TREE]: ['dapi-management-merkle-tree-root', createDapiManagementMerkleTree],
+  [DAPI_PRICING_TREE]: ['dapi-pricing-merkle-tree-root', createDapiPricingMerkleTree],
+  [SIGNED_API_URL_TREE]: ['signed-api-url-merkle-tree-root', createSignedApiUrlMerkleTree],
 };
 
-if (!MERKLE_TREE_MAPPING[merkleType]) {
-  console.error('You must provide a valid Merkle type as an argument!');
+if (!MERKLE_TREE_MAPPING[merkleTreeName]) {
+  console.error('You must provide a valid Merkle tree name as an argument!');
   process.exit(1);
 }
 
-if (!chainIdArg || isNaN(parseInt(chainIdArg))) {
-  console.error('You must provide a valid chainId as an argument!');
-  process.exit(1);
-}
-
-function constructMerkleTree(values, dataTypes) {
-  return StandardMerkleTree.of(values, dataTypes);
-}
-
-async function signMessage(privateKey, message) {
-  const wallet = new ethers.Wallet(privateKey);
+// FIXME: Update this function to sign with the hash type, merkle root, and timestamp
+async function signMessage(message) {
   const messageHash = ethers.utils.hashMessage(message);
   const signature = await wallet.signMessage(ethers.utils.arrayify(messageHash));
   return signature;
 }
 
-const HASH_TYPE_DATA_TYPES = {
-  price: ['bytes32', 'uint256', 'bytes', 'uint256', 'uint256'],
-  'dapi management': ['bytes32', 'bytes32', 'address'],
-  'dapi fallback': ['bytes32', 'bytes32', 'address'],
-  'api integration': ['address', 'bytes32'],
-};
-
 async function signMerkleTree(merkleTreeName) {
-  const folderName = MERKLE_TREE_MAPPING[merkleTreeName];
+  const [folderName, createMerkleTree] = MERKLE_TREE_MAPPING[merkleTreeName];
   const currentHashPath = path.join(__dirname, '..', 'data', folderName, 'current-hash.json');
+  const signersPath = path.join(__dirname, '..', 'data', folderName, 'hash-signers.json');
+  const currentHashData = JSON.parse(fs.readFileSync(currentHashPath, 'utf8'));
+  const signerData = JSON.parse(fs.readFileSync(signersPath, 'utf8'));
 
-  let currentHashData = { signatures: {}, merkleTreeValues: { values: [] } };
-
-  if (fs.existsSync(currentHashPath)) {
-    const currentHashRawData = fs.readFileSync(currentHashPath, 'utf8');
-    currentHashData = JSON.parse(currentHashRawData);
+  const signerAddress = wallet.address;
+  if (!signerData.hashSigners.includes(signerAddress)) {
+    throw new Error(`${signerAddress} is not a root signer`);
   }
 
   const values = currentHashData.merkleTreeValues ? currentHashData.merkleTreeValues.values : [];
   const timestamp = currentHashData.timestamp ? currentHashData.timestamp : 0;
 
-  const dataTypes = HASH_TYPE_DATA_TYPES[merkleTreeName];
-  if (!dataTypes) {
-    throw new Error(`Data type for ${merkleTreeName} not found`);
-  }
-  const tree = constructMerkleTree(values, dataTypes);
+  const tree = createMerkleTree(values);
   const merkleRoot = tree.root;
 
   const hashType = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(merkleTreeName));
 
   const signature = await signMessage(hashType, merkleRoot, timestamp);
-  const signerAddress = wallet.address;
 
-  currentHashData = {
-    timestamp: timestamp,
+  const updatedHashData = {
+    ...currentHashData,
     hash: merkleRoot,
     signatures: {
       ...currentHashData.signatures,
       [signerAddress]: signature,
     },
-    merkleTreeValues: { values: values },
   };
 
-  fs.writeFileSync(currentHashPath, JSON.stringify(currentHashData, null, 4));
+  fs.writeFileSync(currentHashPath, JSON.stringify(updatedHashData, null, 2));
+  exec('yarn prettier');
 }
 
-signMerkleTree(merkleType).catch((error) => {
-  console.error(`Error processing ${merkleType}:`, error);
+signMerkleTree(merkleTreeName).catch((error) => {
+  console.error(`Error processing "${merkleTreeName}":`, error);
   process.exit(1);
 });
 
-module.exports = { signMerkleTree, constructMerkleTree };
+module.exports = { signMerkleTree };
