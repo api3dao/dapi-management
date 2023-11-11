@@ -127,9 +127,14 @@ contract DapiDataRegistry is
         );
         require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
 
-        airnodeToSignedApiUrl[airnode] = url;
+        if (
+            keccak256(abi.encodePacked((airnodeToSignedApiUrl[airnode]))) !=
+            keccak256(abi.encodePacked((url)))
+        ) {
+            airnodeToSignedApiUrl[airnode] = url;
 
-        emit RegisteredSignedApiUrl(airnode, url);
+            emit RegisteredSignedApiUrl(airnode, url);
+        }
     }
 
     /// @notice Called to register data about a data feed
@@ -173,9 +178,14 @@ contract DapiDataRegistry is
             dataFeedId = keccak256(abi.encode(beaconIds));
         }
 
-        dataFeeds[dataFeedId] = dataFeed;
+        if (
+            keccak256(abi.encodePacked((dataFeeds[dataFeedId]))) !=
+            keccak256(abi.encodePacked((dataFeed)))
+        ) {
+            dataFeeds[dataFeedId] = dataFeed;
 
-        emit RegisteredDataFeed(dataFeedId, dataFeed);
+            emit RegisteredDataFeed(dataFeedId, dataFeed);
+        }
     }
 
     /// Called by a registrar or manager to add a dAPI along with update
