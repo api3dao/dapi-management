@@ -342,7 +342,7 @@ describe('DapiDataRegistry', function () {
             .withArgs(dataFeedId, encodedBeaconData);
           expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconData);
         });
-        it.only('registers beaconSet data feed', async function () {
+        it('registers beaconSet data feed', async function () {
           const { roles, dapiDataRegistry, dataFeeds, dapiTreeValues } = await helpers.loadFixture(deploy);
 
           const [dataFeed] = dataFeeds;
