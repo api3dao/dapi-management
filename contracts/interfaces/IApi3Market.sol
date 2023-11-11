@@ -50,6 +50,15 @@ interface IApi3Market {
         uint256 end;
     }
 
+    struct ScheduledPurchase {
+        uint256 newDeviationThreshold;
+        uint256 newHeartbeatInterval;
+        uint256 price;
+        uint256 duration;
+        uint256 start;
+        uint256 end;
+    }
+
     struct UpdateParams {
         uint256 deviationThresholdInPercentage;
         int224 deviationReference;

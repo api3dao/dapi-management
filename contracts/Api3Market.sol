@@ -29,6 +29,7 @@ contract Api3Market is IApi3Market {
     address public immutable override api3ServerV1;
 
     mapping(bytes32 => Purchase[]) public dapiToPurchases;
+    mapping(bytes32 => ScheduledPurchase) public dapiToScheduledPurchases;
 
     /// @param _hashRegistry HashRegistry contract address
     /// @param _dapiDataRegistry DapiDataRegistry contract address
@@ -94,12 +95,6 @@ contract Api3Market is IApi3Market {
             "Invalid proof"
         );
 
-        // TODO: handle downgrade/upgrade
-        //       say we have 0.25% active for the next 3 months and someone wants
-        //       to come in and buy 1% for the next 6 months, which means they
-        //       should only pay for 1% for 3 months and the dAPI to be
-        //       downgraded to 1% after 3 months
-        // TODO: Need to use some sort of Checkpoint or Queue data structure to store subscriptions?
         UpdateParams memory updateParams = _decodeUpdateParams(
             args.dapi.updateParams
         );
@@ -109,6 +104,8 @@ contract Api3Market is IApi3Market {
             args.dapi,
             updateParams
         );
+        require(msg.value >= updatedPrice, "Insufficient payment");
+        uint256 refundAmount = msg.value - updatedPrice;
 
         // Store Signed API URLs for all the Airnodes used by the constituent beacons of the beaconSet
         require(
@@ -157,7 +154,8 @@ contract Api3Market is IApi3Market {
         );
 
         // This is done last because it is less trusted than other external calls
-        Address.sendValue(args.dapi.sponsorWallet, msg.value);
+        Address.sendValue(args.dapi.sponsorWallet, updatedPrice);
+        Address.sendValue(payable(msg.sender), refundAmount);
 
         emit BoughtDapi(
             args.dapi.name,
@@ -178,108 +176,110 @@ contract Api3Market is IApi3Market {
     ) private returns (uint256 updatedPrice, uint256 updatedDuration) {
         updatedPrice = dapi.price;
         updatedDuration = dapi.duration;
-        uint256 purchaseEnd = block.timestamp + dapi.duration;
+        uint256 currentTime = block.timestamp;
+        uint256 purchaseEnd = currentTime + updatedDuration;
 
         (bool found, uint256 index) = _findCurrentDapiPurchaseIndex(
             dapiNameHash
         );
 
         if (!found) {
-            // Scenerio 1: No previous purchases
-            dapiToPurchases[dapiNameHash].push(
-                Purchase(
+            // No previous purchases
+            _pushPurchase(
+                dapiNameHash,
+                updateParams.deviationThresholdInPercentage,
+                updateParams.heartbeatInterval,
+                updatedPrice,
+                updatedDuration,
+                currentTime,
+                purchaseEnd
+            );
+        } else {
+            Purchase storage current = dapiToPurchases[dapiNameHash][index];
+            uint256 pricePerTick = current.price / current.duration;
+            require(current.end > currentTime, "Purchase duration ended.");
+            uint256 remainingPrice = pricePerTick * (current.end - currentTime);
+            if (
+                // Extention
+                updateParams.deviationThresholdInPercentage ==
+                current.deviationThreshold &&
+                updateParams.heartbeatInterval == current.heartbeatInterval
+            ) {
+                updatedDuration = current.end - currentTime + updatedDuration;
+                _pushPurchase(
+                    dapiNameHash,
                     updateParams.deviationThresholdInPercentage,
                     updateParams.heartbeatInterval,
                     updatedPrice,
                     updatedDuration,
-                    block.timestamp,
+                    currentTime,
                     purchaseEnd
-                )
-            );
-        } else {
-            Purchase storage current = dapiToPurchases[dapiNameHash][index];
-            Purchase storage downgrade = current;
-            uint256 purchasesLength = dapiToPurchases[dapiNameHash].length;
-            if (index == purchasesLength - 1) {
-                // We only allow a single downgrade after last purchase
-                downgrade = dapiToPurchases[dapiNameHash][purchasesLength];
-            }
+                );
+            } else if (
+                // Upgrade
+                updateParams.deviationThresholdInPercentage <
+                current.deviationThreshold &&
+                updateParams.heartbeatInterval <= current.heartbeatInterval
+            ) {
+                updatedPrice = updatedPrice - remainingPrice;
 
-            // Scenario 2: New purchase is downgrade or extension
-            // TODO: is it OK to restrict purchases to end after current period ends?
-            require(
-                purchaseEnd > current.end,
-                "Does not extends nor downgrades current purchase"
-            );
-
-            if (
-                // TODO: not 100% sure this is the right way to determine if upgrade
-                // or downgrade but this is the way it's currently being done in
-                // operation-database backend
-                updateParams.deviationThresholdInPercentage >=
+                _pushPurchase(
+                    dapiNameHash,
+                    updateParams.deviationThresholdInPercentage,
+                    updateParams.heartbeatInterval,
+                    updatedPrice,
+                    updatedDuration,
+                    currentTime,
+                    purchaseEnd
+                );
+            } else if (
+                // Downgrade
+                updateParams.deviationThresholdInPercentage >
                 current.deviationThreshold &&
                 updateParams.heartbeatInterval >= current.heartbeatInterval
             ) {
-                require(
-                    downgrade.end != current.end,
-                    "There is already a pending extension or downgrade"
-                );
+                ScheduledPurchase
+                    storage scheduledPurchase = dapiToScheduledPurchases[
+                        dapiNameHash
+                    ];
+                require(scheduledPurchase.start == 0, "Only downgrade once!");
+                require(purchaseEnd > current.end, "Unfinished upgrade.");
                 updatedDuration = purchaseEnd - current.end;
-                updatedPrice = (updatedDuration * dapi.price) / dapi.duration;
-                dapiToPurchases[dapiNameHash].push(
-                    Purchase(
-                        updateParams.deviationThresholdInPercentage,
-                        updateParams.heartbeatInterval,
-                        updatedPrice,
-                        updatedDuration,
-                        block.timestamp,
-                        purchaseEnd
-                    )
-                );
-            } else {
-                // Scenario 3: New purchase is upgrade
-                uint256 currentOverlapDuration = current.end - block.timestamp;
-                updatedPrice -=
-                    (currentOverlapDuration * current.price) /
-                    current.duration;
 
-                if (downgrade.end != current.end) {
-                    // Also deduct and adjust downgrade
-                    uint256 downgradeOverlapDuration = Math.min(
-                        purchaseEnd,
-                        downgrade.end
-                    ) - downgrade.start;
-                    updatedPrice -=
-                        (downgradeOverlapDuration * downgrade.price) /
-                        downgrade.duration;
-                    if (downgradeOverlapDuration == downgrade.duration) {
-                        // Purchase upgrades the downgrade completely
-                        delete dapiToPurchases[dapiNameHash][purchasesLength];
-                    } else {
-                        // Adjust downgrade
-                        uint256 updatedDowngradeDuration = (downgrade.duration -
-                            downgradeOverlapDuration);
-                        downgrade.price =
-                            (updatedDowngradeDuration * downgrade.price) /
-                            downgrade.duration;
-                        downgrade.duration = updatedDowngradeDuration;
-                        downgrade.start += updatedDowngradeDuration;
-                    }
-                }
+                updatedPrice = updatedPrice - remainingPrice;
 
-                dapiToPurchases[dapiNameHash].push(
-                    Purchase(
-                        updateParams.deviationThresholdInPercentage,
-                        updateParams.heartbeatInterval,
-                        updatedPrice,
-                        updatedDuration,
-                        block.timestamp,
-                        purchaseEnd
-                    )
-                );
+                dapiToScheduledPurchases[dapiNameHash] = ScheduledPurchase({
+                    newDeviationThreshold: updateParams
+                        .deviationThresholdInPercentage,
+                    newHeartbeatInterval: updateParams.heartbeatInterval,
+                    price: updatedPrice,
+                    duration: updatedDuration,
+                    start: current.end,
+                    end: purchaseEnd
+                });
             }
         }
-        require(msg.value >= updatedPrice, "Insufficient payment");
+    }
+
+    function _pushPurchase(
+        bytes32 dapiNameHash,
+        uint256 deviationThreshold,
+        uint256 heartbeatInterval,
+        uint256 price,
+        uint256 duration,
+        uint256 start,
+        uint256 end
+    ) internal {
+        dapiToPurchases[dapiNameHash].push(
+            Purchase(
+                deviationThreshold,
+                heartbeatInterval,
+                price,
+                duration,
+                start,
+                end
+            )
+        );
     }
 
     function _findCurrentDapiPurchaseIndex(
@@ -287,14 +287,14 @@ contract Api3Market is IApi3Market {
     ) private view returns (bool found, uint256 index) {
         Purchase[] storage purchases = dapiToPurchases[dapiNameHash];
         if (purchases.length > 0) {
-            for (uint256 ind = purchases.length - 1; ind >= 0; ind--) {
-                Purchase storage purchase = purchases[ind];
+            for (uint256 ind = purchases.length; ind > 0; ind--) {
+                Purchase storage purchase = purchases[ind - 1];
                 if (
                     block.timestamp >= purchase.start &&
                     block.timestamp < purchase.end
                 ) {
                     found = true;
-                    index = ind;
+                    index = ind - 1;
                     break;
                 }
             }
