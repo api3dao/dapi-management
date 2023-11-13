@@ -67,4 +67,11 @@ interface IApi3Market {
     function api3ServerV1() external view returns (address);
 
     function buyDapi(BuyDapiArgs calldata args) external payable;
+    
+    function readCurrentAndPendingPurchases(
+        bytes32 dapiName
+    )
+        external
+        view
+        returns (Purchase memory current, Purchase memory downgrade);
 }

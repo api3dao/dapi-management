@@ -59,8 +59,6 @@ contract Api3Market is IApi3Market {
         dapiDataRegistry = _dapiDataRegistry;
         dapiFallbackV2 = _dapiFallbackV2;
         proxyFactory = _proxyFactory;
-        // TODO: should this contract get the Api3ServerV1 address from
-        // DapiDataRegistry or from ProxyFactory contracts instead?
         api3ServerV1 = _api3ServerV1;
     }
 
@@ -201,8 +199,8 @@ contract Api3Market is IApi3Market {
                 )
             );
         } else {
-            Purchase memory current = dapiToPurchases[dapiNameHash][index];
-            Purchase memory downgrade = current;
+            Purchase storage current = dapiToPurchases[dapiNameHash][index];
+            Purchase storage downgrade = current;
             uint256 purchasesLength = dapiToPurchases[dapiNameHash].length;
             if (purchasesLength > 1 && index == purchasesLength - 2) {
                 downgrade = dapiToPurchases[dapiNameHash][purchasesLength - 1];
@@ -214,7 +212,6 @@ contract Api3Market is IApi3Market {
                 updateParams.heartbeatInterval >= current.heartbeatInterval
             ) {
                 // Scenario 2: New purchase is downgrade or extension
-                // TODO: is it OK to restrict purchases to end after current period ends?
                 require(
                     purchaseEnd > current.end,
                     "Does not extends nor downgrades current purchase"
@@ -243,6 +240,16 @@ contract Api3Market is IApi3Market {
                 updatedPrice -=
                     (currentOverlapDuration * current.price) /
                     current.duration;
+                dapiToPurchases[dapiNameHash].push(
+                    Purchase(
+                        updateParams.deviationThresholdInPercentage,
+                        updateParams.heartbeatInterval,
+                        dapi.price,
+                        updatedDuration,
+                        block.timestamp,
+                        purchaseEnd
+                    )
+                );
                 if (downgrade.end != current.end) {
                     // Also deduct and adjust downgrade
                     uint256 downgradeOverlapDuration = Math.min(
@@ -255,7 +262,9 @@ contract Api3Market is IApi3Market {
 
                     if (downgradeOverlapDuration == downgrade.duration) {
                         // Purchase upgrades the downgrade completely
-                        delete dapiToPurchases[dapiNameHash][purchasesLength];
+                        delete dapiToPurchases[dapiNameHash][
+                            purchasesLength - 2
+                        ];
                     } else {
                         // Adjust downgrade
                         uint256 updatedDowngradeDuration = (downgrade.duration -
@@ -264,23 +273,27 @@ contract Api3Market is IApi3Market {
                             (updatedDowngradeDuration * downgrade.price) /
                             downgrade.duration;
                         downgrade.duration = updatedDowngradeDuration;
-                        downgrade.start += updatedDowngradeDuration;
+                        downgrade.start = purchaseEnd;
+
+                        _swapCurrentAndDowngrade(dapiNameHash);
                     }
                 }
-
-                dapiToPurchases[dapiNameHash].push(
-                    Purchase(
-                        updateParams.deviationThresholdInPercentage,
-                        updateParams.heartbeatInterval,
-                        updatedPrice,
-                        updatedDuration,
-                        block.timestamp,
-                        purchaseEnd
-                    )
-                );
             }
         }
         require(msg.value >= updatedPrice, "Insufficient payment");
+    }
+
+    function _swapCurrentAndDowngrade(bytes32 dapiNameHash) private {
+        uint256 purchasesLength = dapiToPurchases[dapiNameHash].length;
+        if (purchasesLength > 1) {
+            Purchase memory last = dapiToPurchases[dapiNameHash][
+                purchasesLength - 1
+            ];
+            dapiToPurchases[dapiNameHash][
+                purchasesLength - 1
+            ] = dapiToPurchases[dapiNameHash][purchasesLength - 2];
+            dapiToPurchases[dapiNameHash][purchasesLength - 2] = last;
+        }
     }
 
     function _findCurrentDapiPurchaseIndex(
@@ -424,6 +437,21 @@ contract Api3Market is IApi3Market {
         }
     }
 
-    // TODO: add view function to read current purchase (and pending downgrade if
-    // exists) for a given dAPI name
+    function readCurrentAndPendingPurchases(
+        bytes32 dapiName
+    ) external view returns (Purchase memory current, Purchase memory pending) {
+        bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
+        (bool found, uint256 index) = _findCurrentDapiPurchaseIndex(
+            dapiNameHash
+        );
+        if (found) {
+            uint256 purchasesLength = dapiToPurchases[dapiNameHash].length;
+            current = dapiToPurchases[dapiNameHash][index];
+            if (purchasesLength > 1 && index == purchasesLength - 2) {
+                pending = dapiToPurchases[dapiNameHash][index + 1];
+            }
+        }
+    }
+
+    // TODO: function to read purchase for a dAPI by index? (called via multicall)
 }
