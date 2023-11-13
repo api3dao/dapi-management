@@ -100,8 +100,6 @@ export default function DapiFallbackTree(props: Props) {
     signers
   );
 
-  console.log(connectStatus);
-
   const isSigner = !!signatures[address];
   const canSign = (signatures[address] === '0x' || !isLoading) && connectStatus === 'connected';
 
