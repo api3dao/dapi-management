@@ -58,9 +58,8 @@ async function signMerkleTree(merkleTreeName) {
   const tree = createMerkleTree(values);
   const merkleRoot = tree.root;
 
-  const hashType = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(merkleTreeName));
-
-  const signature = await signMessage(hashType, merkleRoot, timestamp);
+  const treeHash = deriveTreeHash(merkleRoot, timestamp);
+  const signature = await signMessage(treeHash);
 
   const updatedHashData = {
     ...currentHashData,
@@ -73,6 +72,21 @@ async function signMerkleTree(merkleTreeName) {
 
   fs.writeFileSync(currentHashPath, JSON.stringify(updatedHashData, null, 2));
   exec('yarn prettier');
+}
+
+function deriveTreeHash(treeRoot, timestamp) {
+  const encodedHash = ethers.utils.toUtf8Bytes('dAPI fallback Merkle tree root');
+  const hashType = ethers.utils.keccak256(encodedHash);
+
+  const encodedValues = ethers.utils.defaultAbiCoder.encode(
+    ['string', 'bytes32', 'uint256'],
+    [hashType, treeRoot, timestamp]
+  );
+
+  // Hash the encoded parameters
+  const hash = ethers.utils.keccak256(encodedValues);
+
+  return ethers.utils.arrayify(hash);
 }
 
 signMerkleTree(merkleTreeName).catch((error) => {

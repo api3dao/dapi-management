@@ -53,7 +53,7 @@ export default function DapiFallbackTree(props: Props) {
   const { toast } = useToast();
   const [isLoading, setLoading] = useState(false);
   const { currentTree, signers } = props;
-  const { address, signer } = useWeb3Data();
+  const { address, signer, connectStatus } = useWeb3Data();
 
   const treeRootHash = `${DAPI_FALLBACK_MERKLE_TREE_TYPE} root`;
   const merkleTree = createDapiFallbackMerkleTree(currentTree.merkleTreeValues.values);
@@ -70,7 +70,7 @@ export default function DapiFallbackTree(props: Props) {
 
     if (goSignature.success) {
       // Save signature to the file
-      const payload = { signature: goSignature.data, address, tree: DAPI_FALLBACK_MERKLE_TREE_TYPE };
+      const payload = { signature: goSignature.data, address, treeType: DAPI_FALLBACK_MERKLE_TREE_TYPE };
       const goRes = await go(() => fetch('/api/sign-merkle-root', { method: 'POST', body: JSON.stringify(payload) }));
 
       if (goRes.success && goRes.data.status === 200) {
@@ -100,8 +100,10 @@ export default function DapiFallbackTree(props: Props) {
     signers
   );
 
+  console.log(connectStatus);
+
   const isSigner = !!signatures[address];
-  const canSign = signatures[address] === '0x' || !isLoading;
+  const canSign = (signatures[address] === '0x' || !isLoading) && connectStatus === 'connected';
 
   return (
     <RootLayout>
