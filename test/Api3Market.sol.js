@@ -477,13 +477,12 @@ describe('Api3Market', function () {
       );
       expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconSetData);
       const [onChainBeaconSetValue] = await api3ServerV1.dataFeeds(dataFeedId);
-      const { /*updateParameters,*/ dataFeedValue, dataFeed, signedApiUrls } = await dapiDataRegistry.readDapiWithName(
+      const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } = await dapiDataRegistry.readDapiWithName(
         dapiName
       );
-      // TODO: for pending downgrades the update parameters should remain unchanged and a bot should update them when time comes
-      // expect(updateParameters).to.deep.equal(
-      //   hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], updateParams)
-      // );
+      expect(updateParameters).to.deep.equal(
+        hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], updateParams)
+      );
       expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
       expect(dataFeed).to.equal(encodedBeaconSetData);
       expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));
@@ -624,13 +623,12 @@ describe('Api3Market', function () {
       );
       expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconSetData);
       const [onChainBeaconSetValue] = await api3ServerV1.dataFeeds(dataFeedId);
-      const { /*updateParameters,*/ dataFeedValue, dataFeed, signedApiUrls } = await dapiDataRegistry.readDapiWithName(
+      const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } = await dapiDataRegistry.readDapiWithName(
         dapiName
       );
-      // TODO: for pending downgrades the update parameters should remain unchanged and a bot should update them when time comes
-      // expect(updateParameters).to.deep.equal(
-      //   hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], updateParams)
-      // );
+      expect(updateParameters).to.deep.equal(
+        hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], updateParams)
+      );
       expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
       expect(dataFeed).to.equal(encodedBeaconSetData);
       expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));

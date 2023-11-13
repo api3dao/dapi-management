@@ -100,11 +100,11 @@ contract Api3Market is IApi3Market {
             args.dapi.updateParams
         );
 
-        (uint256 updatedPrice, uint256 updatedDuration) = _processPayment(
-            dapiNameHash,
-            args.dapi,
-            updateParams
-        );
+        (
+            uint256 updatedPrice,
+            uint256 updatedDuration,
+            bool isPendingDowngradeOrExtension
+        ) = _processPayment(dapiNameHash, args.dapi, updateParams);
 
         // Store Signed API URLs for all the Airnodes used by the constituent beacons of the beaconSet
         _registerSignedApiUrl(
@@ -117,19 +117,21 @@ contract Api3Market is IApi3Market {
         bytes32 dataFeedId = _registerDataFeed(args.beacons);
 
         // Add the dAPI to the DapiDataRegistry for managed data feed updates
-        // TODO: do not call if downgrade. Worker needs to call this function
-        // when downgrade period starts to update the update parameters used by
-        // Airseeker. How to determine current purchase is a downgrade here?
-        IDapiDataRegistry(dapiDataRegistry).addDapi(
-            args.dapi.name,
-            dataFeedId,
-            args.dapi.sponsorWallet,
-            updateParams.deviationThresholdInPercentage,
-            updateParams.deviationReference,
-            updateParams.heartbeatInterval,
-            args.dapiRoot,
-            args.dapiProof
-        );
+        // If purchase if future downgrade, then a worker needs to call this
+        // function when downgrade period starts to update the update parameters
+        // used by Airseeker
+        if (!isPendingDowngradeOrExtension) {
+            IDapiDataRegistry(dapiDataRegistry).addDapi(
+                args.dapi.name,
+                dataFeedId,
+                args.dapi.sponsorWallet,
+                updateParams.deviationThresholdInPercentage,
+                updateParams.deviationReference,
+                updateParams.heartbeatInterval,
+                args.dapiRoot,
+                args.dapiProof
+            );
+        }
 
         // Deploy the dAPI proxy (if it hasn't been deployed yet)
         address dapiProxyAddress = IProxyFactory(proxyFactory)
@@ -170,7 +172,14 @@ contract Api3Market is IApi3Market {
         bytes32 dapiNameHash,
         Dapi calldata dapi,
         UpdateParams memory updateParams
-    ) private returns (uint256 updatedPrice, uint256 updatedDuration) {
+    )
+        private
+        returns (
+            uint256 updatedPrice,
+            uint256 updatedDuration,
+            bool isPendingDowngradeOrExtension
+        )
+    {
         updatedPrice = dapi.price;
         updatedDuration = dapi.duration;
         uint256 purchaseEnd = block.timestamp + dapi.duration;
@@ -200,9 +209,6 @@ contract Api3Market is IApi3Market {
             }
 
             if (
-                // TODO: not 100% sure this is the right way to determine if upgrade
-                // or downgrade but this is the way it's currently being done in
-                // operation-database backend
                 updateParams.deviationThresholdInPercentage >=
                 current.deviationThreshold &&
                 updateParams.heartbeatInterval >= current.heartbeatInterval
@@ -220,6 +226,7 @@ contract Api3Market is IApi3Market {
                 );
                 updatedDuration = purchaseEnd - current.end;
                 updatedPrice = (updatedDuration * dapi.price) / dapi.duration;
+                isPendingDowngradeOrExtension = true;
                 dapiToPurchases[dapiNameHash].push(
                     Purchase(
                         updateParams.deviationThresholdInPercentage,
