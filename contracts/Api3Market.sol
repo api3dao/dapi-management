@@ -30,6 +30,7 @@ contract Api3Market is IApi3Market {
     /// @notice Api3ServerV1 contract address
     address public immutable override api3ServerV1;
 
+    // TODO: should this be public?
     mapping(bytes32 => Purchase[]) public dapiToPurchases;
 
     /// @param _hashRegistry HashRegistry contract address
@@ -439,7 +440,12 @@ contract Api3Market is IApi3Market {
 
     function readCurrentAndPendingPurchases(
         bytes32 dapiName
-    ) external view returns (Purchase memory current, Purchase memory pending) {
+    )
+        external
+        view
+        override
+        returns (Purchase memory current, Purchase memory pending)
+    {
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         (bool found, uint256 index) = _findCurrentDapiPurchaseIndex(
             dapiNameHash
@@ -453,5 +459,13 @@ contract Api3Market is IApi3Market {
         }
     }
 
-    // TODO: function to read purchase for a dAPI by index? (called via multicall)
+    function readDapiPurchaseWithIndex(
+        bytes32 dapiName,
+        uint256 index
+    ) external view override returns (Purchase memory purchase) {
+        bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
+        if (index < dapiToPurchases[dapiNameHash].length) {
+            purchase = dapiToPurchases[dapiNameHash][index];
+        }
+    }
 }
