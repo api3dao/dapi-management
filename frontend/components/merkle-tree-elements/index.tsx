@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import some from 'lodash/some';
 import { Diff2HtmlUI } from 'diff2html/lib/ui/js/diff2html-ui';
-import { ShieldCheckIcon, ShieldEllipsisIcon } from 'lucide-react';
+import { InfoIcon, ShieldCheckIcon, ShieldEllipsisIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
+import { Button } from '~/components/ui/button';
 import { Toggle } from '~/components/ui/toggle';
 import { cn } from '~/lib/utils';
 import addressBook from '../../../data/address-book.json';
@@ -61,12 +63,13 @@ export function SignatureTable(props: SignatureTableProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {signers.map((signer) => {
-          const signature = signatures[signer];
+        {signers.map((signerAddress) => {
+          const signature = signatures[signerAddress];
+          const signerName = getNameForAddress(signerAddress);
           return (
-            <TableRow key={signer} className="text-sm">
+            <TableRow key={signerAddress} className="text-sm">
               <TableCell className="break-words align-top text-gray-500">
-                {getNameForAddress(signer) || signer}
+                {signerName ? <SignerInfo name={signerName} address={signerAddress} /> : signerAddress}
               </TableCell>
               {signature === '0x' ? (
                 <TableCell className="bg-amber-0 border-amber-100 text-amber-600">
@@ -84,6 +87,44 @@ export function SignatureTable(props: SignatureTableProps) {
         })}
       </TableBody>
     </Table>
+  );
+}
+
+interface SignerInfoProps {
+  name: string;
+  address: string;
+}
+
+function SignerInfo(props: SignerInfoProps) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  return (
+    <Tooltip delayDuration={0}>
+      <TooltipTrigger asChild>
+        <Button
+          ref={triggerRef}
+          variant="ghost"
+          className="group inline-flex h-4 cursor-auto items-center gap-1.5 p-0"
+          onClick={(ev) => {
+            // We don't want to close the tooltip when the trigger is clicked
+            ev.preventDefault();
+          }}
+        >
+          <InfoIcon className="h-4 w-4 text-gray-300 group-hover:text-gray-400" />
+          {props.name}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent
+        className="border-0 bg-gray-600 text-xs text-gray-200"
+        onPointerDownOutside={(ev) => {
+          // We don't want to close the tooltip when the trigger is clicked
+          if (triggerRef.current!.contains(ev.target as Node)) {
+            ev.preventDefault();
+          }
+        }}
+      >
+        {props.address}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

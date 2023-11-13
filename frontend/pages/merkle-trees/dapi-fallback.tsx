@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { z } from 'zod';
-import { BadgeInfoIcon } from 'lucide-react';
+import { AlertTriangleIcon } from 'lucide-react';
 import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
@@ -66,7 +66,7 @@ export default function DapiFallbackTree(props: Props) {
         </div>
         {!!address && !isSigner && (
           <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
-            <BadgeInfoIcon className="w-4 text-gray-300" />
+            <AlertTriangleIcon className="w-4 text-gray-300" />
             You are not a signer.
           </p>
         )}

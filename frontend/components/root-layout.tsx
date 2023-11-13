@@ -50,7 +50,7 @@ function NavLink(props: NavLinkProps) {
   const isActive = router.pathname === props.href;
   return (
     <Link
-      className={isActive ? '-mx-2 -my-1 bg-gray-200 px-2 py-1 text-gray-800' : 'hover:text-gray-800'}
+      className={isActive ? '-mx-2 -my-1 rounded bg-gray-200 px-2 py-1 text-gray-800' : 'hover:text-gray-800'}
       href={props.href}
     >
       {props.children}
