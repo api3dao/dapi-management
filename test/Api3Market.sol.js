@@ -482,11 +482,11 @@ describe('Api3Market', function () {
                   expect(current.price).to.equal(price);
                   expect(current.duration).to.equal(duration);
                   expect(current.start).to.be.approximately(now, 1);
-                  expect(current.end).to.be.approximately(now + duration, 1);
+                  expect(current.purchasedAt).to.be.approximately(now, 1);
                   expect(pending.price).to.equal(hre.ethers.constants.Zero);
                   expect(pending.duration).to.equal(hre.ethers.constants.Zero);
                   expect(pending.start).to.equal(hre.ethers.constants.Zero);
-                  expect(pending.end).to.equal(hre.ethers.constants.Zero);
+                  expect(pending.purchasedAt).to.equal(hre.ethers.constants.Zero);
                 });
                 context('Extends or downgrades current purchase', function () {
                   context('There is not already a pending extension or downgrade', function () {
@@ -623,11 +623,11 @@ describe('Api3Market', function () {
                       expect(current.price).to.equal(price);
                       expect(current.duration).to.equal(duration);
                       expect(current.start).to.equal(now);
-                      expect(current.end).to.equal(now + duration);
+                      expect(current.purchasedAt).to.equal(now);
                       expect(pending.price).to.equal(expectedPrice);
                       expect(pending.duration).to.equal(expectedDuration);
-                      expect(pending.start).to.equal(now + duration); // current.end
-                      expect(pending.end).to.equal(now + duration + expectedDuration);
+                      expect(pending.start).to.equal(now + duration);
+                      expect(pending.purchasedAt).to.equal(futureNow);
                     });
                     it('buys downgrade dAPI subscription', async function () {
                       const {
@@ -788,11 +788,11 @@ describe('Api3Market', function () {
                       expect(current.price).to.equal(price);
                       expect(current.duration).to.equal(duration);
                       expect(current.start).to.equal(now);
-                      expect(current.end).to.equal(now + duration);
+                      expect(current.purchasedAt).to.equal(now);
                       expect(pending.price).to.equal(expectedPrice);
                       expect(pending.duration).to.equal(expectedDuration);
-                      expect(pending.start).to.equal(now + duration); // current.end
-                      expect(pending.end).to.equal(now + duration + expectedDuration);
+                      expect(pending.start).to.equal(now + duration);
+                      expect(pending.purchasedAt).to.equal(futureNow);
                     });
                   });
                   context('There is already a pending extension or downgrade', function () {
@@ -1132,11 +1132,11 @@ describe('Api3Market', function () {
                   expect(current.price).to.equal(upgradePrice);
                   expect(current.duration).to.equal(upgradeDuration);
                   expect(current.start).to.equal(futureNow);
-                  expect(current.end).to.equal(futureNow + upgradeDuration);
+                  expect(current.purchasedAt).to.equal(futureNow);
                   expect(pending.price).to.equal(hre.ethers.constants.Zero);
                   expect(pending.duration).to.equal(hre.ethers.constants.Zero);
                   expect(pending.start).to.equal(hre.ethers.constants.Zero);
-                  expect(pending.end).to.equal(hre.ethers.constants.Zero);
+                  expect(pending.purchasedAt).to.equal(hre.ethers.constants.Zero);
                 });
                 it('buys upgrade that overrides pending downgrade dAPI subscription', async function () {
                   const {
@@ -1326,11 +1326,11 @@ describe('Api3Market', function () {
                   expect(current.price).to.equal(upgradePrice);
                   expect(current.duration).to.equal(upgradeDuration);
                   expect(current.start).to.equal(futureNow);
-                  expect(current.end).to.equal(futureNow + upgradeDuration);
+                  expect(current.purchasedAt).to.equal(futureNow);
                   expect(pending.price).to.equal(hre.ethers.constants.Zero);
                   expect(pending.duration).to.equal(hre.ethers.constants.Zero);
                   expect(pending.start).to.equal(hre.ethers.constants.Zero);
-                  expect(pending.end).to.equal(hre.ethers.constants.Zero);
+                  expect(pending.purchasedAt).to.equal(hre.ethers.constants.Zero);
                 });
                 it('buys upgrade with pending downgrade dAPI subscription', async function () {
                   const {
@@ -1402,8 +1402,8 @@ describe('Api3Market', function () {
 
                   const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber()))
                     .timestamp;
-                  let futureNow = now + duration / 3;
-                  await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
+                  const downgradePurchasedAt = now + duration / 3;
+                  await hre.ethers.provider.send('evm_setNextBlockTimestamp', [downgradePurchasedAt]);
 
                   // Downgrade from the middle of current subscription
                   const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] =
@@ -1430,8 +1430,8 @@ describe('Api3Market', function () {
                       { value: downgradePrice }
                     );
 
-                  futureNow = now + duration / 2;
-                  await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
+                  const upgradePurchasedAt = now + duration / 2;
+                  await hre.ethers.provider.send('evm_setNextBlockTimestamp', [upgradePurchasedAt]);
 
                   // Upgrade from the middle of current subscription
                   const [, , upgradeUpdateParams, upgradeDuration, upgradePrice] = priceTreeValues[randomIndex * 3];
@@ -1526,14 +1526,12 @@ describe('Api3Market', function () {
                   const [current, pending] = await api3Market.readCurrentAndPendingPurchases(dapiName);
                   expect(current.price).to.equal(upgradePrice);
                   expect(current.duration).to.equal(upgradeDuration);
-                  expect(current.start).to.equal(futureNow);
-                  expect(current.end).to.equal(futureNow + upgradeDuration);
+                  expect(current.start).to.equal(upgradePurchasedAt);
+                  expect(current.purchasedAt).to.equal(upgradePurchasedAt);
                   expect(pending.price).to.equal(expectedDowngradePrice.sub(overlapUpgradeDowngradePrice));
                   expect(pending.duration).to.equal(expectedDowngradeDuration - overlapUpgradeDowngradeDuration);
-                  expect(pending.start).to.equal(futureNow + upgradeDuration); // current.end
-                  expect(pending.end).to.equal(
-                    futureNow + upgradeDuration + expectedDowngradeDuration - overlapUpgradeDowngradeDuration
-                  );
+                  expect(pending.start).to.equal(upgradePurchasedAt + upgradeDuration);
+                  expect(pending.purchasedAt).to.equal(downgradePurchasedAt);
                 });
               });
               context('Value is not enough for payment', function () {

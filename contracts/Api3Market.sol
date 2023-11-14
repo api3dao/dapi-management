@@ -70,6 +70,7 @@ contract Api3Market is IApi3Market {
     /// @param args The arguments needed for the dAPI purchase and update. See
     /// IApi3Market.BuyDapiArgs struct for details on these parameters
     function buyDapi(BuyDapiArgs calldata args) external payable override {
+        // TODO: add check to limit purchases once a day
         bytes32 dapiNameHash = keccak256(abi.encodePacked(args.dapi.name));
         _isFallbacked(dapiNameHash);
         require(args.beacons.length != 0, "Beacons is empty");
@@ -194,7 +195,6 @@ contract Api3Market is IApi3Market {
     {
         updatedPrice = dapi.price;
         updatedDuration = dapi.duration;
-        uint256 purchaseEnd = block.timestamp + dapi.duration;
 
         (bool found, uint256 index) = _findCurrentDapiPurchaseIndex(
             dapiNameHash
@@ -209,7 +209,7 @@ contract Api3Market is IApi3Market {
                     updatedPrice,
                     updatedDuration,
                     block.timestamp,
-                    purchaseEnd
+                    block.timestamp
                 )
             );
         } else {
@@ -227,15 +227,19 @@ contract Api3Market is IApi3Market {
             ) {
                 // Scenario 2: New purchase is downgrade or extension
                 require(
-                    purchaseEnd > current.end,
+                    (block.timestamp + dapi.duration) >
+                        (current.start + current.duration),
                     "Does not extends nor downgrades current purchase"
                 );
                 // We only allow a single downgrade after last purchase
                 require(
-                    downgrade.end == current.end,
+                    (downgrade.start + downgrade.duration) ==
+                        (current.start + current.duration),
                     "There is already a pending extension or downgrade"
                 );
-                updatedDuration = purchaseEnd - current.end;
+                updatedDuration =
+                    (block.timestamp + dapi.duration) -
+                    (current.start + current.duration);
                 updatedPrice = (updatedDuration * dapi.price) / dapi.duration;
                 isPendingDowngradeOrExtension = true;
                 dapiToPurchases[dapiNameHash].push(
@@ -244,13 +248,14 @@ contract Api3Market is IApi3Market {
                         updateParams.heartbeatInterval,
                         updatedPrice,
                         updatedDuration,
-                        current.end,
-                        purchaseEnd
+                        current.start + current.duration,
+                        block.timestamp
                     )
                 );
             } else {
                 // Scenario 3: New purchase is upgrade
-                uint256 currentOverlapDuration = current.end - block.timestamp;
+                uint256 currentOverlapDuration = (current.start +
+                    current.duration) - block.timestamp;
                 updatedPrice -=
                     (currentOverlapDuration * current.price) /
                     current.duration;
@@ -261,14 +266,17 @@ contract Api3Market is IApi3Market {
                         dapi.price,
                         updatedDuration,
                         block.timestamp,
-                        purchaseEnd
+                        block.timestamp
                     )
                 );
-                if (downgrade.end != current.end) {
+                if (
+                    (downgrade.start + downgrade.duration) !=
+                    (current.start + current.duration)
+                ) {
                     // Also deduct and adjust downgrade
                     uint256 downgradeOverlapDuration = Math.min(
-                        purchaseEnd,
-                        downgrade.end
+                        (block.timestamp + dapi.duration),
+                        (downgrade.start + downgrade.duration)
                     ) - downgrade.start;
                     updatedPrice -=
                         (downgradeOverlapDuration * downgrade.price) /
@@ -287,7 +295,7 @@ contract Api3Market is IApi3Market {
                             (updatedDowngradeDuration * downgrade.price) /
                             downgrade.duration;
                         downgrade.duration = updatedDowngradeDuration;
-                        downgrade.start = purchaseEnd;
+                        downgrade.start = block.timestamp + dapi.duration;
 
                         _swapCurrentAndDowngrade(dapiNameHash);
                     }
@@ -331,7 +339,7 @@ contract Api3Market is IApi3Market {
                 Purchase storage purchase = purchases[ind - 1];
                 if (
                     block.timestamp >= purchase.start &&
-                    block.timestamp < purchase.end
+                    block.timestamp < purchase.start + purchase.duration
                 ) {
                     found = true;
                     index = ind - 1;
