@@ -74,6 +74,10 @@ contract Api3Market is IApi3Market {
         require(!_isFallbacked(dapiNameHash), "dAPI is fallbacked");
         require(args.beacons.length != 0, "Beacons is empty");
         require(
+            args.beacons.length == args.signedApiUrlProofs.length,
+            "Beacons and signed API URL proofs length mismatch"
+        );
+        require(
             IHashRegistry(hashRegistry).hashTypeToHash(
                 DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE
             ) == args.priceRoot,
@@ -480,10 +484,6 @@ contract Api3Market is IApi3Market {
         bytes32 signedApiUrlRoot,
         bytes32[][] memory signedApiUrlProofs
     ) private {
-        require(
-            beacons.length == signedApiUrlProofs.length,
-            "Signed API URL proofs length is incorrect"
-        );
         bytes[] memory calldatas = new bytes[](signedApiUrlProofs.length);
         for (uint ind = 0; ind < signedApiUrlProofs.length; ind++) {
             calldatas[ind] = abi.encodeCall(

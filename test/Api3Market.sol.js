@@ -353,9 +353,9 @@ describe('Api3Market', function () {
   describe('buyDapi', function () {
     context('dAPI has not been fallbacked', function () {
       context('Beacons is not empty', function () {
-        context('dAPI pricing Merkle tree root has been registered', function () {
-          context('Valid dAPI pricing Merkle tree proof', function () {
-            context('Signed API URL proofs length is correct', function () {
+        context('Beacons and signed API URL proofs length match', function () {
+          context('dAPI pricing Merkle tree root has been registered', function () {
+            context('Valid dAPI pricing Merkle tree proof', function () {
               context('Value is enough for payment', function () {
                 it('buys first dAPI subscription', async function () {
                   const {
@@ -1679,7 +1679,7 @@ describe('Api3Market', function () {
                 });
               });
             });
-            context('Signed API URL proofs length is incorrect', function () {
+            context('Invalid dAPI pricing Merkle tree proof', function () {
               it('reverts', async function () {
                 const {
                   roles,
@@ -1702,9 +1702,8 @@ describe('Api3Market', function () {
                 const dapiTreeRoot = dapiTree.root;
                 const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-                const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+                const [, , updateParams, duration, price] = priceTreeValues[randomIndex * 3];
                 const priceTreeRoot = priceTree.root;
-                const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
                 const dapi = {
                   name: dapiName,
@@ -1733,26 +1732,24 @@ describe('Api3Market', function () {
                 const dapiProxyAddress = await proxyFactory.computeDapiProxyAddress(dapiName, '0x');
                 expect(await hre.ethers.provider.getCode(dapiProxyAddress)).to.equal('0x');
 
-                const [, ...rest] = beacons;
-
                 const args = {
                   dapi,
-                  beacons: rest,
+                  beacons,
                   signedApiUrlRoot: apiTreeRoot,
                   signedApiUrlProofs: apiTreeProofs,
                   dapiRoot: dapiTreeRoot,
                   dapiProof: dapiTreeProof,
                   priceRoot: priceTreeRoot,
-                  priceProof: priceTreeProof,
+                  priceProof: [],
                 };
 
                 await expect(
                   api3Market.connect(roles.randomPerson).buyDapi(args, { value: price })
-                ).to.have.been.revertedWith('Signed API URL proofs length is incorrect');
+                ).to.have.been.revertedWith('Invalid proof');
               });
             });
           });
-          context('Invalid dAPI pricing Merkle tree proof', function () {
+          context('dAPI pricing Merkle tree root has not been registered', function () {
             it('reverts', async function () {
               const {
                 roles,
@@ -1775,8 +1772,8 @@ describe('Api3Market', function () {
               const dapiTreeRoot = dapiTree.root;
               const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-              const [, , updateParams, duration, price] = priceTreeValues[randomIndex * 3];
-              const priceTreeRoot = priceTree.root;
+              const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+              const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
               const dapi = {
                 name: dapiName,
@@ -1812,17 +1809,17 @@ describe('Api3Market', function () {
                 signedApiUrlProofs: apiTreeProofs,
                 dapiRoot: dapiTreeRoot,
                 dapiProof: dapiTreeProof,
-                priceRoot: priceTreeRoot,
-                priceProof: [],
+                priceRoot: generateRandomBytes32(),
+                priceProof: priceTreeProof,
               };
 
               await expect(
                 api3Market.connect(roles.randomPerson).buyDapi(args, { value: price })
-              ).to.have.been.revertedWith('Invalid proof');
+              ).to.have.been.revertedWith('Root has not been registered');
             });
           });
         });
-        context('dAPI pricing Merkle tree root has not been registered', function () {
+        context('Beacons and signed API URL proofs length mismatch', function () {
           it('reverts', async function () {
             const {
               roles,
@@ -1846,6 +1843,7 @@ describe('Api3Market', function () {
             const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
             const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+            const priceTreeRoot = priceTree.root;
             const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
             const dapi = {
@@ -1875,20 +1873,22 @@ describe('Api3Market', function () {
             const dapiProxyAddress = await proxyFactory.computeDapiProxyAddress(dapiName, '0x');
             expect(await hre.ethers.provider.getCode(dapiProxyAddress)).to.equal('0x');
 
+            const [, ...rest] = beacons;
+
             const args = {
               dapi,
-              beacons,
+              beacons: rest,
               signedApiUrlRoot: apiTreeRoot,
               signedApiUrlProofs: apiTreeProofs,
               dapiRoot: dapiTreeRoot,
               dapiProof: dapiTreeProof,
-              priceRoot: generateRandomBytes32(),
+              priceRoot: priceTreeRoot,
               priceProof: priceTreeProof,
             };
 
             await expect(
               api3Market.connect(roles.randomPerson).buyDapi(args, { value: price })
-            ).to.have.been.revertedWith('Root has not been registered');
+            ).to.have.been.revertedWith('Beacons and signed API URL proofs length mismatch');
           });
         });
       });
