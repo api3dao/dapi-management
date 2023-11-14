@@ -13,8 +13,8 @@ import "./interfaces/IDapiDataRegistry.sol";
 import "./interfaces/IDapiFallbackV2.sol";
 import "./interfaces/IHashRegistry.sol";
 
-/// @title
-/// @notice
+/// @title Contract that will be called to buy a managed dAPI subscription
+/// @notice TODO
 contract Api3Market is IApi3Market {
     bytes32 private constant DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("dAPI pricing Merkle tree root"));
@@ -63,7 +63,12 @@ contract Api3Market is IApi3Market {
         api3ServerV1 = _api3ServerV1;
     }
 
-    // This function must use the 3 Merkle trees to store the data needed for running a managed dAPI
+    /// @notice This function allows users to purchase a dAPI and update its
+    /// parameters
+    /// @dev This function must use the 3 Merkle trees to store the data needed
+    /// for running a managed dAPI.
+    /// @param args The arguments needed for the dAPI purchase and update. See
+    /// IApi3Market.BuyDapiArgs struct for details on these parameters
     function buyDapi(BuyDapiArgs calldata args) external payable override {
         bytes32 dapiNameHash = keccak256(abi.encodePacked(args.dapi.name));
         _isFallbacked(dapiNameHash);
@@ -167,6 +172,14 @@ contract Api3Market is IApi3Market {
         );
     }
 
+    /// @notice Internal function to process payment for the dAPI purchase
+    /// @dev Handles various scenarios including new purchase, upgrade, downgrade, and extension
+    /// @param dapiNameHash Hash of the dAPI name
+    /// @param dapi The dAPI being purchased
+    /// @param updateParams Parameters for updating the dAPI
+    /// @return updatedPrice The updated price for the dAPI
+    /// @return updatedDuration The updated duration for the dAPI
+    /// @return isPendingDowngradeOrExtension True if the purchase is pending a downgrade or extension
     function _processPayment(
         bytes32 dapiNameHash,
         Dapi calldata dapi,
@@ -284,6 +297,11 @@ contract Api3Market is IApi3Market {
         require(msg.value >= updatedPrice, "Insufficient payment");
     }
 
+    /// @notice Internal function to swap the current and downgrade purchases in
+    /// the mapping
+    /// @dev Used when a new purchase is an upgrade, and the current purchase
+    /// overlaps with a pending downgrade
+    /// @param dapiNameHash Hash of the dAPI name.
     function _swapCurrentAndDowngrade(bytes32 dapiNameHash) private {
         uint256 purchasesLength = dapiToPurchases[dapiNameHash].length;
         if (purchasesLength > 1) {
@@ -297,6 +315,13 @@ contract Api3Market is IApi3Market {
         }
     }
 
+    /// @notice Internal function to find the index of the current dAPI purchase
+    /// @dev Searches through the purchase history to find the current purchase
+    /// where current means that block.timestamp is somewhere in between start
+    /// and date of a purchase
+    /// @param dapiNameHash Hash of the dAPI name
+    /// @return found True if a current purchase is found
+    /// @return index Index of the current purchase in the purchase history
     function _findCurrentDapiPurchaseIndex(
         bytes32 dapiNameHash
     ) private view returns (bool found, uint256 index) {
@@ -316,6 +341,10 @@ contract Api3Market is IApi3Market {
         }
     }
 
+    /// @notice Checks if the dAPI has been fallbacked
+    /// @dev Checks if the dAPI is in the list of fallbacked dAPIs in the
+    /// DapiFallbackV2 contract
+    /// @param dapiNameHash Hash of the dAPI name.
     function _isFallbacked(bytes32 dapiNameHash) private view {
         bytes32[] memory fallbackedDapis = IDapiFallbackV2(dapiFallbackV2)
             .getFallbackedDapis();
@@ -327,6 +356,10 @@ contract Api3Market is IApi3Market {
         }
     }
 
+    /// @notice Decodes the update parameters from the provided encoded data
+    /// @dev Decodes the update parameters used in the dAPI purchase
+    /// @param updateParams_ Encoded update parameters
+    /// @return updateParams Decoded update parameters
     function _decodeUpdateParams(
         bytes calldata updateParams_
     ) private pure returns (UpdateParams memory updateParams) {
@@ -342,6 +375,10 @@ contract Api3Market is IApi3Market {
         );
     }
 
+    /// @notice Registers the data feed data for the dAPI
+    /// @dev Registers this data in the DapiDataRegistry contract
+    /// @param beacons The values of the beacons associated with the dAPI
+    /// @return dataFeedId The ID of the registered data feed
     function _registerDataFeed(
         Beacon[] calldata beacons
     ) private returns (bytes32 dataFeedId) {
@@ -362,6 +399,12 @@ contract Api3Market is IApi3Market {
         }
     }
 
+    /// @notice Updates the data feed with signed API data
+    /// @dev Calls the Api3ServerV1 contract to update the data feed values using
+    /// API data signed by each Airnode
+    /// @param dataFeedId The ID of the data feed to be updated
+    /// @param heartbeatInterval The heartbeat interval for the data feed
+    /// @param beacons The values of the beacons associated with the data feed
     function _updateDataFeed(
         bytes32 dataFeedId,
         uint256 heartbeatInterval,
@@ -404,6 +447,13 @@ contract Api3Market is IApi3Market {
         }
     }
 
+    /// @notice Registers signed API URLs for each Airnode used to update each
+    /// beacon
+    /// @dev Checks if the signed API URLs have already been registered and
+    /// registers them if not
+    /// @param beacons The values of the beacons associated with the dAPI
+    /// @param signedApiUrlRoot The root hash of the Merkle tree containing signed API URLs
+    /// @param signedApiUrlProofs Merkle proofs for the signed API URLs
     function _registerSignedApiUrl(
         Beacon[] memory beacons,
         bytes32 signedApiUrlRoot,
@@ -438,6 +488,11 @@ contract Api3Market is IApi3Market {
         }
     }
 
+    /// @notice Reads the current and pending purchases for a specific dAPI
+    /// @dev Returns the current and pending purchases for a given dAPI name
+    /// @param dapiName The encoded bytes32 name of the dAPI
+    /// @return current The current purchase information
+    /// @return pending The pending purchase information
     function readCurrentAndPendingPurchases(
         bytes32 dapiName
     )
@@ -459,6 +514,12 @@ contract Api3Market is IApi3Market {
         }
     }
 
+    /// @notice Reads a specific purchase for a given dAPI with a specified index
+    /// @dev Returns the purchase information for a specific index in the
+    /// purchase history of a given dAPI
+    /// @param dapiName The encoded bytes32 name of the dAPI
+    /// @param index The index of the purchase in the purchase history
+    /// @return purchase The purchase information
     function readDapiPurchaseWithIndex(
         bytes32 dapiName,
         uint256 index
