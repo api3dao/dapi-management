@@ -192,16 +192,17 @@ contract Api3Market is IApi3Market {
             );
         } else {
             Purchase storage current = dapiToPurchases[dapiNameHash][index];
-            uint256 pricePerTick = current.price / current.duration;
             require(current.end > currentTime, "Purchase duration ended.");
-            uint256 remainingPrice = pricePerTick * (current.end - currentTime);
+            uint256 remainingTime = current.end - currentTime;
+            uint256 remainingPrice = Math.mulDiv(current.price, remainingTime, current.duration);
+            updatedPrice = updatedPrice - remainingPrice;
             if (
                 // Extention
                 updateParams.deviationThresholdInPercentage ==
                 current.deviationThreshold &&
                 updateParams.heartbeatInterval == current.heartbeatInterval
             ) {
-                updatedDuration = current.end - currentTime + updatedDuration;
+                updatedDuration = remainingTime + updatedDuration;
                 _pushPurchase(
                     dapiNameHash,
                     updateParams.deviationThresholdInPercentage,
@@ -217,8 +218,6 @@ contract Api3Market is IApi3Market {
                 current.deviationThreshold &&
                 updateParams.heartbeatInterval <= current.heartbeatInterval
             ) {
-                updatedPrice = updatedPrice - remainingPrice;
-
                 _pushPurchase(
                     dapiNameHash,
                     updateParams.deviationThresholdInPercentage,
@@ -238,11 +237,26 @@ contract Api3Market is IApi3Market {
                     storage scheduledPurchase = dapiToScheduledPurchases[
                         dapiNameHash
                     ];
-                require(scheduledPurchase.start == 0, "Only downgrade once!");
+/*                 if(scheduledPurchase.start == 0 && ){
                 require(purchaseEnd > current.end, "Unfinished upgrade.");
                 updatedDuration = purchaseEnd - current.end;
 
-                updatedPrice = updatedPrice - remainingPrice;
+                dapiToScheduledPurchases[dapiNameHash] = ScheduledPurchase({
+                    newDeviationThreshold: updateParams
+                        .deviationThresholdInPercentage,
+                    newHeartbeatInterval: updateParams.heartbeatInterval,
+                    price: updatedPrice,
+                    duration: updatedDuration,
+                    start: current.end,
+                    end: purchaseEnd
+                });
+                }
+                else {
+                    require()
+                } */
+                require(scheduledPurchase.start == 0, "Only downgrade once!");
+                require(purchaseEnd > current.end, "Unfinished upgrade.");
+                updatedDuration = purchaseEnd - current.end;
 
                 dapiToScheduledPurchases[dapiNameHash] = ScheduledPurchase({
                     newDeviationThreshold: updateParams
