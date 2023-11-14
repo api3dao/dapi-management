@@ -488,315 +488,424 @@ describe('Api3Market', function () {
                   expect(pending.start).to.equal(hre.ethers.constants.Zero);
                   expect(pending.purchasedAt).to.equal(hre.ethers.constants.Zero);
                 });
-                context('Extends or downgrades current purchase', function () {
-                  context('There is not already a pending extension or downgrade', function () {
-                    it('buys extension dAPI subscription', async function () {
-                      const {
-                        roles,
-                        api3Market,
-                        dapiDataRegistry,
-                        proxyFactory,
-                        api3ServerV1,
-                        apiTreeValues,
-                        apiTree,
-                        dataFeeds,
-                        dapiTreeValues,
-                        dapiTree,
-                        priceTreeValues,
-                        priceTree,
-                      } = await helpers.loadFixture(deploy);
+                context('Does not buy a subscription for the same dAPI on the same day', function () {
+                  context('Extends or downgrades current purchase', function () {
+                    context('There is not already a pending extension or downgrade', function () {
+                      it('buys extension dAPI subscription', async function () {
+                        const {
+                          roles,
+                          api3Market,
+                          dapiDataRegistry,
+                          proxyFactory,
+                          api3ServerV1,
+                          apiTreeValues,
+                          apiTree,
+                          dataFeeds,
+                          dapiTreeValues,
+                          dapiTree,
+                          priceTreeValues,
+                          priceTree,
+                        } = await helpers.loadFixture(deploy);
 
-                      const apiTreeRoot = apiTree.root;
-                      const apiTreeProofs = apiTreeValues.map(([airnode, url]) => apiTree.getProof([airnode, url]));
+                        const apiTreeRoot = apiTree.root;
+                        const apiTreeProofs = apiTreeValues.map(([airnode, url]) => apiTree.getProof([airnode, url]));
 
-                      const randomIndex = Math.floor(Math.random() * dapiTreeValues.length);
-                      const [dapiName, dataFeedId, sponsorWallet] = dapiTreeValues[randomIndex];
-                      const dapiTreeRoot = dapiTree.root;
-                      const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
+                        const randomIndex = Math.floor(Math.random() * dapiTreeValues.length);
+                        const [dapiName, dataFeedId, sponsorWallet] = dapiTreeValues[randomIndex];
+                        const dapiTreeRoot = dapiTree.root;
+                        const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-                      const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
-                      const priceTreeRoot = priceTree.root;
-                      const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
+                        const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+                        const priceTreeRoot = priceTree.root;
+                        const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
-                      const dapi = {
-                        name: dapiName,
-                        sponsorWallet,
-                        price,
-                        duration,
-                        updateParams,
-                      };
-
-                      const beacons = await Promise.all(
-                        dataFeeds[randomIndex].map(async ({ airnode, templateId }, index) => {
-                          const timestamp = await helpers.time.latest();
-                          const decodedData = Math.floor(Math.random() * 200 - 100);
-                          const data = hre.ethers.utils.defaultAbiCoder.encode(['int256'], [decodedData]);
-                          return {
-                            airnode: airnode.address,
-                            templateId,
-                            timestamp,
-                            data,
-                            signature: await signData(airnode, templateId, timestamp, data),
-                            url: apiTreeValues[index][1],
-                          };
-                        })
-                      );
-
-                      const dapiProxyAddress = await proxyFactory.computeDapiProxyAddress(dapiName, '0x');
-                      expect(await hre.ethers.provider.getCode(dapiProxyAddress)).to.equal('0x');
-
-                      const args = {
-                        dapi,
-                        beacons,
-                        signedApiUrlRoot: apiTreeRoot,
-                        signedApiUrlProofs: apiTreeProofs,
-                        dapiRoot: dapiTreeRoot,
-                        dapiProof: dapiTreeProof,
-                        priceRoot: priceTreeRoot,
-                        priceProof: priceTreeProof,
-                      };
-
-                      await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
-
-                      const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber()))
-                        .timestamp;
-                      const futureNow = now + duration / 2;
-                      await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
-
-                      // Extend from the middle of current subscription
-                      const expectedPrice = price.sub(price.mul(duration / 2).div(duration));
-                      const expectedDuration = duration / 2;
-                      await expect(api3Market.connect(roles.randomPerson).buyDapi(args, { value: price }))
-                        .to.emit(api3Market, 'BoughtDapi')
-                        .withArgs(
-                          dapiName,
-                          dataFeedId,
-                          dapiProxyAddress,
-                          expectedPrice,
-                          expectedDuration,
+                        const dapi = {
+                          name: dapiName,
+                          sponsorWallet,
+                          price,
+                          duration,
                           updateParams,
-                          price.add(expectedPrice), // sponsorWallet balance
-                          roles.randomPerson.address
+                        };
+
+                        const beacons = await Promise.all(
+                          dataFeeds[randomIndex].map(async ({ airnode, templateId }, index) => {
+                            const timestamp = await helpers.time.latest();
+                            const decodedData = Math.floor(Math.random() * 200 - 100);
+                            const data = hre.ethers.utils.defaultAbiCoder.encode(['int256'], [decodedData]);
+                            return {
+                              airnode: airnode.address,
+                              templateId,
+                              timestamp,
+                              data,
+                              signature: await signData(airnode, templateId, timestamp, data),
+                              url: apiTreeValues[index][1],
+                            };
+                          })
                         );
 
-                      await Promise.all(
-                        apiTreeValues.map(async ([airnode, url]) => {
-                          expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
-                        })
-                      );
-                      const { airnodes, templateIds } = dataFeeds[randomIndex].reduce(
-                        (acc, { airnode, templateId }) => ({
-                          airnodes: [...acc.airnodes, airnode.address],
-                          templateIds: [...acc.templateIds, templateId],
-                        }),
-                        { airnodes: [], templateIds: [] }
-                      );
-                      const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
-                        ['address[]', 'bytes32[]'],
-                        [airnodes, templateIds]
-                      );
-                      expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconSetData);
-                      const [onChainBeaconSetValue] = await api3ServerV1.dataFeeds(dataFeedId);
-                      const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
-                        await dapiDataRegistry.readDapiWithName(dapiName);
-                      expect(updateParameters).to.deep.equal(
-                        hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], updateParams)
-                      );
-                      expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
-                      expect(dataFeed).to.equal(encodedBeaconSetData);
-                      expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));
-                      expect(await hre.ethers.provider.getCode(dapiProxyAddress)).not.to.equal('0x');
-                      await Promise.all(
-                        beacons.map(async ({ airnode, templateId, data }) => {
-                          const beaconId = hre.ethers.utils.solidityKeccak256(
-                            ['address', 'bytes32'],
-                            [airnode, templateId]
+                        const dapiProxyAddress = await proxyFactory.computeDapiProxyAddress(dapiName, '0x');
+                        expect(await hre.ethers.provider.getCode(dapiProxyAddress)).to.equal('0x');
+
+                        const args = {
+                          dapi,
+                          beacons,
+                          signedApiUrlRoot: apiTreeRoot,
+                          signedApiUrlProofs: apiTreeProofs,
+                          dapiRoot: dapiTreeRoot,
+                          dapiProof: dapiTreeProof,
+                          priceRoot: priceTreeRoot,
+                          priceProof: priceTreeProof,
+                        };
+
+                        await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
+
+                        const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber()))
+                          .timestamp;
+                        const futureNow = now + duration / 2;
+                        await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
+
+                        // Extend from the middle of current subscription
+                        const expectedPrice = price.sub(price.mul(duration / 2).div(duration));
+                        const expectedDuration = duration / 2;
+                        await expect(api3Market.connect(roles.randomPerson).buyDapi(args, { value: price }))
+                          .to.emit(api3Market, 'BoughtDapi')
+                          .withArgs(
+                            dapiName,
+                            dataFeedId,
+                            dapiProxyAddress,
+                            expectedPrice,
+                            expectedDuration,
+                            updateParams,
+                            price.add(expectedPrice), // sponsorWallet balance
+                            roles.randomPerson.address
                           );
-                          const decodedData = hre.ethers.utils.defaultAbiCoder.decode(['int256'], data)[0];
-                          const [onChainBeaconValue] = await api3ServerV1.dataFeeds(beaconId);
-                          expect(onChainBeaconValue.toString()).to.equal(decodedData.toString());
-                        })
-                      );
-                      expect(await hre.ethers.provider.getBalance(sponsorWallet)).to.equal(price.add(expectedPrice));
 
-                      const [current, pending] = await api3Market.readCurrentAndPendingPurchases(dapiName);
-                      expect(current.price).to.equal(price);
-                      expect(current.duration).to.equal(duration);
-                      expect(current.start).to.equal(now);
-                      expect(current.purchasedAt).to.equal(now);
-                      expect(pending.price).to.equal(expectedPrice);
-                      expect(pending.duration).to.equal(expectedDuration);
-                      expect(pending.start).to.equal(now + duration);
-                      expect(pending.purchasedAt).to.equal(futureNow);
+                        await Promise.all(
+                          apiTreeValues.map(async ([airnode, url]) => {
+                            expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
+                          })
+                        );
+                        const { airnodes, templateIds } = dataFeeds[randomIndex].reduce(
+                          (acc, { airnode, templateId }) => ({
+                            airnodes: [...acc.airnodes, airnode.address],
+                            templateIds: [...acc.templateIds, templateId],
+                          }),
+                          { airnodes: [], templateIds: [] }
+                        );
+                        const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+                          ['address[]', 'bytes32[]'],
+                          [airnodes, templateIds]
+                        );
+                        expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconSetData);
+                        const [onChainBeaconSetValue] = await api3ServerV1.dataFeeds(dataFeedId);
+                        const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
+                          await dapiDataRegistry.readDapiWithName(dapiName);
+                        expect(updateParameters).to.deep.equal(
+                          hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], updateParams)
+                        );
+                        expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
+                        expect(dataFeed).to.equal(encodedBeaconSetData);
+                        expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));
+                        expect(await hre.ethers.provider.getCode(dapiProxyAddress)).not.to.equal('0x');
+                        await Promise.all(
+                          beacons.map(async ({ airnode, templateId, data }) => {
+                            const beaconId = hre.ethers.utils.solidityKeccak256(
+                              ['address', 'bytes32'],
+                              [airnode, templateId]
+                            );
+                            const decodedData = hre.ethers.utils.defaultAbiCoder.decode(['int256'], data)[0];
+                            const [onChainBeaconValue] = await api3ServerV1.dataFeeds(beaconId);
+                            expect(onChainBeaconValue.toString()).to.equal(decodedData.toString());
+                          })
+                        );
+                        expect(await hre.ethers.provider.getBalance(sponsorWallet)).to.equal(price.add(expectedPrice));
+
+                        const [current, pending] = await api3Market.readCurrentAndPendingPurchases(dapiName);
+                        expect(current.price).to.equal(price);
+                        expect(current.duration).to.equal(duration);
+                        expect(current.start).to.equal(now);
+                        expect(current.purchasedAt).to.equal(now);
+                        expect(pending.price).to.equal(expectedPrice);
+                        expect(pending.duration).to.equal(expectedDuration);
+                        expect(pending.start).to.equal(now + duration);
+                        expect(pending.purchasedAt).to.equal(futureNow);
+                      });
+                      it('buys downgrade dAPI subscription', async function () {
+                        const {
+                          roles,
+                          api3Market,
+                          dapiDataRegistry,
+                          proxyFactory,
+                          api3ServerV1,
+                          apiTreeValues,
+                          apiTree,
+                          dataFeeds,
+                          dapiTreeValues,
+                          dapiTree,
+                          priceTreeValues,
+                          priceTree,
+                        } = await helpers.loadFixture(deploy);
+
+                        const apiTreeRoot = apiTree.root;
+                        const apiTreeProofs = apiTreeValues.map(([airnode, url]) => apiTree.getProof([airnode, url]));
+
+                        const randomIndex = Math.floor(Math.random() * dapiTreeValues.length);
+                        const [dapiName, dataFeedId, sponsorWallet] = dapiTreeValues[randomIndex];
+                        const dapiTreeRoot = dapiTree.root;
+                        const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
+
+                        const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+                        const priceTreeRoot = priceTree.root;
+                        const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
+
+                        const dapi = {
+                          name: dapiName,
+                          sponsorWallet,
+                          price,
+                          duration,
+                          updateParams,
+                        };
+
+                        const beacons = await Promise.all(
+                          dataFeeds[randomIndex].map(async ({ airnode, templateId }, index) => {
+                            const timestamp = await helpers.time.latest();
+                            const decodedData = Math.floor(Math.random() * 200 - 100);
+                            const data = hre.ethers.utils.defaultAbiCoder.encode(['int256'], [decodedData]);
+                            return {
+                              airnode: airnode.address,
+                              templateId,
+                              timestamp,
+                              data,
+                              signature: await signData(airnode, templateId, timestamp, data),
+                              url: apiTreeValues[index][1],
+                            };
+                          })
+                        );
+
+                        const dapiProxyAddress = await proxyFactory.computeDapiProxyAddress(dapiName, '0x');
+                        expect(await hre.ethers.provider.getCode(dapiProxyAddress)).to.equal('0x');
+
+                        const args = {
+                          dapi,
+                          beacons,
+                          signedApiUrlRoot: apiTreeRoot,
+                          signedApiUrlProofs: apiTreeProofs,
+                          dapiRoot: dapiTreeRoot,
+                          dapiProof: dapiTreeProof,
+                          priceRoot: priceTreeRoot,
+                          priceProof: priceTreeProof,
+                        };
+
+                        await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
+
+                        const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber()))
+                          .timestamp;
+                        const futureNow = now + duration / 2;
+                        await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
+
+                        // Downgrade from the middle of current subscription
+                        const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] =
+                          priceTreeValues[randomIndex * 3 + 1];
+                        const downgradePriceTreeProof = priceTree.getProof([
+                          dapiName,
+                          chainId,
+                          downgradeUpdateParams,
+                          downgradeDuration,
+                          downgradePrice,
+                        ]);
+                        const downgradeDapi = {
+                          name: dapiName,
+                          sponsorWallet,
+                          price: downgradePrice,
+                          duration: downgradeDuration,
+                          updateParams: downgradeUpdateParams,
+                        };
+
+                        const expectedPrice = downgradePrice
+                          .sub(downgradePrice.mul(duration / 2).div(downgradeDuration))
+                          .sub(1);
+                        const expectedDuration = downgradeDuration - duration / 2;
+                        await expect(
+                          api3Market
+                            .connect(roles.randomPerson)
+                            .buyDapi(
+                              { ...args, dapi: downgradeDapi, priceProof: downgradePriceTreeProof },
+                              { value: downgradePrice }
+                            )
+                        )
+                          .to.emit(api3Market, 'BoughtDapi')
+                          .withArgs(
+                            dapiName,
+                            dataFeedId,
+                            dapiProxyAddress,
+                            expectedPrice,
+                            expectedDuration,
+                            downgradeUpdateParams,
+                            price.add(expectedPrice), // sponsorWallet balance
+                            roles.randomPerson.address
+                          );
+
+                        await Promise.all(
+                          apiTreeValues.map(async ([airnode, url]) => {
+                            expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
+                          })
+                        );
+                        const { airnodes, templateIds } = dataFeeds[randomIndex].reduce(
+                          (acc, { airnode, templateId }) => ({
+                            airnodes: [...acc.airnodes, airnode.address],
+                            templateIds: [...acc.templateIds, templateId],
+                          }),
+                          { airnodes: [], templateIds: [] }
+                        );
+                        const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+                          ['address[]', 'bytes32[]'],
+                          [airnodes, templateIds]
+                        );
+                        expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconSetData);
+                        const [onChainBeaconSetValue] = await api3ServerV1.dataFeeds(dataFeedId);
+                        const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
+                          await dapiDataRegistry.readDapiWithName(dapiName);
+                        expect(updateParameters).to.deep.equal(
+                          hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], updateParams)
+                        );
+                        expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
+                        expect(dataFeed).to.equal(encodedBeaconSetData);
+                        expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));
+                        expect(await hre.ethers.provider.getCode(dapiProxyAddress)).not.to.equal('0x');
+                        await Promise.all(
+                          beacons.map(async ({ airnode, templateId, data }) => {
+                            const beaconId = hre.ethers.utils.solidityKeccak256(
+                              ['address', 'bytes32'],
+                              [airnode, templateId]
+                            );
+                            const decodedData = hre.ethers.utils.defaultAbiCoder.decode(['int256'], data)[0];
+                            const [onChainBeaconValue] = await api3ServerV1.dataFeeds(beaconId);
+                            expect(onChainBeaconValue.toString()).to.equal(decodedData.toString());
+                          })
+                        );
+                        expect(await hre.ethers.provider.getBalance(sponsorWallet)).to.equal(price.add(expectedPrice));
+
+                        const [current, pending] = await api3Market.readCurrentAndPendingPurchases(dapiName);
+                        expect(current.price).to.equal(price);
+                        expect(current.duration).to.equal(duration);
+                        expect(current.start).to.equal(now);
+                        expect(current.purchasedAt).to.equal(now);
+                        expect(pending.price).to.equal(expectedPrice);
+                        expect(pending.duration).to.equal(expectedDuration);
+                        expect(pending.start).to.equal(now + duration);
+                        expect(pending.purchasedAt).to.equal(futureNow);
+                      });
                     });
-                    it('buys downgrade dAPI subscription', async function () {
-                      const {
-                        roles,
-                        api3Market,
-                        dapiDataRegistry,
-                        proxyFactory,
-                        api3ServerV1,
-                        apiTreeValues,
-                        apiTree,
-                        dataFeeds,
-                        dapiTreeValues,
-                        dapiTree,
-                        priceTreeValues,
-                        priceTree,
-                      } = await helpers.loadFixture(deploy);
+                    context('There is already a pending extension or downgrade', function () {
+                      it('reverts', async function () {
+                        const {
+                          roles,
+                          api3Market,
+                          proxyFactory,
+                          apiTreeValues,
+                          apiTree,
+                          dataFeeds,
+                          dapiTreeValues,
+                          dapiTree,
+                          priceTreeValues,
+                          priceTree,
+                        } = await helpers.loadFixture(deploy);
 
-                      const apiTreeRoot = apiTree.root;
-                      const apiTreeProofs = apiTreeValues.map(([airnode, url]) => apiTree.getProof([airnode, url]));
+                        const apiTreeRoot = apiTree.root;
+                        const apiTreeProofs = apiTreeValues.map(([airnode, url]) => apiTree.getProof([airnode, url]));
 
-                      const randomIndex = Math.floor(Math.random() * dapiTreeValues.length);
-                      const [dapiName, dataFeedId, sponsorWallet] = dapiTreeValues[randomIndex];
-                      const dapiTreeRoot = dapiTree.root;
-                      const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
+                        const randomIndex = Math.floor(Math.random() * dapiTreeValues.length);
+                        const [dapiName, dataFeedId, sponsorWallet] = dapiTreeValues[randomIndex];
+                        const dapiTreeRoot = dapiTree.root;
+                        const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-                      const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
-                      const priceTreeRoot = priceTree.root;
-                      const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
+                        const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+                        const priceTreeRoot = priceTree.root;
+                        const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
-                      const dapi = {
-                        name: dapiName,
-                        sponsorWallet,
-                        price,
-                        duration,
-                        updateParams,
-                      };
+                        const dapi = {
+                          name: dapiName,
+                          sponsorWallet,
+                          price,
+                          duration,
+                          updateParams,
+                        };
 
-                      const beacons = await Promise.all(
-                        dataFeeds[randomIndex].map(async ({ airnode, templateId }, index) => {
-                          const timestamp = await helpers.time.latest();
-                          const decodedData = Math.floor(Math.random() * 200 - 100);
-                          const data = hre.ethers.utils.defaultAbiCoder.encode(['int256'], [decodedData]);
-                          return {
-                            airnode: airnode.address,
-                            templateId,
-                            timestamp,
-                            data,
-                            signature: await signData(airnode, templateId, timestamp, data),
-                            url: apiTreeValues[index][1],
-                          };
-                        })
-                      );
+                        const beacons = await Promise.all(
+                          dataFeeds[randomIndex].map(async ({ airnode, templateId }, index) => {
+                            const timestamp = await helpers.time.latest();
+                            const decodedData = Math.floor(Math.random() * 200 - 100);
+                            const data = hre.ethers.utils.defaultAbiCoder.encode(['int256'], [decodedData]);
+                            return {
+                              airnode: airnode.address,
+                              templateId,
+                              timestamp,
+                              data,
+                              signature: await signData(airnode, templateId, timestamp, data),
+                              url: apiTreeValues[index][1],
+                            };
+                          })
+                        );
 
-                      const dapiProxyAddress = await proxyFactory.computeDapiProxyAddress(dapiName, '0x');
-                      expect(await hre.ethers.provider.getCode(dapiProxyAddress)).to.equal('0x');
+                        const dapiProxyAddress = await proxyFactory.computeDapiProxyAddress(dapiName, '0x');
+                        expect(await hre.ethers.provider.getCode(dapiProxyAddress)).to.equal('0x');
 
-                      const args = {
-                        dapi,
-                        beacons,
-                        signedApiUrlRoot: apiTreeRoot,
-                        signedApiUrlProofs: apiTreeProofs,
-                        dapiRoot: dapiTreeRoot,
-                        dapiProof: dapiTreeProof,
-                        priceRoot: priceTreeRoot,
-                        priceProof: priceTreeProof,
-                      };
+                        const args = {
+                          dapi,
+                          beacons,
+                          signedApiUrlRoot: apiTreeRoot,
+                          signedApiUrlProofs: apiTreeProofs,
+                          dapiRoot: dapiTreeRoot,
+                          dapiProof: dapiTreeProof,
+                          priceRoot: priceTreeRoot,
+                          priceProof: priceTreeProof,
+                        };
 
-                      await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
+                        await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
 
-                      const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber()))
-                        .timestamp;
-                      const futureNow = now + duration / 2;
-                      await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
+                        const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber()))
+                          .timestamp;
 
-                      // Downgrade from the middle of current subscription
-                      const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] =
-                        priceTreeValues[randomIndex * 3 + 1];
-                      const downgradePriceTreeProof = priceTree.getProof([
-                        dapiName,
-                        chainId,
-                        downgradeUpdateParams,
-                        downgradeDuration,
-                        downgradePrice,
-                      ]);
-                      const downgradeDapi = {
-                        name: dapiName,
-                        sponsorWallet,
-                        price: downgradePrice,
-                        duration: downgradeDuration,
-                        updateParams: downgradeUpdateParams,
-                      };
+                        // Downgrade from the middle of current subscription
+                        const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] =
+                          priceTreeValues[randomIndex * 3 + 1];
+                        const downgradePriceTreeProof = priceTree.getProof([
+                          dapiName,
+                          chainId,
+                          downgradeUpdateParams,
+                          downgradeDuration,
+                          downgradePrice,
+                        ]);
+                        const downgradeDapi = {
+                          name: dapiName,
+                          sponsorWallet,
+                          price: downgradePrice,
+                          duration: downgradeDuration,
+                          updateParams: downgradeUpdateParams,
+                        };
 
-                      const expectedPrice = downgradePrice
-                        .sub(downgradePrice.mul(duration / 2).div(downgradeDuration))
-                        .sub(1);
-                      const expectedDuration = downgradeDuration - duration / 2;
-                      await expect(
-                        api3Market
+                        await hre.ethers.provider.send('evm_setNextBlockTimestamp', [now + duration / 3]);
+                        await api3Market
                           .connect(roles.randomPerson)
                           .buyDapi(
                             { ...args, dapi: downgradeDapi, priceProof: downgradePriceTreeProof },
                             { value: downgradePrice }
-                          )
-                      )
-                        .to.emit(api3Market, 'BoughtDapi')
-                        .withArgs(
-                          dapiName,
-                          dataFeedId,
-                          dapiProxyAddress,
-                          expectedPrice,
-                          expectedDuration,
-                          downgradeUpdateParams,
-                          price.add(expectedPrice), // sponsorWallet balance
-                          roles.randomPerson.address
-                        );
-
-                      await Promise.all(
-                        apiTreeValues.map(async ([airnode, url]) => {
-                          expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
-                        })
-                      );
-                      const { airnodes, templateIds } = dataFeeds[randomIndex].reduce(
-                        (acc, { airnode, templateId }) => ({
-                          airnodes: [...acc.airnodes, airnode.address],
-                          templateIds: [...acc.templateIds, templateId],
-                        }),
-                        { airnodes: [], templateIds: [] }
-                      );
-                      const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
-                        ['address[]', 'bytes32[]'],
-                        [airnodes, templateIds]
-                      );
-                      expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconSetData);
-                      const [onChainBeaconSetValue] = await api3ServerV1.dataFeeds(dataFeedId);
-                      const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
-                        await dapiDataRegistry.readDapiWithName(dapiName);
-                      expect(updateParameters).to.deep.equal(
-                        hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], updateParams)
-                      );
-                      expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
-                      expect(dataFeed).to.equal(encodedBeaconSetData);
-                      expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));
-                      expect(await hre.ethers.provider.getCode(dapiProxyAddress)).not.to.equal('0x');
-                      await Promise.all(
-                        beacons.map(async ({ airnode, templateId, data }) => {
-                          const beaconId = hre.ethers.utils.solidityKeccak256(
-                            ['address', 'bytes32'],
-                            [airnode, templateId]
                           );
-                          const decodedData = hre.ethers.utils.defaultAbiCoder.decode(['int256'], data)[0];
-                          const [onChainBeaconValue] = await api3ServerV1.dataFeeds(beaconId);
-                          expect(onChainBeaconValue.toString()).to.equal(decodedData.toString());
-                        })
-                      );
-                      expect(await hre.ethers.provider.getBalance(sponsorWallet)).to.equal(price.add(expectedPrice));
 
-                      const [current, pending] = await api3Market.readCurrentAndPendingPurchases(dapiName);
-                      expect(current.price).to.equal(price);
-                      expect(current.duration).to.equal(duration);
-                      expect(current.start).to.equal(now);
-                      expect(current.purchasedAt).to.equal(now);
-                      expect(pending.price).to.equal(expectedPrice);
-                      expect(pending.duration).to.equal(expectedDuration);
-                      expect(pending.start).to.equal(now + duration);
-                      expect(pending.purchasedAt).to.equal(futureNow);
+                        await hre.ethers.provider.send('evm_setNextBlockTimestamp', [now + duration / 2]);
+                        await expect(
+                          api3Market
+                            .connect(roles.randomPerson)
+                            .buyDapi(
+                              { ...args, dapi: downgradeDapi, priceProof: downgradePriceTreeProof },
+                              { value: downgradePrice }
+                            )
+                        ).to.have.been.revertedWith('There is already a pending extension or downgrade');
+                      });
                     });
                   });
-                  context('There is already a pending extension or downgrade', function () {
-                    it('reverts', async function () {
+                  context('Does not extends nor downgrades current purchase', function () {
+                    it.skip('reverts', async function () {
                       const {
                         roles,
                         api3Market,
@@ -860,51 +969,574 @@ describe('Api3Market', function () {
                         priceProof: priceTreeProof,
                       };
 
+                      await hre.network.provider.send('evm_setAutomine', [false]);
+                      await hre.network.provider.send('evm_setIntervalMining', [0]);
                       await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
 
-                      const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber()))
-                        .timestamp;
+                      const tx = await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
+                      await hre.network.provider.send('evm_mine');
+                      expect(tx).to.have.been.revertedWith('Does not extends nor downgrades current purchase');
+                    });
+                  });
+                  it('buys upgrade dAPI subscription', async function () {
+                    const {
+                      roles,
+                      api3Market,
+                      dapiDataRegistry,
+                      proxyFactory,
+                      api3ServerV1,
+                      apiTreeValues,
+                      apiTree,
+                      dataFeeds,
+                      dapiTreeValues,
+                      dapiTree,
+                      priceTreeValues,
+                      priceTree,
+                    } = await helpers.loadFixture(deploy);
 
-                      // Downgrade from the middle of current subscription
-                      const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] =
-                        priceTreeValues[randomIndex * 3 + 1];
-                      const downgradePriceTreeProof = priceTree.getProof([
-                        dapiName,
-                        chainId,
-                        downgradeUpdateParams,
-                        downgradeDuration,
-                        downgradePrice,
-                      ]);
-                      const downgradeDapi = {
-                        name: dapiName,
-                        sponsorWallet,
-                        price: downgradePrice,
-                        duration: downgradeDuration,
-                        updateParams: downgradeUpdateParams,
-                      };
+                    const apiTreeRoot = apiTree.root;
+                    const apiTreeProofs = apiTreeValues.map(([airnode, url]) => apiTree.getProof([airnode, url]));
 
-                      await hre.ethers.provider.send('evm_setNextBlockTimestamp', [now + duration / 3]);
-                      await api3Market
+                    const randomIndex = Math.floor(Math.random() * dapiTreeValues.length);
+                    const [dapiName, dataFeedId, sponsorWallet] = dapiTreeValues[randomIndex];
+                    const dapiTreeRoot = dapiTree.root;
+                    const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
+
+                    const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3 + 1];
+                    const priceTreeRoot = priceTree.root;
+                    const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
+
+                    const dapi = {
+                      name: dapiName,
+                      sponsorWallet,
+                      price,
+                      duration,
+                      updateParams,
+                    };
+
+                    const beacons = await Promise.all(
+                      dataFeeds[randomIndex].map(async ({ airnode, templateId }, index) => {
+                        const timestamp = await helpers.time.latest();
+                        const decodedData = Math.floor(Math.random() * 200 - 100);
+                        const data = hre.ethers.utils.defaultAbiCoder.encode(['int256'], [decodedData]);
+                        return {
+                          airnode: airnode.address,
+                          templateId,
+                          timestamp,
+                          data,
+                          signature: await signData(airnode, templateId, timestamp, data),
+                          url: apiTreeValues[index][1],
+                        };
+                      })
+                    );
+
+                    const dapiProxyAddress = await proxyFactory.computeDapiProxyAddress(dapiName, '0x');
+                    expect(await hre.ethers.provider.getCode(dapiProxyAddress)).to.equal('0x');
+
+                    const args = {
+                      dapi,
+                      beacons,
+                      signedApiUrlRoot: apiTreeRoot,
+                      signedApiUrlProofs: apiTreeProofs,
+                      dapiRoot: dapiTreeRoot,
+                      dapiProof: dapiTreeProof,
+                      priceRoot: priceTreeRoot,
+                      priceProof: priceTreeProof,
+                    };
+
+                    await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
+
+                    const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber()))
+                      .timestamp;
+                    const futureNow = now + duration / 2;
+                    await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
+
+                    // Upgrade from the middle of current subscription
+                    const [, , upgradeUpdateParams, upgradeDuration, upgradePrice] = priceTreeValues[randomIndex * 3];
+                    const upgradePriceTreeProof = priceTree.getProof([
+                      dapiName,
+                      chainId,
+                      upgradeUpdateParams,
+                      upgradeDuration,
+                      upgradePrice,
+                    ]);
+                    const upgradeDapi = {
+                      name: dapiName,
+                      sponsorWallet,
+                      price: upgradePrice,
+                      duration: upgradeDuration,
+                      updateParams: upgradeUpdateParams,
+                    };
+
+                    const expectedPrice = upgradePrice.sub(price.mul(duration / 2).div(duration));
+                    await expect(
+                      api3Market
                         .connect(roles.randomPerson)
                         .buyDapi(
-                          { ...args, dapi: downgradeDapi, priceProof: downgradePriceTreeProof },
-                          { value: downgradePrice }
-                        );
+                          { ...args, dapi: upgradeDapi, priceProof: upgradePriceTreeProof },
+                          { value: upgradePrice }
+                        )
+                    )
+                      .to.emit(api3Market, 'BoughtDapi')
+                      .withArgs(
+                        dapiName,
+                        dataFeedId,
+                        dapiProxyAddress,
+                        expectedPrice,
+                        upgradeDuration,
+                        upgradeUpdateParams,
+                        price.add(expectedPrice), // sponsorWallet balance
+                        roles.randomPerson.address
+                      );
 
-                      await hre.ethers.provider.send('evm_setNextBlockTimestamp', [now + duration / 2]);
-                      await expect(
-                        api3Market
-                          .connect(roles.randomPerson)
-                          .buyDapi(
-                            { ...args, dapi: downgradeDapi, priceProof: downgradePriceTreeProof },
-                            { value: downgradePrice }
-                          )
-                      ).to.have.been.revertedWith('There is already a pending extension or downgrade');
-                    });
+                    await Promise.all(
+                      apiTreeValues.map(async ([airnode, url]) => {
+                        expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
+                      })
+                    );
+                    const { airnodes, templateIds } = dataFeeds[randomIndex].reduce(
+                      (acc, { airnode, templateId }) => ({
+                        airnodes: [...acc.airnodes, airnode.address],
+                        templateIds: [...acc.templateIds, templateId],
+                      }),
+                      { airnodes: [], templateIds: [] }
+                    );
+                    const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+                      ['address[]', 'bytes32[]'],
+                      [airnodes, templateIds]
+                    );
+                    expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconSetData);
+                    const [onChainBeaconSetValue] = await api3ServerV1.dataFeeds(dataFeedId);
+                    const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
+                      await dapiDataRegistry.readDapiWithName(dapiName);
+                    expect(updateParameters).to.deep.equal(
+                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], upgradeUpdateParams)
+                    );
+                    expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
+                    expect(dataFeed).to.equal(encodedBeaconSetData);
+                    expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));
+                    expect(await hre.ethers.provider.getCode(dapiProxyAddress)).not.to.equal('0x');
+                    await Promise.all(
+                      beacons.map(async ({ airnode, templateId, data }) => {
+                        const beaconId = hre.ethers.utils.solidityKeccak256(
+                          ['address', 'bytes32'],
+                          [airnode, templateId]
+                        );
+                        const decodedData = hre.ethers.utils.defaultAbiCoder.decode(['int256'], data)[0];
+                        const [onChainBeaconValue] = await api3ServerV1.dataFeeds(beaconId);
+                        expect(onChainBeaconValue.toString()).to.equal(decodedData.toString());
+                      })
+                    );
+                    expect(await hre.ethers.provider.getBalance(sponsorWallet)).to.equal(price.add(expectedPrice));
+
+                    const [current, pending] = await api3Market.readCurrentAndPendingPurchases(dapiName);
+                    expect(current.price).to.equal(upgradePrice);
+                    expect(current.duration).to.equal(upgradeDuration);
+                    expect(current.start).to.equal(futureNow);
+                    expect(current.purchasedAt).to.equal(futureNow);
+                    expect(pending.price).to.equal(hre.ethers.constants.Zero);
+                    expect(pending.duration).to.equal(hre.ethers.constants.Zero);
+                    expect(pending.start).to.equal(hre.ethers.constants.Zero);
+                    expect(pending.purchasedAt).to.equal(hre.ethers.constants.Zero);
+                  });
+                  it('buys upgrade that overrides pending downgrade dAPI subscription', async function () {
+                    const {
+                      roles,
+                      api3Market,
+                      dapiDataRegistry,
+                      proxyFactory,
+                      api3ServerV1,
+                      apiTreeValues,
+                      apiTree,
+                      dataFeeds,
+                      dapiTreeValues,
+                      dapiTree,
+                      priceTreeValues,
+                      priceTree,
+                    } = await helpers.loadFixture(deploy);
+
+                    const apiTreeRoot = apiTree.root;
+                    const apiTreeProofs = apiTreeValues.map(([airnode, url]) => apiTree.getProof([airnode, url]));
+
+                    const randomIndex = Math.floor(Math.random() * dapiTreeValues.length);
+                    const [dapiName, dataFeedId, sponsorWallet] = dapiTreeValues[randomIndex];
+                    const dapiTreeRoot = dapiTree.root;
+                    const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
+
+                    const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3 + 1];
+                    const priceTreeRoot = priceTree.root;
+                    const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
+
+                    const dapi = {
+                      name: dapiName,
+                      sponsorWallet,
+                      price,
+                      duration,
+                      updateParams,
+                    };
+
+                    const beacons = await Promise.all(
+                      dataFeeds[randomIndex].map(async ({ airnode, templateId }, index) => {
+                        const timestamp = await helpers.time.latest();
+                        const decodedData = Math.floor(Math.random() * 200 - 100);
+                        const data = hre.ethers.utils.defaultAbiCoder.encode(['int256'], [decodedData]);
+                        return {
+                          airnode: airnode.address,
+                          templateId,
+                          timestamp,
+                          data,
+                          signature: await signData(airnode, templateId, timestamp, data),
+                          url: apiTreeValues[index][1],
+                        };
+                      })
+                    );
+
+                    const dapiProxyAddress = await proxyFactory.computeDapiProxyAddress(dapiName, '0x');
+                    expect(await hre.ethers.provider.getCode(dapiProxyAddress)).to.equal('0x');
+
+                    const args = {
+                      dapi,
+                      beacons,
+                      signedApiUrlRoot: apiTreeRoot,
+                      signedApiUrlProofs: apiTreeProofs,
+                      dapiRoot: dapiTreeRoot,
+                      dapiProof: dapiTreeProof,
+                      priceRoot: priceTreeRoot,
+                      priceProof: priceTreeProof,
+                    };
+
+                    await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
+
+                    const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber()))
+                      .timestamp;
+                    let futureNow = now + duration / 4;
+                    await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
+
+                    // Downgrade from the middle of current subscription
+                    const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] =
+                      priceTreeValues[randomIndex * 3 + 2];
+                    const downgradePriceTreeProof = priceTree.getProof([
+                      dapiName,
+                      chainId,
+                      downgradeUpdateParams,
+                      downgradeDuration,
+                      downgradePrice,
+                    ]);
+                    const downgradeDapi = {
+                      name: dapiName,
+                      sponsorWallet,
+                      price: downgradePrice,
+                      duration: downgradeDuration,
+                      updateParams: downgradeUpdateParams,
+                    };
+
+                    await api3Market
+                      .connect(roles.randomPerson)
+                      .buyDapi(
+                        { ...args, dapi: downgradeDapi, priceProof: downgradePriceTreeProof },
+                        { value: downgradePrice }
+                      );
+
+                    futureNow = now + duration - 10;
+                    await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
+
+                    // Upgrade from the middle of current subscription
+                    const [, , upgradeUpdateParams, upgradeDuration, upgradePrice] = priceTreeValues[randomIndex * 3];
+                    const upgradePriceTreeProof = priceTree.getProof([
+                      dapiName,
+                      chainId,
+                      upgradeUpdateParams,
+                      upgradeDuration,
+                      upgradePrice,
+                    ]);
+                    const upgradeDapi = {
+                      name: dapiName,
+                      sponsorWallet,
+                      price: upgradePrice,
+                      duration: upgradeDuration,
+                      updateParams: upgradeUpdateParams,
+                    };
+
+                    const expectedDowngradePrice = downgradePrice
+                      .mul(downgradeDuration - (duration / 4) * 3)
+                      .div(downgradeDuration);
+                    const expectedPrice = upgradePrice.sub(price.mul(10).div(duration)).sub(expectedDowngradePrice);
+                    await expect(
+                      api3Market
+                        .connect(roles.randomPerson)
+                        .buyDapi(
+                          { ...args, dapi: upgradeDapi, priceProof: upgradePriceTreeProof },
+                          { value: upgradePrice }
+                        )
+                    )
+                      .to.emit(api3Market, 'BoughtDapi')
+                      .withArgs(
+                        dapiName,
+                        dataFeedId,
+                        dapiProxyAddress,
+                        expectedPrice,
+                        upgradeDuration,
+                        upgradeUpdateParams,
+                        price.add(expectedDowngradePrice).add(expectedPrice), // sponsorWallet balance
+                        roles.randomPerson.address
+                      );
+
+                    await Promise.all(
+                      apiTreeValues.map(async ([airnode, url]) => {
+                        expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
+                      })
+                    );
+                    const { airnodes, templateIds } = dataFeeds[randomIndex].reduce(
+                      (acc, { airnode, templateId }) => ({
+                        airnodes: [...acc.airnodes, airnode.address],
+                        templateIds: [...acc.templateIds, templateId],
+                      }),
+                      { airnodes: [], templateIds: [] }
+                    );
+                    const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+                      ['address[]', 'bytes32[]'],
+                      [airnodes, templateIds]
+                    );
+                    expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconSetData);
+                    const [onChainBeaconSetValue] = await api3ServerV1.dataFeeds(dataFeedId);
+                    const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
+                      await dapiDataRegistry.readDapiWithName(dapiName);
+                    expect(updateParameters).to.deep.equal(
+                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], upgradeUpdateParams)
+                    );
+                    expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
+                    expect(dataFeed).to.equal(encodedBeaconSetData);
+                    expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));
+                    expect(await hre.ethers.provider.getCode(dapiProxyAddress)).not.to.equal('0x');
+                    await Promise.all(
+                      beacons.map(async ({ airnode, templateId, data }) => {
+                        const beaconId = hre.ethers.utils.solidityKeccak256(
+                          ['address', 'bytes32'],
+                          [airnode, templateId]
+                        );
+                        const decodedData = hre.ethers.utils.defaultAbiCoder.decode(['int256'], data)[0];
+                        const [onChainBeaconValue] = await api3ServerV1.dataFeeds(beaconId);
+                        expect(onChainBeaconValue.toString()).to.equal(decodedData.toString());
+                      })
+                    );
+                    expect(await hre.ethers.provider.getBalance(sponsorWallet)).to.equal(
+                      price.add(expectedDowngradePrice).add(expectedPrice)
+                    );
+
+                    const [current, pending] = await api3Market.readCurrentAndPendingPurchases(dapiName);
+                    expect(current.price).to.equal(upgradePrice);
+                    expect(current.duration).to.equal(upgradeDuration);
+                    expect(current.start).to.equal(futureNow);
+                    expect(current.purchasedAt).to.equal(futureNow);
+                    expect(pending.price).to.equal(hre.ethers.constants.Zero);
+                    expect(pending.duration).to.equal(hre.ethers.constants.Zero);
+                    expect(pending.start).to.equal(hre.ethers.constants.Zero);
+                    expect(pending.purchasedAt).to.equal(hre.ethers.constants.Zero);
+                  });
+                  it('buys upgrade with pending downgrade dAPI subscription', async function () {
+                    const {
+                      roles,
+                      api3Market,
+                      dapiDataRegistry,
+                      proxyFactory,
+                      api3ServerV1,
+                      apiTreeValues,
+                      apiTree,
+                      dataFeeds,
+                      dapiTreeValues,
+                      dapiTree,
+                      priceTreeValues,
+                      priceTree,
+                    } = await helpers.loadFixture(deploy);
+
+                    const apiTreeRoot = apiTree.root;
+                    const apiTreeProofs = apiTreeValues.map(([airnode, url]) => apiTree.getProof([airnode, url]));
+
+                    const randomIndex = Math.floor(Math.random() * dapiTreeValues.length);
+                    const [dapiName, dataFeedId, sponsorWallet] = dapiTreeValues[randomIndex];
+                    const dapiTreeRoot = dapiTree.root;
+                    const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
+
+                    const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3 + 1];
+                    const priceTreeRoot = priceTree.root;
+                    const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
+
+                    const dapi = {
+                      name: dapiName,
+                      sponsorWallet,
+                      price,
+                      duration,
+                      updateParams,
+                    };
+
+                    const beacons = await Promise.all(
+                      dataFeeds[randomIndex].map(async ({ airnode, templateId }, index) => {
+                        const timestamp = await helpers.time.latest();
+                        const decodedData = Math.floor(Math.random() * 200 - 100);
+                        const data = hre.ethers.utils.defaultAbiCoder.encode(['int256'], [decodedData]);
+                        return {
+                          airnode: airnode.address,
+                          templateId,
+                          timestamp,
+                          data,
+                          signature: await signData(airnode, templateId, timestamp, data),
+                          url: apiTreeValues[index][1],
+                        };
+                      })
+                    );
+
+                    const dapiProxyAddress = await proxyFactory.computeDapiProxyAddress(dapiName, '0x');
+                    expect(await hre.ethers.provider.getCode(dapiProxyAddress)).to.equal('0x');
+
+                    const args = {
+                      dapi,
+                      beacons,
+                      signedApiUrlRoot: apiTreeRoot,
+                      signedApiUrlProofs: apiTreeProofs,
+                      dapiRoot: dapiTreeRoot,
+                      dapiProof: dapiTreeProof,
+                      priceRoot: priceTreeRoot,
+                      priceProof: priceTreeProof,
+                    };
+
+                    await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
+
+                    const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber()))
+                      .timestamp;
+                    const downgradePurchasedAt = now + duration / 3;
+                    await hre.ethers.provider.send('evm_setNextBlockTimestamp', [downgradePurchasedAt]);
+
+                    // Downgrade from the middle of current subscription
+                    const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] =
+                      priceTreeValues[randomIndex * 3 + 2];
+                    const downgradePriceTreeProof = priceTree.getProof([
+                      dapiName,
+                      chainId,
+                      downgradeUpdateParams,
+                      downgradeDuration,
+                      downgradePrice,
+                    ]);
+                    const downgradeDapi = {
+                      name: dapiName,
+                      sponsorWallet,
+                      price: downgradePrice,
+                      duration: downgradeDuration,
+                      updateParams: downgradeUpdateParams,
+                    };
+
+                    await api3Market
+                      .connect(roles.randomPerson)
+                      .buyDapi(
+                        { ...args, dapi: downgradeDapi, priceProof: downgradePriceTreeProof },
+                        { value: downgradePrice }
+                      );
+
+                    const upgradePurchasedAt = now + duration / 2;
+                    await hre.ethers.provider.send('evm_setNextBlockTimestamp', [upgradePurchasedAt]);
+
+                    // Upgrade from the middle of current subscription
+                    const [, , upgradeUpdateParams, upgradeDuration, upgradePrice] = priceTreeValues[randomIndex * 3];
+                    const upgradePriceTreeProof = priceTree.getProof([
+                      dapiName,
+                      chainId,
+                      upgradeUpdateParams,
+                      upgradeDuration,
+                      upgradePrice,
+                    ]);
+                    const upgradeDapi = {
+                      name: dapiName,
+                      sponsorWallet,
+                      price: upgradePrice,
+                      duration: upgradeDuration,
+                      updateParams: upgradeUpdateParams,
+                    };
+
+                    const expectedDowngradeDuration = downgradeDuration / 2;
+                    const expectedDowngradePrice = downgradePrice.sub(
+                      downgradePrice.mul((duration / 3) * 2).div(downgradeDuration)
+                    );
+                    const overlapUpgradeDowngradeDuration = upgradeDuration - duration / 2;
+                    const overlapUpgradeDowngradePrice = downgradePrice
+                      .mul(overlapUpgradeDowngradeDuration)
+                      .div(downgradeDuration);
+                    const expectedPrice = upgradePrice
+                      .sub(price.mul(duration / 2).div(duration))
+                      .sub(overlapUpgradeDowngradePrice);
+                    await expect(
+                      api3Market
+                        .connect(roles.randomPerson)
+                        .buyDapi(
+                          { ...args, dapi: upgradeDapi, priceProof: upgradePriceTreeProof },
+                          { value: upgradePrice }
+                        )
+                    )
+                      .to.emit(api3Market, 'BoughtDapi')
+                      .withArgs(
+                        dapiName,
+                        dataFeedId,
+                        dapiProxyAddress,
+                        expectedPrice,
+                        upgradeDuration,
+                        upgradeUpdateParams,
+                        price.add(expectedDowngradePrice).add(expectedPrice), // sponsorWallet balance
+                        roles.randomPerson.address
+                      );
+
+                    await Promise.all(
+                      apiTreeValues.map(async ([airnode, url]) => {
+                        expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
+                      })
+                    );
+                    const { airnodes, templateIds } = dataFeeds[randomIndex].reduce(
+                      (acc, { airnode, templateId }) => ({
+                        airnodes: [...acc.airnodes, airnode.address],
+                        templateIds: [...acc.templateIds, templateId],
+                      }),
+                      { airnodes: [], templateIds: [] }
+                    );
+                    const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
+                      ['address[]', 'bytes32[]'],
+                      [airnodes, templateIds]
+                    );
+                    expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconSetData);
+                    const [onChainBeaconSetValue] = await api3ServerV1.dataFeeds(dataFeedId);
+                    const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
+                      await dapiDataRegistry.readDapiWithName(dapiName);
+                    expect(updateParameters).to.deep.equal(
+                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], upgradeUpdateParams)
+                    );
+                    expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
+                    expect(dataFeed).to.equal(encodedBeaconSetData);
+                    expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));
+                    expect(await hre.ethers.provider.getCode(dapiProxyAddress)).not.to.equal('0x');
+                    await Promise.all(
+                      beacons.map(async ({ airnode, templateId, data }) => {
+                        const beaconId = hre.ethers.utils.solidityKeccak256(
+                          ['address', 'bytes32'],
+                          [airnode, templateId]
+                        );
+                        const decodedData = hre.ethers.utils.defaultAbiCoder.decode(['int256'], data)[0];
+                        const [onChainBeaconValue] = await api3ServerV1.dataFeeds(beaconId);
+                        expect(onChainBeaconValue.toString()).to.equal(decodedData.toString());
+                      })
+                    );
+                    expect(await hre.ethers.provider.getBalance(sponsorWallet)).to.equal(
+                      price.add(expectedDowngradePrice).add(expectedPrice)
+                    );
+
+                    const [current, pending] = await api3Market.readCurrentAndPendingPurchases(dapiName);
+                    expect(current.price).to.equal(upgradePrice);
+                    expect(current.duration).to.equal(upgradeDuration);
+                    expect(current.start).to.equal(upgradePurchasedAt);
+                    expect(current.purchasedAt).to.equal(upgradePurchasedAt);
+                    expect(pending.price).to.equal(expectedDowngradePrice.sub(overlapUpgradeDowngradePrice));
+                    expect(pending.duration).to.equal(expectedDowngradeDuration - overlapUpgradeDowngradeDuration);
+                    expect(pending.start).to.equal(upgradePurchasedAt + upgradeDuration);
+                    expect(pending.purchasedAt).to.equal(downgradePurchasedAt);
                   });
                 });
-                context('Does not extends nor downgrades current purchase', function () {
-                  it.skip('reverts', async function () {
+                context('Buys a subscription for the same dAPI on the same day', function () {
+                  it('reverts', async function () {
                     const {
                       roles,
                       api3Market,
@@ -968,570 +1600,12 @@ describe('Api3Market', function () {
                       priceProof: priceTreeProof,
                     };
 
-                    await hre.network.provider.send('evm_setAutomine', [false]);
-                    await hre.network.provider.send('evm_setIntervalMining', [0]);
                     await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
 
-                    const tx = await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
-                    await hre.network.provider.send('evm_mine');
-                    expect(tx).to.have.been.revertedWith('Does not extends nor downgrades current purchase');
+                    await expect(
+                      api3Market.connect(roles.randomPerson).buyDapi(args, { value: price })
+                    ).to.have.been.revertedWith('dAPI has been purchased on the last day');
                   });
-                });
-                it('buys upgrade dAPI subscription', async function () {
-                  const {
-                    roles,
-                    api3Market,
-                    dapiDataRegistry,
-                    proxyFactory,
-                    api3ServerV1,
-                    apiTreeValues,
-                    apiTree,
-                    dataFeeds,
-                    dapiTreeValues,
-                    dapiTree,
-                    priceTreeValues,
-                    priceTree,
-                  } = await helpers.loadFixture(deploy);
-
-                  const apiTreeRoot = apiTree.root;
-                  const apiTreeProofs = apiTreeValues.map(([airnode, url]) => apiTree.getProof([airnode, url]));
-
-                  const randomIndex = Math.floor(Math.random() * dapiTreeValues.length);
-                  const [dapiName, dataFeedId, sponsorWallet] = dapiTreeValues[randomIndex];
-                  const dapiTreeRoot = dapiTree.root;
-                  const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
-
-                  const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3 + 1];
-                  const priceTreeRoot = priceTree.root;
-                  const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
-
-                  const dapi = {
-                    name: dapiName,
-                    sponsorWallet,
-                    price,
-                    duration,
-                    updateParams,
-                  };
-
-                  const beacons = await Promise.all(
-                    dataFeeds[randomIndex].map(async ({ airnode, templateId }, index) => {
-                      const timestamp = await helpers.time.latest();
-                      const decodedData = Math.floor(Math.random() * 200 - 100);
-                      const data = hre.ethers.utils.defaultAbiCoder.encode(['int256'], [decodedData]);
-                      return {
-                        airnode: airnode.address,
-                        templateId,
-                        timestamp,
-                        data,
-                        signature: await signData(airnode, templateId, timestamp, data),
-                        url: apiTreeValues[index][1],
-                      };
-                    })
-                  );
-
-                  const dapiProxyAddress = await proxyFactory.computeDapiProxyAddress(dapiName, '0x');
-                  expect(await hre.ethers.provider.getCode(dapiProxyAddress)).to.equal('0x');
-
-                  const args = {
-                    dapi,
-                    beacons,
-                    signedApiUrlRoot: apiTreeRoot,
-                    signedApiUrlProofs: apiTreeProofs,
-                    dapiRoot: dapiTreeRoot,
-                    dapiProof: dapiTreeProof,
-                    priceRoot: priceTreeRoot,
-                    priceProof: priceTreeProof,
-                  };
-
-                  await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
-
-                  const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber()))
-                    .timestamp;
-                  const futureNow = now + duration / 2;
-                  await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
-
-                  // Upgrade from the middle of current subscription
-                  const [, , upgradeUpdateParams, upgradeDuration, upgradePrice] = priceTreeValues[randomIndex * 3];
-                  const upgradePriceTreeProof = priceTree.getProof([
-                    dapiName,
-                    chainId,
-                    upgradeUpdateParams,
-                    upgradeDuration,
-                    upgradePrice,
-                  ]);
-                  const upgradeDapi = {
-                    name: dapiName,
-                    sponsorWallet,
-                    price: upgradePrice,
-                    duration: upgradeDuration,
-                    updateParams: upgradeUpdateParams,
-                  };
-
-                  const expectedPrice = upgradePrice.sub(price.mul(duration / 2).div(duration));
-                  await expect(
-                    api3Market
-                      .connect(roles.randomPerson)
-                      .buyDapi(
-                        { ...args, dapi: upgradeDapi, priceProof: upgradePriceTreeProof },
-                        { value: upgradePrice }
-                      )
-                  )
-                    .to.emit(api3Market, 'BoughtDapi')
-                    .withArgs(
-                      dapiName,
-                      dataFeedId,
-                      dapiProxyAddress,
-                      expectedPrice,
-                      upgradeDuration,
-                      upgradeUpdateParams,
-                      price.add(expectedPrice), // sponsorWallet balance
-                      roles.randomPerson.address
-                    );
-
-                  await Promise.all(
-                    apiTreeValues.map(async ([airnode, url]) => {
-                      expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
-                    })
-                  );
-                  const { airnodes, templateIds } = dataFeeds[randomIndex].reduce(
-                    (acc, { airnode, templateId }) => ({
-                      airnodes: [...acc.airnodes, airnode.address],
-                      templateIds: [...acc.templateIds, templateId],
-                    }),
-                    { airnodes: [], templateIds: [] }
-                  );
-                  const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
-                    ['address[]', 'bytes32[]'],
-                    [airnodes, templateIds]
-                  );
-                  expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconSetData);
-                  const [onChainBeaconSetValue] = await api3ServerV1.dataFeeds(dataFeedId);
-                  const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
-                    await dapiDataRegistry.readDapiWithName(dapiName);
-                  expect(updateParameters).to.deep.equal(
-                    hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], upgradeUpdateParams)
-                  );
-                  expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
-                  expect(dataFeed).to.equal(encodedBeaconSetData);
-                  expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));
-                  expect(await hre.ethers.provider.getCode(dapiProxyAddress)).not.to.equal('0x');
-                  await Promise.all(
-                    beacons.map(async ({ airnode, templateId, data }) => {
-                      const beaconId = hre.ethers.utils.solidityKeccak256(
-                        ['address', 'bytes32'],
-                        [airnode, templateId]
-                      );
-                      const decodedData = hre.ethers.utils.defaultAbiCoder.decode(['int256'], data)[0];
-                      const [onChainBeaconValue] = await api3ServerV1.dataFeeds(beaconId);
-                      expect(onChainBeaconValue.toString()).to.equal(decodedData.toString());
-                    })
-                  );
-                  expect(await hre.ethers.provider.getBalance(sponsorWallet)).to.equal(price.add(expectedPrice));
-
-                  const [current, pending] = await api3Market.readCurrentAndPendingPurchases(dapiName);
-                  expect(current.price).to.equal(upgradePrice);
-                  expect(current.duration).to.equal(upgradeDuration);
-                  expect(current.start).to.equal(futureNow);
-                  expect(current.purchasedAt).to.equal(futureNow);
-                  expect(pending.price).to.equal(hre.ethers.constants.Zero);
-                  expect(pending.duration).to.equal(hre.ethers.constants.Zero);
-                  expect(pending.start).to.equal(hre.ethers.constants.Zero);
-                  expect(pending.purchasedAt).to.equal(hre.ethers.constants.Zero);
-                });
-                it('buys upgrade that overrides pending downgrade dAPI subscription', async function () {
-                  const {
-                    roles,
-                    api3Market,
-                    dapiDataRegistry,
-                    proxyFactory,
-                    api3ServerV1,
-                    apiTreeValues,
-                    apiTree,
-                    dataFeeds,
-                    dapiTreeValues,
-                    dapiTree,
-                    priceTreeValues,
-                    priceTree,
-                  } = await helpers.loadFixture(deploy);
-
-                  const apiTreeRoot = apiTree.root;
-                  const apiTreeProofs = apiTreeValues.map(([airnode, url]) => apiTree.getProof([airnode, url]));
-
-                  const randomIndex = Math.floor(Math.random() * dapiTreeValues.length);
-                  const [dapiName, dataFeedId, sponsorWallet] = dapiTreeValues[randomIndex];
-                  const dapiTreeRoot = dapiTree.root;
-                  const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
-
-                  const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3 + 1];
-                  const priceTreeRoot = priceTree.root;
-                  const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
-
-                  const dapi = {
-                    name: dapiName,
-                    sponsorWallet,
-                    price,
-                    duration,
-                    updateParams,
-                  };
-
-                  const beacons = await Promise.all(
-                    dataFeeds[randomIndex].map(async ({ airnode, templateId }, index) => {
-                      const timestamp = await helpers.time.latest();
-                      const decodedData = Math.floor(Math.random() * 200 - 100);
-                      const data = hre.ethers.utils.defaultAbiCoder.encode(['int256'], [decodedData]);
-                      return {
-                        airnode: airnode.address,
-                        templateId,
-                        timestamp,
-                        data,
-                        signature: await signData(airnode, templateId, timestamp, data),
-                        url: apiTreeValues[index][1],
-                      };
-                    })
-                  );
-
-                  const dapiProxyAddress = await proxyFactory.computeDapiProxyAddress(dapiName, '0x');
-                  expect(await hre.ethers.provider.getCode(dapiProxyAddress)).to.equal('0x');
-
-                  const args = {
-                    dapi,
-                    beacons,
-                    signedApiUrlRoot: apiTreeRoot,
-                    signedApiUrlProofs: apiTreeProofs,
-                    dapiRoot: dapiTreeRoot,
-                    dapiProof: dapiTreeProof,
-                    priceRoot: priceTreeRoot,
-                    priceProof: priceTreeProof,
-                  };
-
-                  await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
-
-                  const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber()))
-                    .timestamp;
-                  let futureNow = now + duration / 4;
-                  await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
-
-                  // Downgrade from the middle of current subscription
-                  const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] =
-                    priceTreeValues[randomIndex * 3 + 2];
-                  const downgradePriceTreeProof = priceTree.getProof([
-                    dapiName,
-                    chainId,
-                    downgradeUpdateParams,
-                    downgradeDuration,
-                    downgradePrice,
-                  ]);
-                  const downgradeDapi = {
-                    name: dapiName,
-                    sponsorWallet,
-                    price: downgradePrice,
-                    duration: downgradeDuration,
-                    updateParams: downgradeUpdateParams,
-                  };
-
-                  await api3Market
-                    .connect(roles.randomPerson)
-                    .buyDapi(
-                      { ...args, dapi: downgradeDapi, priceProof: downgradePriceTreeProof },
-                      { value: downgradePrice }
-                    );
-
-                  futureNow = now + duration - 10;
-                  await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
-
-                  // Upgrade from the middle of current subscription
-                  const [, , upgradeUpdateParams, upgradeDuration, upgradePrice] = priceTreeValues[randomIndex * 3];
-                  const upgradePriceTreeProof = priceTree.getProof([
-                    dapiName,
-                    chainId,
-                    upgradeUpdateParams,
-                    upgradeDuration,
-                    upgradePrice,
-                  ]);
-                  const upgradeDapi = {
-                    name: dapiName,
-                    sponsorWallet,
-                    price: upgradePrice,
-                    duration: upgradeDuration,
-                    updateParams: upgradeUpdateParams,
-                  };
-
-                  const expectedDowngradePrice = downgradePrice
-                    .mul(downgradeDuration - (duration / 4) * 3)
-                    .div(downgradeDuration);
-                  const expectedPrice = upgradePrice.sub(price.mul(10).div(duration)).sub(expectedDowngradePrice);
-                  await expect(
-                    api3Market
-                      .connect(roles.randomPerson)
-                      .buyDapi(
-                        { ...args, dapi: upgradeDapi, priceProof: upgradePriceTreeProof },
-                        { value: upgradePrice }
-                      )
-                  )
-                    .to.emit(api3Market, 'BoughtDapi')
-                    .withArgs(
-                      dapiName,
-                      dataFeedId,
-                      dapiProxyAddress,
-                      expectedPrice,
-                      upgradeDuration,
-                      upgradeUpdateParams,
-                      price.add(expectedDowngradePrice).add(expectedPrice), // sponsorWallet balance
-                      roles.randomPerson.address
-                    );
-
-                  await Promise.all(
-                    apiTreeValues.map(async ([airnode, url]) => {
-                      expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
-                    })
-                  );
-                  const { airnodes, templateIds } = dataFeeds[randomIndex].reduce(
-                    (acc, { airnode, templateId }) => ({
-                      airnodes: [...acc.airnodes, airnode.address],
-                      templateIds: [...acc.templateIds, templateId],
-                    }),
-                    { airnodes: [], templateIds: [] }
-                  );
-                  const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
-                    ['address[]', 'bytes32[]'],
-                    [airnodes, templateIds]
-                  );
-                  expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconSetData);
-                  const [onChainBeaconSetValue] = await api3ServerV1.dataFeeds(dataFeedId);
-                  const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
-                    await dapiDataRegistry.readDapiWithName(dapiName);
-                  expect(updateParameters).to.deep.equal(
-                    hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], upgradeUpdateParams)
-                  );
-                  expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
-                  expect(dataFeed).to.equal(encodedBeaconSetData);
-                  expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));
-                  expect(await hre.ethers.provider.getCode(dapiProxyAddress)).not.to.equal('0x');
-                  await Promise.all(
-                    beacons.map(async ({ airnode, templateId, data }) => {
-                      const beaconId = hre.ethers.utils.solidityKeccak256(
-                        ['address', 'bytes32'],
-                        [airnode, templateId]
-                      );
-                      const decodedData = hre.ethers.utils.defaultAbiCoder.decode(['int256'], data)[0];
-                      const [onChainBeaconValue] = await api3ServerV1.dataFeeds(beaconId);
-                      expect(onChainBeaconValue.toString()).to.equal(decodedData.toString());
-                    })
-                  );
-                  expect(await hre.ethers.provider.getBalance(sponsorWallet)).to.equal(
-                    price.add(expectedDowngradePrice).add(expectedPrice)
-                  );
-
-                  const [current, pending] = await api3Market.readCurrentAndPendingPurchases(dapiName);
-                  expect(current.price).to.equal(upgradePrice);
-                  expect(current.duration).to.equal(upgradeDuration);
-                  expect(current.start).to.equal(futureNow);
-                  expect(current.purchasedAt).to.equal(futureNow);
-                  expect(pending.price).to.equal(hre.ethers.constants.Zero);
-                  expect(pending.duration).to.equal(hre.ethers.constants.Zero);
-                  expect(pending.start).to.equal(hre.ethers.constants.Zero);
-                  expect(pending.purchasedAt).to.equal(hre.ethers.constants.Zero);
-                });
-                it('buys upgrade with pending downgrade dAPI subscription', async function () {
-                  const {
-                    roles,
-                    api3Market,
-                    dapiDataRegistry,
-                    proxyFactory,
-                    api3ServerV1,
-                    apiTreeValues,
-                    apiTree,
-                    dataFeeds,
-                    dapiTreeValues,
-                    dapiTree,
-                    priceTreeValues,
-                    priceTree,
-                  } = await helpers.loadFixture(deploy);
-
-                  const apiTreeRoot = apiTree.root;
-                  const apiTreeProofs = apiTreeValues.map(([airnode, url]) => apiTree.getProof([airnode, url]));
-
-                  const randomIndex = Math.floor(Math.random() * dapiTreeValues.length);
-                  const [dapiName, dataFeedId, sponsorWallet] = dapiTreeValues[randomIndex];
-                  const dapiTreeRoot = dapiTree.root;
-                  const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
-
-                  const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3 + 1];
-                  const priceTreeRoot = priceTree.root;
-                  const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
-
-                  const dapi = {
-                    name: dapiName,
-                    sponsorWallet,
-                    price,
-                    duration,
-                    updateParams,
-                  };
-
-                  const beacons = await Promise.all(
-                    dataFeeds[randomIndex].map(async ({ airnode, templateId }, index) => {
-                      const timestamp = await helpers.time.latest();
-                      const decodedData = Math.floor(Math.random() * 200 - 100);
-                      const data = hre.ethers.utils.defaultAbiCoder.encode(['int256'], [decodedData]);
-                      return {
-                        airnode: airnode.address,
-                        templateId,
-                        timestamp,
-                        data,
-                        signature: await signData(airnode, templateId, timestamp, data),
-                        url: apiTreeValues[index][1],
-                      };
-                    })
-                  );
-
-                  const dapiProxyAddress = await proxyFactory.computeDapiProxyAddress(dapiName, '0x');
-                  expect(await hre.ethers.provider.getCode(dapiProxyAddress)).to.equal('0x');
-
-                  const args = {
-                    dapi,
-                    beacons,
-                    signedApiUrlRoot: apiTreeRoot,
-                    signedApiUrlProofs: apiTreeProofs,
-                    dapiRoot: dapiTreeRoot,
-                    dapiProof: dapiTreeProof,
-                    priceRoot: priceTreeRoot,
-                    priceProof: priceTreeProof,
-                  };
-
-                  await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
-
-                  const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber()))
-                    .timestamp;
-                  const downgradePurchasedAt = now + duration / 3;
-                  await hre.ethers.provider.send('evm_setNextBlockTimestamp', [downgradePurchasedAt]);
-
-                  // Downgrade from the middle of current subscription
-                  const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] =
-                    priceTreeValues[randomIndex * 3 + 2];
-                  const downgradePriceTreeProof = priceTree.getProof([
-                    dapiName,
-                    chainId,
-                    downgradeUpdateParams,
-                    downgradeDuration,
-                    downgradePrice,
-                  ]);
-                  const downgradeDapi = {
-                    name: dapiName,
-                    sponsorWallet,
-                    price: downgradePrice,
-                    duration: downgradeDuration,
-                    updateParams: downgradeUpdateParams,
-                  };
-
-                  await api3Market
-                    .connect(roles.randomPerson)
-                    .buyDapi(
-                      { ...args, dapi: downgradeDapi, priceProof: downgradePriceTreeProof },
-                      { value: downgradePrice }
-                    );
-
-                  const upgradePurchasedAt = now + duration / 2;
-                  await hre.ethers.provider.send('evm_setNextBlockTimestamp', [upgradePurchasedAt]);
-
-                  // Upgrade from the middle of current subscription
-                  const [, , upgradeUpdateParams, upgradeDuration, upgradePrice] = priceTreeValues[randomIndex * 3];
-                  const upgradePriceTreeProof = priceTree.getProof([
-                    dapiName,
-                    chainId,
-                    upgradeUpdateParams,
-                    upgradeDuration,
-                    upgradePrice,
-                  ]);
-                  const upgradeDapi = {
-                    name: dapiName,
-                    sponsorWallet,
-                    price: upgradePrice,
-                    duration: upgradeDuration,
-                    updateParams: upgradeUpdateParams,
-                  };
-
-                  const expectedDowngradeDuration = downgradeDuration / 2;
-                  const expectedDowngradePrice = downgradePrice.sub(
-                    downgradePrice.mul((duration / 3) * 2).div(downgradeDuration)
-                  );
-                  const overlapUpgradeDowngradeDuration = upgradeDuration - duration / 2;
-                  const overlapUpgradeDowngradePrice = downgradePrice
-                    .mul(overlapUpgradeDowngradeDuration)
-                    .div(downgradeDuration);
-                  const expectedPrice = upgradePrice
-                    .sub(price.mul(duration / 2).div(duration))
-                    .sub(overlapUpgradeDowngradePrice);
-                  await expect(
-                    api3Market
-                      .connect(roles.randomPerson)
-                      .buyDapi(
-                        { ...args, dapi: upgradeDapi, priceProof: upgradePriceTreeProof },
-                        { value: upgradePrice }
-                      )
-                  )
-                    .to.emit(api3Market, 'BoughtDapi')
-                    .withArgs(
-                      dapiName,
-                      dataFeedId,
-                      dapiProxyAddress,
-                      expectedPrice,
-                      upgradeDuration,
-                      upgradeUpdateParams,
-                      price.add(expectedDowngradePrice).add(expectedPrice), // sponsorWallet balance
-                      roles.randomPerson.address
-                    );
-
-                  await Promise.all(
-                    apiTreeValues.map(async ([airnode, url]) => {
-                      expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
-                    })
-                  );
-                  const { airnodes, templateIds } = dataFeeds[randomIndex].reduce(
-                    (acc, { airnode, templateId }) => ({
-                      airnodes: [...acc.airnodes, airnode.address],
-                      templateIds: [...acc.templateIds, templateId],
-                    }),
-                    { airnodes: [], templateIds: [] }
-                  );
-                  const encodedBeaconSetData = hre.ethers.utils.defaultAbiCoder.encode(
-                    ['address[]', 'bytes32[]'],
-                    [airnodes, templateIds]
-                  );
-                  expect(await dapiDataRegistry.dataFeeds(dataFeedId)).to.equal(encodedBeaconSetData);
-                  const [onChainBeaconSetValue] = await api3ServerV1.dataFeeds(dataFeedId);
-                  const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
-                    await dapiDataRegistry.readDapiWithName(dapiName);
-                  expect(updateParameters).to.deep.equal(
-                    hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], upgradeUpdateParams)
-                  );
-                  expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
-                  expect(dataFeed).to.equal(encodedBeaconSetData);
-                  expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));
-                  expect(await hre.ethers.provider.getCode(dapiProxyAddress)).not.to.equal('0x');
-                  await Promise.all(
-                    beacons.map(async ({ airnode, templateId, data }) => {
-                      const beaconId = hre.ethers.utils.solidityKeccak256(
-                        ['address', 'bytes32'],
-                        [airnode, templateId]
-                      );
-                      const decodedData = hre.ethers.utils.defaultAbiCoder.decode(['int256'], data)[0];
-                      const [onChainBeaconValue] = await api3ServerV1.dataFeeds(beaconId);
-                      expect(onChainBeaconValue.toString()).to.equal(decodedData.toString());
-                    })
-                  );
-                  expect(await hre.ethers.provider.getBalance(sponsorWallet)).to.equal(
-                    price.add(expectedDowngradePrice).add(expectedPrice)
-                  );
-
-                  const [current, pending] = await api3Market.readCurrentAndPendingPurchases(dapiName);
-                  expect(current.price).to.equal(upgradePrice);
-                  expect(current.duration).to.equal(upgradeDuration);
-                  expect(current.start).to.equal(upgradePurchasedAt);
-                  expect(current.purchasedAt).to.equal(upgradePurchasedAt);
-                  expect(pending.price).to.equal(expectedDowngradePrice.sub(overlapUpgradeDowngradePrice));
-                  expect(pending.duration).to.equal(expectedDowngradeDuration - overlapUpgradeDowngradeDuration);
-                  expect(pending.start).to.equal(upgradePurchasedAt + upgradeDuration);
-                  expect(pending.purchasedAt).to.equal(downgradePurchasedAt);
                 });
               });
               context('Value is not enough for payment', function () {
