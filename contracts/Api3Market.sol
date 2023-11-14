@@ -13,8 +13,11 @@ import "./interfaces/IDapiDataRegistry.sol";
 import "./interfaces/IDapiFallbackV2.sol";
 import "./interfaces/IHashRegistry.sol";
 
-/// @title Contract that will be called to buy a managed dAPI subscription
-/// @notice TODO
+/// @title Managed dAPI Subscription Market
+/// @notice This contract facilitates the purchase and management of
+/// decentralized API (dAPI) subscriptions within the API3 ecosystem. Users can
+/// buy a managed dAPI subscription, and the contract handles various scenarios
+/// such as new purchases, upgrades, downgrades, and extensions
 contract Api3Market is IApi3Market {
     bytes32 private constant DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("dAPI pricing Merkle tree root"));
@@ -30,6 +33,8 @@ contract Api3Market is IApi3Market {
     /// @notice Api3ServerV1 contract address
     address public immutable override api3ServerV1;
 
+    /// @notice Hisotry of dAPI purchases
+    /// @dev Key: Hash of dAPI name, Value: Array of Purchase structs
     // TODO: should this be public?
     mapping(bytes32 => Purchase[]) public dapiToPurchases;
 
@@ -65,10 +70,10 @@ contract Api3Market is IApi3Market {
 
     /// @notice This function allows users to purchase a dAPI and update its
     /// parameters
-    /// @dev This function makes use of 3 Merkle trees to validate the data
-    /// needed for running a managed dAPI.
-    /// @param args The arguments needed for the dAPI purchase. See
-    /// IApi3Market.BuyDapiArgs struct for details on these arguments
+    /// @dev This function makes use of three Merkle trees to validate the data
+    /// needed for running a managed dAPI. Refer to the `IApi3Market.BuyDapiArgs`
+    /// struct for detailed information on dAPI purchase and update arguments
+    /// @param args The arguments needed for the dAPI purchase
     function buyDapi(BuyDapiArgs calldata args) external payable override {
         bytes32 dapiNameHash = keccak256(abi.encodePacked(args.dapi.name));
         require(!_isFallbacked(dapiNameHash), "dAPI is fallbacked");
@@ -114,20 +119,23 @@ contract Api3Market is IApi3Market {
             bool isPendingDowngradeOrExtension
         ) = _processPayment(dapiNameHash, args.dapi, updateParams);
 
-        // Store Signed API URLs for all the Airnodes used by the constituent beacons of the beaconSet
+        // Store Signed API URLs for each Airnode used to update each beacon with
+        // signed API data
         _registerSignedApiUrl(
             args.beacons,
             args.signedApiUrlRoot,
             args.signedApiUrlProofs
         );
 
-        // Store the actual data used to derive each beaconId (if more than one then it will also be used to derive the beaconSetId)
+        // Store the actual data used to derive each beaconId (airnode address
+        // and templateId). If more than one is provided in the arguments list
+        // then each beaconId will be used to derive the beaconSetId
         bytes32 dataFeedId = _registerDataFeed(args.beacons);
 
         // Add the dAPI to the DapiDataRegistry for managed data feed updates
-        // If purchase if future downgrade, then a worker needs to call this
-        // function when downgrade period starts to update the update parameters
-        // used by Airseeker
+        // If purchase if future downgrade, then a worker needs to call the
+        // `addDapi()` function when downgrade period starts to update the update
+        // parameters used by Airseeker
         if (!isPendingDowngradeOrExtension) {
             IDapiDataRegistry(dapiDataRegistry).addDapi(
                 args.dapi.name,
@@ -144,19 +152,21 @@ contract Api3Market is IApi3Market {
         // Deploy the dAPI proxy (if it hasn't been deployed yet)
         address dapiProxyAddress = IProxyFactory(proxyFactory)
             .computeDapiProxyAddress(args.dapi.name, "");
-        // https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/utils/ExtendedSelfMulticall.sol#L36
         if (dapiProxyAddress.code.length == 0) {
             IProxyFactory(proxyFactory).deployDapiProxy(args.dapi.name, "");
         }
 
-        // Update the dAPI beacons with signed API data
+        // Update the dAPI beacons with signed API data. This also tries to
+        // update the beaconSet if more than one beacon was provided
         _updateDataFeed(
             dataFeedId,
             updateParams.heartbeatInterval,
             args.beacons
         );
 
-        // This is done last because it is less trusted than other external calls
+        // The price of the dAPI might change in cases where the purchase
+        // upgrades, downgrades or extends the current purchase. Therefore we
+        // only charge the caller the difference and send back the rest
         if (msg.value - updatedPrice == 0) {
             Address.sendValue(args.dapi.sponsorWallet, msg.value);
         } else {
