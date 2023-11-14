@@ -55,5 +55,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* diff2html overrides */
+    --d2h-file-header-bg-color: hsl(var(--muted));
   }
 }

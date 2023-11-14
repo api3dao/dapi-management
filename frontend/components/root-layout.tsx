@@ -16,7 +16,7 @@ interface Props {
 export default function RootLayout(props: Props) {
   return (
     <div className={`flex text-gray-800 ${inter.className}`}>
-      <aside className="fixed left-0 top-0 z-10 h-screen w-[200px] overflow-auto border-r border-gray-200 bg-gray-100">
+      <aside className="fixed bottom-0 left-0 top-0 z-10 h-screen w-[200px] overflow-auto border-r border-gray-200 bg-gray-100">
         <nav className="flex min-h-screen flex-col p-4 text-gray-500">
           <Link href="/" className="mb-5">
             <Image src="/logo.png" alt="Home" width={60} height={60} priority />
@@ -33,7 +33,7 @@ export default function RootLayout(props: Props) {
           </div>
         </nav>
       </aside>
-      <main role="main" className="ml-[200px] flex-grow bg-white px-5 py-4">
+      <main role="main" className="ml-[200px] bg-white px-5 py-4" style={{ width: 'calc(100% - 200px)' }}>
         {props.children}
       </main>
     </div>
@@ -50,7 +50,7 @@ function NavLink(props: NavLinkProps) {
   const isActive = router.pathname === props.href;
   return (
     <Link
-      className={isActive ? '-mx-2 -my-1 bg-gray-200 px-2 py-1 text-gray-800' : 'hover:text-gray-800'}
+      className={isActive ? '-mx-2 -my-1 rounded bg-gray-200 px-2 py-1 text-gray-800' : 'hover:text-gray-800'}
       href={props.href}
     >
       {props.children}
