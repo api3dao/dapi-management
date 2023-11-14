@@ -14,6 +14,7 @@ export type TreeSubFolder =
   | 'signed-api-url-merkle-tree-root';
 
 const merkleTreeSchema = z.object({
+  timestamp: z.number(),
   signatures: z.record(z.string()),
   merkleTreeValues: z.object({
     values: z.array(z.array(z.any())),

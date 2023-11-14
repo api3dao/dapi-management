@@ -1,4 +1,3 @@
-import { ethers } from 'ethers';
 import { z } from 'zod';
 import { AlertTriangleIcon } from 'lucide-react';
 import RootLayout from '~/components/root-layout';
@@ -10,8 +9,11 @@ import { useWeb3Data } from '~/contexts/web3-data-context';
 import { readTreeDataFrom, readSignerDataFrom, createFileDiff } from '~/lib/server/file-utils';
 import { createDapiFallbackMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { InferGetServerSidePropsType } from 'next';
+import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
 
 const merkleTreeSchema = z.object({
+  timestamp: z.number(),
+  hash: z.string(),
   signatures: z.record(z.string()),
   merkleTreeValues: z.object({
     values: z.array(z.tuple([z.string(), z.string(), z.string()])),
@@ -44,11 +46,19 @@ export default function DapiFallbackTree(props: Props) {
   const { address } = useWeb3Data();
 
   const merkleTree = createDapiFallbackMerkleTree(currentTree.merkleTreeValues.values);
-  const merkleTreeRoot = ethers.utils.arrayify(merkleTree.root);
-  const signatures = validateTreeRootSignatures(merkleTreeRoot, currentTree.signatures, signers);
+
+  const { signRoot, isSigning } = useTreeSigner('dAPI fallback Merkle tree', merkleTree.root, currentTree.timestamp);
+
+  const signatures = validateTreeRootSignatures(
+    'dAPI fallback Merkle tree root',
+    merkleTree.root,
+    currentTree.timestamp,
+    currentTree.signatures,
+    signers
+  );
 
   const isSigner = !!signatures[address];
-  const canSign = signatures[address] === '0x';
+  const canSign = signatures[address] === '0x' && !isSigning;
 
   return (
     <RootLayout>
@@ -60,7 +70,7 @@ export default function DapiFallbackTree(props: Props) {
 
       <div className="mb-10">
         <div className="flex gap-3">
-          <Button disabled={!canSign} className="min-w-[15ch]">
+          <Button disabled={!canSign} className="min-w-[15ch]" onClick={() => signRoot()}>
             Sign Root
           </Button>
         </div>
