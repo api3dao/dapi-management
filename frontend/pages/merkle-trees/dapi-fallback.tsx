@@ -1,7 +1,5 @@
 import { z } from 'zod';
 import { AlertTriangleIcon } from 'lucide-react';
-import { go } from '@api3/promise-utils';
-import { BadgeInfoIcon } from 'lucide-react';
 import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
@@ -60,7 +58,7 @@ export default function DapiFallbackTree(props: Props) {
   );
 
   const isSigner = !!signatures[address];
-  const canSign = isSigner && signatures[address] === '0x' && !isSigning;
+  const canSign = signatures[address] === '0x' && !isSigning;
 
   return (
     <RootLayout>
