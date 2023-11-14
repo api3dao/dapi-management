@@ -71,7 +71,7 @@ contract Api3Market is IApi3Market {
     /// IApi3Market.BuyDapiArgs struct for details on these arguments
     function buyDapi(BuyDapiArgs calldata args) external payable override {
         bytes32 dapiNameHash = keccak256(abi.encodePacked(args.dapi.name));
-        _isFallbacked(dapiNameHash);
+        require(!_isFallbacked(dapiNameHash), "dAPI is fallbacked");
         require(args.beacons.length != 0, "Beacons is empty");
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(
@@ -361,14 +361,19 @@ contract Api3Market is IApi3Market {
     /// @dev Checks if the dAPI is in the list of fallbacked dAPIs in the
     /// DapiFallbackV2 contract
     /// @param dapiNameHash Hash of the dAPI name.
-    function _isFallbacked(bytes32 dapiNameHash) private view {
+    /// @return isFallbacked True if dAPI name is in the list
+    function _isFallbacked(
+        bytes32 dapiNameHash
+    ) private view returns (bool isFallbacked) {
         bytes32[] memory fallbackedDapis = IDapiFallbackV2(dapiFallbackV2)
             .getFallbackedDapis();
         for (uint256 i = 0; i < fallbackedDapis.length; i++) {
-            require(
-                keccak256(abi.encodePacked(fallbackedDapis[i])) != dapiNameHash,
-                "Dapi is fallbacked"
-            );
+            if (
+                keccak256(abi.encodePacked(fallbackedDapis[i])) == dapiNameHash
+            ) {
+                isFallbacked = true;
+                break;
+            }
         }
     }
 

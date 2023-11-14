@@ -351,7 +351,7 @@ describe('Api3Market', function () {
   });
 
   describe('buyDapi', function () {
-    context('Dapi has not been fallbacked', function () {
+    context('dAPI has not been fallbacked', function () {
       context('Beacons is not empty', function () {
         context('dAPI pricing Merkle tree root has been registered', function () {
           context('Valid dAPI pricing Merkle tree proof', function () {
@@ -1948,7 +1948,7 @@ describe('Api3Market', function () {
         });
       });
     });
-    context('Dapi is fallbacked', function () {
+    context('dAPI is fallbacked', function () {
       it('reverts', async function () {
         const {
           roles,
@@ -2027,7 +2027,7 @@ describe('Api3Market', function () {
         };
 
         await expect(api3Market.connect(roles.randomPerson).buyDapi(args, { value: price })).to.have.been.revertedWith(
-          'Dapi is fallbacked'
+          'dAPI is fallbacked'
         );
       });
     });
