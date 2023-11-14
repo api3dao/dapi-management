@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { AlertTriangleIcon } from 'lucide-react';
 import { go } from '@api3/promise-utils';
+import { BadgeInfoIcon } from 'lucide-react';
 import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
@@ -8,16 +9,9 @@ import { Button } from '~/components/ui/button';
 import { TreeStatusBadge, TreeRootBadge, SignatureTable, TreeDiff } from '~/components/merkle-tree-elements';
 import { useWeb3Data } from '~/contexts/web3-data-context';
 import { readTreeDataFrom, readSignerDataFrom, createFileDiff } from '~/lib/server/file-utils';
-import {
-  DAPI_FALLBACK_MERKLE_TREE_TYPE,
-  deriveTreeHash,
-  createDapiFallbackMerkleTree,
-  validateTreeRootSignatures,
-} from '~/lib/merkle-tree-utils';
+import { createDapiFallbackMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { InferGetServerSidePropsType } from 'next';
-import { useState } from 'react';
-import router from 'next/router';
-import { useToast } from '~/components/ui/toast/use-toast';
+import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
 
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
@@ -50,50 +44,15 @@ export async function getServerSideProps() {
 type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 
 export default function DapiFallbackTree(props: Props) {
-  const { toast } = useToast();
-  const [isLoading, setLoading] = useState(false);
   const { currentTree, signers } = props;
-  const { address, signer, connectStatus } = useWeb3Data();
+  const { address } = useWeb3Data();
 
-  const treeRootHash = `${DAPI_FALLBACK_MERKLE_TREE_TYPE} root`;
   const merkleTree = createDapiFallbackMerkleTree(currentTree.merkleTreeValues.values);
 
-  const signRoot = async () => {
-    if (!signer || !address) return;
-
-    setLoading(true);
-
-    const treeHash = deriveTreeHash(treeRootHash, merkleTree.root, currentTree.timestamp);
-
-    // Trigger metamask signature request
-    const goSignature = await go(() => signer.signMessage(treeHash));
-
-    if (goSignature.success) {
-      // Save signature to the file
-      const payload = { signature: goSignature.data, address, treeType: DAPI_FALLBACK_MERKLE_TREE_TYPE };
-      const goRes = await go(() => fetch('/api/sign-merkle-root', { method: 'POST', body: JSON.stringify(payload) }));
-
-      if (goRes.success && goRes.data.status === 200) {
-        router.replace(router.asPath); // reload to update signatures on the page
-        toast({
-          title: 'Sign Tree Root',
-          description: 'Successfully signed tree root',
-          duration: 3000,
-        });
-      } else {
-        toast({
-          title: 'Sign Tree Root',
-          description: 'Could not sign tree root',
-          duration: 3000,
-          variant: 'destructive',
-        });
-      }
-    }
-    setLoading(false);
-  };
+  const { signRoot, isSigning } = useTreeSigner('dAPI fallback Merkle tree', merkleTree.root, currentTree.timestamp);
 
   const signatures = validateTreeRootSignatures(
-    treeRootHash,
+    'dAPI fallback Merkle tree root',
     merkleTree.root,
     currentTree.timestamp,
     currentTree.signatures,
@@ -101,7 +60,7 @@ export default function DapiFallbackTree(props: Props) {
   );
 
   const isSigner = !!signatures[address];
-  const canSign = (signatures[address] === '0x' || !isLoading) && connectStatus === 'connected';
+  const canSign = isSigner && signatures[address] === '0x' && !isSigning;
 
   return (
     <RootLayout>

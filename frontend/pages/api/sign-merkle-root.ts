@@ -15,13 +15,12 @@ import { readSignerDataFrom, readTreeDataFrom, writeMerkleTreeData, type TreeSub
 import { z } from 'zod';
 import { exec } from 'child_process';
 
-const treeTypeSchema = z
-  .literal(DAPI_FALLBACK_MERKLE_TREE_TYPE)
-  .or(
-    z
-      .literal(DAPI_MANAGEMENT_MERKLE_TREE_TYPE)
-      .or(z.literal(DAPI_PRICING_MERKLE_TREE_TYPE).or(z.literal(SIGNED_API_URL_MERKLE_TREE_TYPE)))
-  );
+const treeTypeSchema = z.union([
+  z.literal(DAPI_FALLBACK_MERKLE_TREE_TYPE),
+  z.literal(DAPI_MANAGEMENT_MERKLE_TREE_TYPE),
+  z.literal(DAPI_PRICING_MERKLE_TREE_TYPE),
+  z.literal(SIGNED_API_URL_MERKLE_TREE_TYPE),
+]);
 
 type TreeType = z.infer<typeof treeTypeSchema>;
 

@@ -1,6 +1,5 @@
 import { ethers } from 'ethers';
 import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
-import { z } from 'zod';
 
 export function validateTreeRootSignatures(
   rawHashType: RawHashType,
@@ -49,17 +48,13 @@ export const DAPI_PRICING_MERKLE_TREE_TYPE = 'dAPI pricing Merkle tree';
 export const DAPI_MANAGEMENT_MERKLE_TREE_TYPE = 'dAPI management Merkle tree';
 export const SIGNED_API_URL_MERKLE_TREE_TYPE = 'Signed API URL Merkle tree';
 
-const rawHashTypeSchema = z
-  .literal(`${DAPI_FALLBACK_MERKLE_TREE_TYPE} root`)
-  .or(
-    z
-      .literal(`${DAPI_PRICING_MERKLE_TREE_TYPE} root`)
-      .or(
-        z.literal(`${DAPI_MANAGEMENT_MERKLE_TREE_TYPE} root`).or(z.literal(`${SIGNED_API_URL_MERKLE_TREE_TYPE} root`))
-      )
-  );
+export type TreeType =
+  | typeof DAPI_FALLBACK_MERKLE_TREE_TYPE
+  | typeof DAPI_PRICING_MERKLE_TREE_TYPE
+  | typeof DAPI_MANAGEMENT_MERKLE_TREE_TYPE
+  | typeof SIGNED_API_URL_MERKLE_TREE_TYPE;
 
-export type RawHashType = z.infer<typeof rawHashTypeSchema>;
+export type RawHashType = `${TreeType} root`;
 
 export const deriveTreeHash = (rawHashType: RawHashType, treeRoot: string, timestamp: number) => {
   const encodedHash = ethers.utils.toUtf8Bytes(rawHashType);

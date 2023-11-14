@@ -1,5 +1,6 @@
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
+import { Toaster } from '~/components/ui/toast/toaster';
 import { Web3DataContextProvider } from '~/contexts/web3-data-context';
 import { TooltipProvider } from '~/components/ui/tooltip';
 import '~/styles/globals.css';
@@ -13,6 +14,7 @@ export default function App({ Component, pageProps }: AppProps) {
         </Head>
         <Component {...pageProps} />
       </TooltipProvider>
+      <Toaster />
     </Web3DataContextProvider>
   );
 }

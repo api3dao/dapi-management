@@ -33,13 +33,6 @@ if (!MERKLE_TREE_MAPPING[merkleTreeName]) {
   process.exit(1);
 }
 
-// FIXME: Update this function to sign with the hash type, merkle root, and timestamp
-async function signMessage(message) {
-  const messageHash = ethers.utils.hashMessage(message);
-  const signature = await wallet.signMessage(ethers.utils.arrayify(messageHash));
-  return signature;
-}
-
 async function signMerkleTree(merkleTreeName) {
   const [folderName, createMerkleTree] = MERKLE_TREE_MAPPING[merkleTreeName];
   const currentHashPath = path.join(__dirname, '..', 'data', folderName, 'current-hash.json');
@@ -59,7 +52,7 @@ async function signMerkleTree(merkleTreeName) {
   const merkleRoot = tree.root;
 
   const treeHash = deriveTreeHash(merkleTreeName, merkleRoot, timestamp);
-  const signature = await signMessage(treeHash);
+  const signature = await wallet.signMessage(treeHash);
 
   const updatedHashData = {
     ...currentHashData,
