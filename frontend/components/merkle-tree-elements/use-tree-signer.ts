@@ -28,14 +28,15 @@ export function useTreeSigner(treeType: TreeType, merkleRoot: string, timestamp:
       if (goRes.success && goRes.data.status === 200) {
         router.replace(router.asPath); // reload to update signatures on the page
         toast({
-          title: 'Sign Tree Root',
+          title: 'Success',
           description: 'Successfully signed tree root',
           duration: 3000,
+          variant: 'success',
         });
       } else {
         toast({
-          title: 'Sign Tree Root',
-          description: 'Could not sign tree root',
+          title: 'Error',
+          description: 'Failed to sign tree root',
           duration: 3000,
           variant: 'destructive',
         });
