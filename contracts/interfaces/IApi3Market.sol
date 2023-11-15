@@ -73,7 +73,7 @@ interface IApi3Market {
     )
         external
         view
-        returns (Purchase memory current, Purchase memory downgrade);
+        returns (Purchase memory current, Purchase memory pending);
 
     function readDapiPurchaseWithIndex(
         bytes32 dapiName,

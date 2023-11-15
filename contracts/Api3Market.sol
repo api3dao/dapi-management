@@ -35,7 +35,6 @@ contract Api3Market is IApi3Market {
 
     /// @notice Hisotry of dAPI purchases
     /// @dev Key: Hash of dAPI name, Value: Array of Purchase structs
-    // TODO: should this be public?
     mapping(bytes32 => Purchase[]) private dapiToPurchases;
 
     /// @param _hashRegistry HashRegistry contract address
@@ -235,7 +234,7 @@ contract Api3Market is IApi3Market {
 
             require(
                 current.purchasedAt < block.timestamp - 1 days &&
-                    current.purchasedAt < block.timestamp - 1 days,
+                    pending.purchasedAt < block.timestamp - 1 days,
                 "dAPI has been purchased on the last day"
             );
 
