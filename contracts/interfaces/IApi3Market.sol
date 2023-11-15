@@ -70,10 +70,7 @@ interface IApi3Market {
 
     function readCurrentAndPendingPurchases(
         bytes32 dapiName
-    )
-        external
-        view
-        returns (Purchase memory current, Purchase memory pending);
+    ) external view returns (Purchase memory current, Purchase memory pending);
 
     function readDapiPurchaseWithIndex(
         bytes32 dapiName,

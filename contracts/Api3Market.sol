@@ -18,6 +18,14 @@ import "./interfaces/IHashRegistry.sol";
 /// decentralized API (dAPI) subscriptions within the API3 ecosystem. Users can
 /// buy a managed dAPI subscription, and the contract handles various scenarios
 /// such as new purchases, upgrades, downgrades, and extensions
+/// @dev Caller must provide all the information required for running a managed
+/// dAPI while making a purchase. It is also required to send signed data for
+/// each beacon in order for the data feed to be up-to-date after purchase.
+/// Subsequent purchases for the same dAPI should cost less if the underlying
+/// configuration does not change (i.e. same set of beacons that point to the
+/// same Airnode addresses for which signed API URLs have not changed). This is
+/// because there will be no need to update the values in the `DapiDataRegistry`
+/// contract. Deploying a dAPI proxy contract will also not be needed
 contract Api3Market is IApi3Market {
     bytes32 private constant DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("dAPI pricing Merkle tree root"));
@@ -67,8 +75,7 @@ contract Api3Market is IApi3Market {
         api3ServerV1 = _api3ServerV1;
     }
 
-    /// @notice This function allows users to purchase a dAPI and update its
-    /// parameters
+    /// @notice Called by anyone to purchase a dAPI and update its parameters
     /// @dev This function makes use of three Merkle trees to validate the data
     /// needed for running a managed dAPI. Refer to the `IApi3Market.BuyDapiArgs`
     /// struct for detailed information on dAPI purchase and update arguments
@@ -118,21 +125,20 @@ contract Api3Market is IApi3Market {
             bool isPendingDowngradeOrExtension
         ) = _processPayment(dapiNameHash, args.dapi, updateParams);
 
-        // Store Signed API URLs for each Airnode used to update each beacon with
-        // signed API data
+        // Store Signed API URLs for each Airnode used to update each beacon
         _registerSignedApiUrl(
             args.beacons,
             args.signedApiUrlRoot,
             args.signedApiUrlProofs
         );
 
-        // Store the actual data used to derive each beaconId (airnode address
+        // Store the actual data used to derive each beaconId (Airnode address
         // and templateId). If more than one is provided in the arguments list
         // then each beaconId will be used to derive the beaconSetId
         bytes32 dataFeedId = _registerDataFeed(args.beacons);
 
         // Add the dAPI to the DapiDataRegistry for managed data feed updates
-        // If purchase if future downgrade, then a worker needs to call the
+        // If purchase is future downgrade, then a worker needs to call the
         // `addDapi()` function when downgrade period starts to update the update
         // parameters used by Airseeker
         if (!isPendingDowngradeOrExtension) {
@@ -148,10 +154,12 @@ contract Api3Market is IApi3Market {
             );
         }
 
-        // Deploy the dAPI proxy (if it hasn't been deployed yet)
-        address dapiProxyAddress = IProxyFactory(proxyFactory)
-            .computeDapiProxyAddress(args.dapi.name, "");
-        if (dapiProxyAddress.code.length == 0) {
+        // Deploy the dAPI proxy to read the data feed value
+        address dapiProxy = IProxyFactory(proxyFactory).computeDapiProxyAddress(
+            args.dapi.name,
+            ""
+        );
+        if (dapiProxy.code.length == 0) {
             IProxyFactory(proxyFactory).deployDapiProxy(args.dapi.name, "");
         }
 
@@ -166,17 +174,15 @@ contract Api3Market is IApi3Market {
         // The price of the dAPI might change in cases where the purchase
         // upgrades, downgrades or extends the current purchase. Therefore we
         // only charge the caller the difference and send back the rest
-        if (msg.value - updatedPrice == 0) {
-            Address.sendValue(args.dapi.sponsorWallet, msg.value);
-        } else {
-            Address.sendValue(args.dapi.sponsorWallet, updatedPrice);
+        Address.sendValue(args.dapi.sponsorWallet, updatedPrice);
+        if (msg.value - updatedPrice > 0) {
             Address.sendValue(payable(msg.sender), msg.value - updatedPrice);
         }
 
         emit BoughtDapi(
             args.dapi.name,
             dataFeedId,
-            dapiProxyAddress,
+            dapiProxy,
             updatedPrice,
             updatedDuration,
             args.dapi.updateParams,
@@ -185,7 +191,46 @@ contract Api3Market is IApi3Market {
         );
     }
 
-    /// @notice Internal function to process payment for the dAPI purchase
+    /// @notice Checks if the dAPI has been fallbacked
+    /// @dev Checks if the dAPI is in the list of fallbacked dAPIs in the
+    /// DapiFallbackV2 contract
+    /// @param dapiNameHash Hash of the dAPI name
+    /// @return isFallbacked True if dAPI name is in the list
+    function _isFallbacked(
+        bytes32 dapiNameHash
+    ) private view returns (bool isFallbacked) {
+        bytes32[] memory fallbackedDapis = IDapiFallbackV2(dapiFallbackV2)
+            .getFallbackedDapis();
+        for (uint256 i = 0; i < fallbackedDapis.length; i++) {
+            if (
+                keccak256(abi.encodePacked(fallbackedDapis[i])) == dapiNameHash
+            ) {
+                isFallbacked = true;
+                break;
+            }
+        }
+    }
+
+    /// @notice Decodes the update parameters from the provided encoded data
+    /// @dev Decodes the update parameters used in the dAPI purchase
+    /// @param updateParams_ Encoded update parameters
+    /// @return updateParams Decoded update parameters
+    function _decodeUpdateParams(
+        bytes calldata updateParams_
+    ) private pure returns (UpdateParams memory updateParams) {
+        (
+            uint256 deviationThresholdInPercentage,
+            int224 deviationReference,
+            uint32 heartbeatInterval
+        ) = abi.decode(updateParams_, (uint256, int224, uint32));
+        updateParams = UpdateParams(
+            deviationThresholdInPercentage,
+            deviationReference,
+            heartbeatInterval
+        );
+    }
+
+    /// @notice Process payment for the dAPI purchase
     /// @dev Handles various scenarios including new purchase, upgrade, downgrade, and extension
     /// @param dapiNameHash Hash of the dAPI name
     /// @param dapi The dAPI being purchased
@@ -326,25 +371,7 @@ contract Api3Market is IApi3Market {
         require(msg.value >= updatedPrice, "Insufficient payment");
     }
 
-    /// @notice Internal function to swap the current and pending purchases in
-    /// the mapping
-    /// @dev Used when a new purchase is an upgrade, and the current purchase
-    /// overlaps with a pending downgrade or extension
-    /// @param dapiNameHash Hash of the dAPI name.
-    function _swapCurrentAndPending(bytes32 dapiNameHash) private {
-        uint256 purchasesLength = dapiToPurchases[dapiNameHash].length;
-        if (purchasesLength > 1) {
-            Purchase memory last = dapiToPurchases[dapiNameHash][
-                purchasesLength - 1
-            ];
-            dapiToPurchases[dapiNameHash][
-                purchasesLength - 1
-            ] = dapiToPurchases[dapiNameHash][purchasesLength - 2];
-            dapiToPurchases[dapiNameHash][purchasesLength - 2] = last;
-        }
-    }
-
-    /// @notice Internal function to find the index of the current dAPI purchase
+    /// @notice Finds the index of the current dAPI purchase
     /// @dev Searches through the purchase history to find the current purchase
     /// where current means that block.timestamp is somewhere in between start
     /// and date of a purchase
@@ -370,49 +397,65 @@ contract Api3Market is IApi3Market {
         }
     }
 
-    /// @notice Checks if the dAPI has been fallbacked
-    /// @dev Checks if the dAPI is in the list of fallbacked dAPIs in the
-    /// DapiFallbackV2 contract
-    /// @param dapiNameHash Hash of the dAPI name.
-    /// @return isFallbacked True if dAPI name is in the list
-    function _isFallbacked(
-        bytes32 dapiNameHash
-    ) private view returns (bool isFallbacked) {
-        bytes32[] memory fallbackedDapis = IDapiFallbackV2(dapiFallbackV2)
-            .getFallbackedDapis();
-        for (uint256 i = 0; i < fallbackedDapis.length; i++) {
+    /// @notice Swaps the current and pending purchases in the mapping
+    /// @dev Called when a new purchase is an upgrade, and it overlaps with a
+    /// pending downgrade or extension. This is needed because new purchases are
+    /// always pushed at the end of the array
+    /// @param dapiNameHash Hash of the dAPI name
+    function _swapCurrentAndPending(bytes32 dapiNameHash) private {
+        uint256 purchasesLength = dapiToPurchases[dapiNameHash].length;
+        if (purchasesLength > 1) {
+            Purchase memory last = dapiToPurchases[dapiNameHash][
+                purchasesLength - 1
+            ];
+            dapiToPurchases[dapiNameHash][
+                purchasesLength - 1
+            ] = dapiToPurchases[dapiNameHash][purchasesLength - 2];
+            dapiToPurchases[dapiNameHash][purchasesLength - 2] = last;
+        }
+    }
+
+    /// @notice Registers signed API URLs for each Airnode used to update each
+    /// beacon
+    /// @dev Checks if the signed API URLs have already been registered. If not,
+    /// then it registers the URLs in the DapiDataRegistry contract
+    /// @param beacons Values for the beacons associated with the dAPI
+    /// @param signedApiUrlRoot Merkle tree root hash
+    /// @param signedApiUrlProofs Array of hashes to verify a Merkle tree leaf
+    function _registerSignedApiUrl(
+        Beacon[] memory beacons,
+        bytes32 signedApiUrlRoot,
+        bytes32[][] memory signedApiUrlProofs
+    ) private {
+        bytes[] memory calldatas = new bytes[](beacons.length);
+        for (uint ind = 0; ind < beacons.length; ind++) {
+            calldatas[ind] = abi.encodeCall(
+                IDapiDataRegistry.airnodeToSignedApiUrl,
+                (beacons[ind].airnode)
+            );
+        }
+        bytes[] memory returndatas = IDapiDataRegistry(dapiDataRegistry)
+            .multicall(calldatas);
+        for (uint ind = 0; ind < beacons.length; ind++) {
             if (
-                keccak256(abi.encodePacked(fallbackedDapis[i])) == dapiNameHash
+                returndatas[ind].length == 0 ||
+                (keccak256(abi.encodePacked((returndatas[ind]))) !=
+                    keccak256(abi.encodePacked((beacons[ind].url))))
             ) {
-                isFallbacked = true;
-                break;
+                IDapiDataRegistry(dapiDataRegistry).registerAirnodeSignedApiUrl(
+                        beacons[ind].airnode,
+                        beacons[ind].url,
+                        signedApiUrlRoot,
+                        signedApiUrlProofs[ind]
+                    );
             }
         }
     }
 
-    /// @notice Decodes the update parameters from the provided encoded data
-    /// @dev Decodes the update parameters used in the dAPI purchase
-    /// @param updateParams_ Encoded update parameters
-    /// @return updateParams Decoded update parameters
-    function _decodeUpdateParams(
-        bytes calldata updateParams_
-    ) private pure returns (UpdateParams memory updateParams) {
-        (
-            uint256 deviationThresholdInPercentage,
-            int224 deviationReference,
-            uint32 heartbeatInterval
-        ) = abi.decode(updateParams_, (uint256, int224, uint32));
-        updateParams = UpdateParams(
-            deviationThresholdInPercentage,
-            deviationReference,
-            heartbeatInterval
-        );
-    }
-
     /// @notice Registers the data feed data for the dAPI
     /// @dev Registers this data in the DapiDataRegistry contract
-    /// @param beacons The values of the beacons associated with the dAPI
-    /// @return dataFeedId The ID of the registered data feed
+    /// @param beacons Values for the beacons associated with the dAPI
+    /// @return dataFeedId Registered data feed ID
     function _registerDataFeed(
         Beacon[] calldata beacons
     ) private returns (bytes32 dataFeedId) {
@@ -436,9 +479,9 @@ contract Api3Market is IApi3Market {
     /// @notice Updates the data feed with signed API data
     /// @dev Calls the Api3ServerV1 contract to update the data feed values using
     /// API data signed by each Airnode
-    /// @param dataFeedId The ID of the data feed to be updated
-    /// @param heartbeatInterval The heartbeat interval for the data feed
-    /// @param beacons The values of the beacons associated with the data feed
+    /// @param dataFeedId Data feed ID to be updated
+    /// @param heartbeatInterval Heartbeat interval for the data feed
+    /// @param beacons Values for the beacons associated with the dAPI
     function _updateDataFeed(
         bytes32 dataFeedId,
         uint256 heartbeatInterval,
@@ -481,48 +524,11 @@ contract Api3Market is IApi3Market {
         }
     }
 
-    /// @notice Registers signed API URLs for each Airnode used to update each
-    /// beacon
-    /// @dev Checks if the signed API URLs have already been registered and
-    /// registers them if not
-    /// @param beacons The values of the beacons associated with the dAPI
-    /// @param signedApiUrlRoot The root hash of the Merkle tree containing signed API URLs
-    /// @param signedApiUrlProofs Merkle proofs for the signed API URLs
-    function _registerSignedApiUrl(
-        Beacon[] memory beacons,
-        bytes32 signedApiUrlRoot,
-        bytes32[][] memory signedApiUrlProofs
-    ) private {
-        bytes[] memory calldatas = new bytes[](signedApiUrlProofs.length);
-        for (uint ind = 0; ind < signedApiUrlProofs.length; ind++) {
-            calldatas[ind] = abi.encodeCall(
-                IDapiDataRegistry.airnodeToSignedApiUrl,
-                (beacons[ind].airnode)
-            );
-        }
-        bytes[] memory returndatas = IDapiDataRegistry(dapiDataRegistry)
-            .multicall(calldatas);
-        for (uint ind = 0; ind < signedApiUrlProofs.length; ind++) {
-            if (
-                returndatas[ind].length == 0 ||
-                (keccak256(abi.encodePacked((returndatas[ind]))) !=
-                    keccak256(abi.encodePacked((beacons[ind].url))))
-            ) {
-                IDapiDataRegistry(dapiDataRegistry).registerAirnodeSignedApiUrl(
-                        beacons[ind].airnode,
-                        beacons[ind].url,
-                        signedApiUrlRoot,
-                        signedApiUrlProofs[ind]
-                    );
-            }
-        }
-    }
-
     /// @notice Reads the current and pending purchases for a specific dAPI
     /// @dev Returns the current and pending purchases for a given dAPI name
-    /// @param dapiName The encoded bytes32 name of the dAPI
-    /// @return current The current purchase information
-    /// @return pending The pending purchase information
+    /// @param dapiName Encoded bytes32 name of the dAPI
+    /// @return current Current purchase information
+    /// @return pending Pending purchase information
     function readCurrentAndPendingPurchases(
         bytes32 dapiName
     )
@@ -547,9 +553,9 @@ contract Api3Market is IApi3Market {
     /// @notice Reads a specific purchase for a given dAPI with a specified index
     /// @dev Returns the purchase information for a specific index in the
     /// purchase history of a given dAPI
-    /// @param dapiName The encoded bytes32 name of the dAPI
-    /// @param index The index of the purchase in the purchase history
-    /// @return purchase The purchase information
+    /// @param dapiName Encoded bytes32 name of the dAPI
+    /// @param index Index of the purchase in the purchase history array
+    /// @return purchase dAPI purchase information
     function readDapiPurchaseWithIndex(
         bytes32 dapiName,
         uint256 index
