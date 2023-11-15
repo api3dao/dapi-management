@@ -201,11 +201,16 @@ describe('Api3Market', function () {
       ['uint256', 'int224', 'uint32'],
       [deviationThresholdInPercentage * 4, deviationReference, heartbeatInterval]
     );
+    const updateParamsEight = hre.ethers.utils.defaultAbiCoder.encode(
+      ['uint256', 'int224', 'uint32'],
+      [deviationThresholdInPercentage * 8, deviationReference, heartbeatInterval]
+    );
     const priceTreeValues = dapiNamesWithSponsorWallets
       .map(([dapiName]) => [
         [hre.ethers.utils.formatBytes32String(dapiName), chainId, updateParamsOne, duration, price],
         [hre.ethers.utils.formatBytes32String(dapiName), chainId, updateParamsTwo, duration * 1.5, price.div(2)],
         [hre.ethers.utils.formatBytes32String(dapiName), chainId, updateParamsFour, duration * 2, price.div(4)],
+        [hre.ethers.utils.formatBytes32String(dapiName), chainId, updateParamsEight, duration, price.div(8)],
       ])
       .flat();
     const priceTree = StandardMerkleTree.of(priceTreeValues, ['bytes32', 'uint256', 'bytes', 'uint256', 'uint256']);
@@ -381,7 +386,7 @@ describe('Api3Market', function () {
                   const dapiTreeRoot = dapiTree.root;
                   const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-                  const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+                  const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 4];
                   const priceTreeRoot = priceTree.root;
                   const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
@@ -515,7 +520,7 @@ describe('Api3Market', function () {
                         const dapiTreeRoot = dapiTree.root;
                         const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-                        const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+                        const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 4];
                         const priceTreeRoot = priceTree.root;
                         const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
@@ -654,7 +659,7 @@ describe('Api3Market', function () {
                         const dapiTreeRoot = dapiTree.root;
                         const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-                        const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+                        const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 4];
                         const priceTreeRoot = priceTree.root;
                         const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
@@ -705,7 +710,7 @@ describe('Api3Market', function () {
 
                         // Downgrade from the middle of current subscription
                         const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] =
-                          priceTreeValues[randomIndex * 3 + 1];
+                          priceTreeValues[randomIndex * 4 + 1];
                         const downgradePriceTreeProof = priceTree.getProof([
                           dapiName,
                           chainId,
@@ -819,7 +824,7 @@ describe('Api3Market', function () {
                         const dapiTreeRoot = dapiTree.root;
                         const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-                        const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+                        const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 4];
                         const priceTreeRoot = priceTree.root;
                         const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
@@ -868,7 +873,7 @@ describe('Api3Market', function () {
 
                         // Downgrade from the middle of current subscription
                         const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] =
-                          priceTreeValues[randomIndex * 3 + 1];
+                          priceTreeValues[randomIndex * 4 + 1];
                         const downgradePriceTreeProof = priceTree.getProof([
                           dapiName,
                           chainId,
@@ -905,7 +910,7 @@ describe('Api3Market', function () {
                     });
                   });
                   context('Does not extends nor downgrades current purchase', function () {
-                    it.skip('reverts', async function () {
+                    it('reverts', async function () {
                       const {
                         roles,
                         api3Market,
@@ -927,7 +932,7 @@ describe('Api3Market', function () {
                       const dapiTreeRoot = dapiTree.root;
                       const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-                      const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+                      const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 4 + 1];
                       const priceTreeRoot = priceTree.root;
                       const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
@@ -969,13 +974,37 @@ describe('Api3Market', function () {
                         priceProof: priceTreeProof,
                       };
 
-                      await hre.network.provider.send('evm_setAutomine', [false]);
-                      await hre.network.provider.send('evm_setIntervalMining', [0]);
+                      const now = (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber()))
+                        .timestamp;
                       await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
 
-                      const tx = await api3Market.connect(roles.randomPerson).buyDapi(args, { value: price });
-                      await hre.network.provider.send('evm_mine');
-                      expect(tx).to.have.been.revertedWith('Does not extends nor downgrades current purchase');
+                      const futureNow = now + duration / 3;
+                      await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
+                      const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] =
+                        priceTreeValues[randomIndex * 4 + 3];
+                      const downgradePriceTreeProof = priceTree.getProof([
+                        dapiName,
+                        chainId,
+                        downgradeUpdateParams,
+                        downgradeDuration,
+                        downgradePrice,
+                      ]);
+                      const downgradeDapi = {
+                        name: dapiName,
+                        sponsorWallet,
+                        price: downgradePrice,
+                        duration: downgradeDuration,
+                        updateParams: downgradeUpdateParams,
+                      };
+
+                      await expect(
+                        api3Market
+                          .connect(roles.randomPerson)
+                          .buyDapi(
+                            { ...args, dapi: downgradeDapi, priceProof: downgradePriceTreeProof },
+                            { value: downgradePrice }
+                          )
+                      ).to.to.have.been.revertedWith('Does not extends nor downgrades current purchase');
                     });
                   });
                   it('buys upgrade dAPI subscription', async function () {
@@ -1002,7 +1031,7 @@ describe('Api3Market', function () {
                     const dapiTreeRoot = dapiTree.root;
                     const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-                    const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3 + 1];
+                    const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 4 + 1];
                     const priceTreeRoot = priceTree.root;
                     const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
@@ -1052,7 +1081,7 @@ describe('Api3Market', function () {
                     await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
 
                     // Upgrade from the middle of current subscription
-                    const [, , upgradeUpdateParams, upgradeDuration, upgradePrice] = priceTreeValues[randomIndex * 3];
+                    const [, , upgradeUpdateParams, upgradeDuration, upgradePrice] = priceTreeValues[randomIndex * 4];
                     const upgradePriceTreeProof = priceTree.getProof([
                       dapiName,
                       chainId,
@@ -1163,7 +1192,7 @@ describe('Api3Market', function () {
                     const dapiTreeRoot = dapiTree.root;
                     const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-                    const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3 + 1];
+                    const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 4 + 1];
                     const priceTreeRoot = priceTree.root;
                     const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
@@ -1214,7 +1243,7 @@ describe('Api3Market', function () {
 
                     // Downgrade from the middle of current subscription
                     const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] =
-                      priceTreeValues[randomIndex * 3 + 2];
+                      priceTreeValues[randomIndex * 4 + 2];
                     const downgradePriceTreeProof = priceTree.getProof([
                       dapiName,
                       chainId,
@@ -1241,7 +1270,7 @@ describe('Api3Market', function () {
                     await hre.ethers.provider.send('evm_setNextBlockTimestamp', [futureNow]);
 
                     // Upgrade from the middle of current subscription
-                    const [, , upgradeUpdateParams, upgradeDuration, upgradePrice] = priceTreeValues[randomIndex * 3];
+                    const [, , upgradeUpdateParams, upgradeDuration, upgradePrice] = priceTreeValues[randomIndex * 4];
                     const upgradePriceTreeProof = priceTree.getProof([
                       dapiName,
                       chainId,
@@ -1357,7 +1386,7 @@ describe('Api3Market', function () {
                     const dapiTreeRoot = dapiTree.root;
                     const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-                    const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3 + 1];
+                    const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 4 + 1];
                     const priceTreeRoot = priceTree.root;
                     const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
@@ -1408,7 +1437,7 @@ describe('Api3Market', function () {
 
                     // Downgrade from the middle of current subscription
                     const [, , downgradeUpdateParams, downgradeDuration, downgradePrice] =
-                      priceTreeValues[randomIndex * 3 + 2];
+                      priceTreeValues[randomIndex * 4 + 2];
                     const downgradePriceTreeProof = priceTree.getProof([
                       dapiName,
                       chainId,
@@ -1435,7 +1464,7 @@ describe('Api3Market', function () {
                     await hre.ethers.provider.send('evm_setNextBlockTimestamp', [upgradePurchasedAt]);
 
                     // Upgrade from the middle of current subscription
-                    const [, , upgradeUpdateParams, upgradeDuration, upgradePrice] = priceTreeValues[randomIndex * 3];
+                    const [, , upgradeUpdateParams, upgradeDuration, upgradePrice] = priceTreeValues[randomIndex * 4];
                     const upgradePriceTreeProof = priceTree.getProof([
                       dapiName,
                       chainId,
@@ -1558,7 +1587,7 @@ describe('Api3Market', function () {
                     const dapiTreeRoot = dapiTree.root;
                     const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-                    const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+                    const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 4];
                     const priceTreeRoot = priceTree.root;
                     const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
@@ -1631,7 +1660,7 @@ describe('Api3Market', function () {
                   const dapiTreeRoot = dapiTree.root;
                   const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-                  const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+                  const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 4];
                   const priceTreeRoot = priceTree.root;
                   const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
@@ -1702,7 +1731,7 @@ describe('Api3Market', function () {
                 const dapiTreeRoot = dapiTree.root;
                 const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-                const [, , updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+                const [, , updateParams, duration, price] = priceTreeValues[randomIndex * 4];
                 const priceTreeRoot = priceTree.root;
 
                 const dapi = {
@@ -1772,7 +1801,7 @@ describe('Api3Market', function () {
               const dapiTreeRoot = dapiTree.root;
               const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-              const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+              const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 4];
               const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
               const dapi = {
@@ -1842,7 +1871,7 @@ describe('Api3Market', function () {
             const dapiTreeRoot = dapiTree.root;
             const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-            const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+            const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 4];
             const priceTreeRoot = priceTree.root;
             const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
@@ -1914,7 +1943,7 @@ describe('Api3Market', function () {
           const dapiTreeRoot = dapiTree.root;
           const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-          const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+          const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 4];
           const priceTreeRoot = priceTree.root;
           const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
@@ -1984,7 +2013,7 @@ describe('Api3Market', function () {
         const dapiTreeRoot = dapiTree.root;
         const dapiTreeProof = dapiTree.getProof([dapiName, dataFeedId, sponsorWallet]);
 
-        const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 3];
+        const [, chainId, updateParams, duration, price] = priceTreeValues[randomIndex * 4];
         const priceTreeRoot = priceTree.root;
         const priceTreeProof = priceTree.getProof([dapiName, chainId, updateParams, duration, price]);
 
