@@ -22,5 +22,11 @@ module.exports = {
         bracketSpacing: false,
       },
     },
+    {
+      files: ['contracts/test/**/*.sol', 'contracts/mock/MockApi3ServerV1.sol'],
+      options: {
+        compiler: '0.8.17',
+      },
+    },
   ],
 };
