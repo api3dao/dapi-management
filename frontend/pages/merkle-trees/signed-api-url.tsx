@@ -1,11 +1,14 @@
 import { z } from 'zod';
-import { AlertTriangleIcon } from 'lucide-react';
 import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
-import { Button } from '~/components/ui/button';
-import { TreeStatusBadge, TreeRootBadge, SignatureTable, TreeDiff } from '~/components/merkle-tree-elements';
-import { useWeb3Data } from '~/contexts/web3-data-context';
+import {
+  TreeStatusBadge,
+  TreeRootBadge,
+  SignRootButton,
+  SignatureTable,
+  TreeDiff,
+} from '~/components/merkle-tree-elements';
 import { readTreeDataFrom, readSignerDataFrom, createFileDiff } from '~/lib/server/file-utils';
 import { createSignedApiUrlMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { InferGetServerSidePropsType } from 'next';
@@ -42,7 +45,6 @@ type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 
 export default function SignedApiUrlTree(props: Props) {
   const { currentTree, signers } = props;
-  const { address } = useWeb3Data();
 
   const merkleTree = createSignedApiUrlMerkleTree(currentTree.merkleTreeValues.values);
 
@@ -56,9 +58,6 @@ export default function SignedApiUrlTree(props: Props) {
     signers
   );
 
-  const isSigner = !!signatures[address];
-  const canSign = signatures[address] === '0x' && !isSigning;
-
   return (
     <RootLayout>
       <div>
@@ -68,17 +67,7 @@ export default function SignedApiUrlTree(props: Props) {
       <TreeRootBadge className="mb-3" root={merkleTree.root} />
 
       <div className="mb-10">
-        <div className="flex gap-3">
-          <Button disabled={!canSign} className="min-w-[15ch]" onClick={() => signRoot()}>
-            Sign Root
-          </Button>
-        </div>
-        {!!address && !isSigner && (
-          <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
-            <AlertTriangleIcon className="w-4 text-gray-300" />
-            You are not a signer.
-          </p>
-        )}
+        <SignRootButton signatures={signatures} signRoot={signRoot} isSigning={isSigning} />
       </div>
 
       <div className="mb-10">
