@@ -11,9 +11,14 @@ import {
   createSignedApiUrlMerkleTree,
   validateTreeRootSignatures,
 } from '~/lib/merkle-tree-utils';
-import { readSignerDataFrom, readTreeDataFrom, writeMerkleTreeData, type TreeSubFolder } from '~/lib/server/file-utils';
+import {
+  readSignerDataFrom,
+  readTreeDataFrom,
+  writeMerkleTreeData,
+  execute,
+  type TreeSubFolder,
+} from '~/lib/server/file-utils';
 import { z } from 'zod';
-import { exec } from 'child_process';
 
 const treeTypeSchema = z.union([
   z.literal(DAPI_FALLBACK_MERKLE_TREE_TYPE),
@@ -30,7 +35,7 @@ const requestBodySchema = z.object({
   treeType: treeTypeSchema,
 });
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).send('Method not allowed');
   }
@@ -71,7 +76,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   // Write updated signatures to the file
   writeMerkleTreeData(currentHashPath, validatedCurrentHash);
 
-  exec('yarn prettier');
+  // We want to wait for prettier to finish, because otherwise the page will reload and the diff will be created
+  // with an unformatted file. Additionally, we only format the current hash file to speed up the process
+  await execute(`yarn prettier --write ${currentHashPath}`);
 
   return res.status(200).send('Successfully signed root');
 }
