@@ -36,7 +36,7 @@ contract Api3Market is IApi3Market {
     /// @notice Hisotry of dAPI purchases
     /// @dev Key: Hash of dAPI name, Value: Array of Purchase structs
     // TODO: should this be public?
-    mapping(bytes32 => Purchase[]) public dapiToPurchases;
+    mapping(bytes32 => Purchase[]) private dapiToPurchases;
 
     /// @param _hashRegistry HashRegistry contract address
     /// @param _dapiDataRegistry DapiDataRegistry contract address
