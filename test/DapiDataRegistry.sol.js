@@ -139,6 +139,7 @@ describe('DapiDataRegistry', function () {
 
     const timestamp = Math.floor(Date.now() / 1000);
 
+    // Signed API URL Merkle tree
     const baseUrl = 'https://example.com/';
     const apiTreeValues = [
       [roles.airnode1.address, baseUrl + generateRandomString(10)],
@@ -150,11 +151,11 @@ describe('DapiDataRegistry', function () {
     const apiTree = StandardMerkleTree.of(apiTreeValues, ['address', 'string']);
     const apiHashType = hre.ethers.utils.solidityKeccak256(['string'], ['Signed API URL Merkle tree root']);
     const rootSigners = [roles.rootSigner1, roles.rootSigner2, roles.rootSigner3];
-    const apiMessages = hre.ethers.utils.arrayify(
+    const apiMessage = hre.ethers.utils.arrayify(
       hre.ethers.utils.solidityKeccak256(['bytes32', 'bytes32', 'uint256'], [apiHashType, apiTree.root, timestamp])
     );
     const apiTreeRootSignatures = await Promise.all(
-      rootSigners.map(async (rootSigner) => await rootSigner.signMessage(apiMessages))
+      rootSigners.map(async (rootSigner) => await rootSigner.signMessage(apiMessage))
     );
     await hashRegistry.connect(roles.owner).setupSigners(
       apiHashType,
@@ -162,6 +163,7 @@ describe('DapiDataRegistry', function () {
     );
     await hashRegistry.registerHash(apiHashType, apiTree.root, timestamp, apiTreeRootSignatures);
 
+    // dAPI management Merkle tree
     const dapiNamesWithSponsorWallets = [
       ['API3/USD', generateRandomAddress()],
       ['BTC/USD', generateRandomAddress()],
@@ -169,14 +171,12 @@ describe('DapiDataRegistry', function () {
       ['MATIC/USD', generateRandomAddress()],
       ['UNI/USD', generateRandomAddress()],
     ];
-
     const dataFeeds = dapiNamesWithSponsorWallets.map(() =>
       [roles.airnode1, roles.airnode2, roles.airnode3, roles.airnode4, roles.airnode5].map((airnode) => ({
         airnode,
         templateId: generateRandomBytes32(),
       }))
     );
-
     const dapiTreeValues = dapiNamesWithSponsorWallets.map(([dapiName, sponsorWallet], index) => {
       const beaconIds = dataFeeds[index].map(({ airnode, templateId }) =>
         hre.ethers.utils.solidityKeccak256(['address', 'bytes32'], [airnode.address, templateId])
@@ -187,22 +187,19 @@ describe('DapiDataRegistry', function () {
       );
       return [hre.ethers.utils.formatBytes32String(dapiName), beaconSetId, sponsorWallet];
     });
-
     const dapiTree = StandardMerkleTree.of(dapiTreeValues, ['bytes32', 'bytes32', 'address']);
-    const dapiTreeRoot = dapiTree.root;
     const dapiHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI management Merkle tree root']);
-    const dapiMessages = hre.ethers.utils.arrayify(
-      hre.ethers.utils.solidityKeccak256(['bytes32', 'bytes32', 'uint256'], [dapiHashType, dapiTreeRoot, timestamp])
+    const dapiMessage = hre.ethers.utils.arrayify(
+      hre.ethers.utils.solidityKeccak256(['bytes32', 'bytes32', 'uint256'], [dapiHashType, dapiTree.root, timestamp])
     );
     const dapiTreeRootSignatures = await Promise.all(
-      rootSigners.map(async (rootSigner) => await rootSigner.signMessage(dapiMessages))
+      rootSigners.map(async (rootSigner) => await rootSigner.signMessage(dapiMessage))
     );
-
     await hashRegistry.connect(roles.owner).setupSigners(
       dapiHashType,
       rootSigners.map((rootSigner) => rootSigner.address)
     );
-    await hashRegistry.registerHash(dapiHashType, dapiTreeRoot, timestamp, dapiTreeRootSignatures);
+    await hashRegistry.registerHash(dapiHashType, dapiTree.root, timestamp, dapiTreeRootSignatures);
 
     return {
       roles,
@@ -262,6 +259,14 @@ describe('DapiDataRegistry', function () {
             )
               .to.emit(dapiDataRegistry, 'RegisteredSignedApiUrl')
               .withArgs(airnode, url);
+            expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
+
+            // If try to register same URL for same Airnode then no update nor event emitted
+            await expect(
+              dapiDataRegistry
+                .connect(roles.api3MarketContract)
+                .registerAirnodeSignedApiUrl(airnode, url, apiTreeRoot, apiTreeProof)
+            ).to.have.not.emit(dapiDataRegistry, 'RegisteredSignedApiUrl');
             expect(await dapiDataRegistry.airnodeToSignedApiUrl(airnode)).to.equal(url);
           });
         });
@@ -357,6 +362,12 @@ describe('DapiDataRegistry', function () {
           await expect(dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData))
             .to.emit(dapiDataRegistry, 'RegisteredDataFeed')
             .withArgs(beaconSetId, encodedBeaconSetData);
+          expect(await dapiDataRegistry.dataFeeds(beaconSetId)).to.deep.equal(encodedBeaconSetData);
+
+          // If try to register same data feed data for same data feed ID then no update nor event emitted
+          await expect(
+            dapiDataRegistry.connect(roles.randomPerson).registerDataFeed(encodedBeaconSetData)
+          ).to.have.not.emit(dapiDataRegistry, 'RegisteredDataFeed');
           expect(await dapiDataRegistry.dataFeeds(beaconSetId)).to.deep.equal(encodedBeaconSetData);
         });
       });
