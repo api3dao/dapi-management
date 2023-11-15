@@ -7,10 +7,7 @@ import { Button } from '~/components/ui/button';
 import { TreeStatusBadge, TreeRootBadge, SignatureTable, TreeDiff } from '~/components/merkle-tree-elements';
 import { useWeb3Data } from '~/contexts/web3-data-context';
 import { readTreeDataFrom, readSignerDataFrom, createFileDiff } from '~/lib/server/file-utils';
-import {
-  createDapiManagementMerkleTree,
-  validateTreeRootSignatures,
-} from '~/lib/merkle-tree-utils';
+import { createDapiManagementMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
 
