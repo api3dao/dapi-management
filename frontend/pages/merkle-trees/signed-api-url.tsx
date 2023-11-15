@@ -88,10 +88,10 @@ export default function SignedApiUrlTree(props: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentTree.merkleTreeValues.values.map((fallback, i) => (
+              {currentTree.merkleTreeValues.values.map((rowValues, i) => (
                 <TableRow key={i}>
-                  <TableCell>{fallback[0]}</TableCell>
-                  <TableCell>{fallback[1]}</TableCell>
+                  <TableCell>{rowValues[0]}</TableCell>
+                  <TableCell>{rowValues[1]}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
