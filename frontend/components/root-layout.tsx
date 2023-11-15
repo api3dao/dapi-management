@@ -91,7 +91,7 @@ function NavLink(props: NavLinkProps) {
       {props.children}
       <LoaderIcon
         className={cn(
-          'absolute h-4 w-4 animate-spin text-gray-400 transition-opacity duration-300 ease-in-out',
+          'absolute h-4 w-4 animate-spin text-gray-400 transition-opacity duration-300',
           isActive ? 'right-[5px] top-[6px]' : 'right-[-3px] top-[2px]',
           showLoader ? 'opacity-100' : 'opacity-0'
         )}
