@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3ServerV1.sol";
-import "@api3/airnode-protocol-v1/contracts/access-control-registry/AccessControlRegistryAdminnedWithManager.sol";
+import "@api3/airnode-protocol-v1/contracts/utils/SelfMulticall.sol";
 import "./interfaces/IHashRegistry.sol";
 import "./interfaces/IDapiFallbackV2.sol";
 import "./interfaces/IDapiDataRegistry.sol";
@@ -13,23 +14,9 @@ import "./interfaces/IDapiDataRegistry.sol";
 /// @title DapiFallbackV2 contract for handling dAPI fallbacks in case of primary data feed failure.
 /// @notice This contract contains the logic for executing dAPI fallbacks
 /// and ensuring data feed continuity by utilizing Merkle proofs for verification.
-contract DapiFallbackV2 is
-    AccessControlRegistryAdminnedWithManager,
-    IDapiFallbackV2
-{
+contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
-    /// @notice Fallback executer role description
-    string public constant override FALLBACK_EXECUTER_ROLE_DESCRIPTION =
-        "Fallback executer";
-    /// @notice Fallback reverter role description
-    string public constant override FALLBACK_REVERTER_ROLE_DESCRIPTION =
-        "Fallback reverter";
-
-    /// @notice Fallback executer role
-    bytes32 public immutable override fallbackExecuterRole;
-    /// @notice Fallback reverter role
-    bytes32 public immutable override fallbackReverterRole;
     /// @notice Api3ServerV1 contract address
     address public immutable override api3ServerV1;
     /// @notice HashRegistry contract address
@@ -37,7 +24,23 @@ contract DapiFallbackV2 is
     /// @notice DapiDataRegistry contract address
     address public immutable override dapiDataRegistry;
 
-    /// @notice Constants defining types of the Merkle tree roots used within the contract logic.
+    /// TODO: switch to EnumerableSet.AddressSet?
+    /// @notice dAPI fallback managers that can individually execute the
+    /// response plan
+    address[] public override dapiFallbackManagers;
+
+    /// @dev Reverts unless the sender is the dAPI fallback manager with the
+    /// specified index
+    /// @param dapiFallbackManagerInd dAPI fallback manager index
+    modifier onlyByDapiFallbackManagerWithInd(uint256 dapiFallbackManagerInd) {
+        require(
+            msg.sender == dapiFallbackManagers[dapiFallbackManagerInd] ||
+                msg.sender == address(0),
+            "Sender not manager with ID"
+        );
+        _;
+    }
+
     bytes32 private constant DAPI_FALLBACK_MERKLE_TREE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("dAPI fallback Merkle tree root"));
     bytes32 private constant DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE =
@@ -47,67 +50,59 @@ contract DapiFallbackV2 is
 
     EnumerableSet.Bytes32Set private fallbackedDapis;
 
-    /// @notice Initializes the contract setting the api3ServerV1 and hashRegistry addresses.
-    /// @param _accessControlRegistry AccessControlRegistry contract address
-    /// @param _adminRoleDescription Admin role description
-    /// @param _manager Manager address
-    /// @param _api3ServerV1 The address of the Api3ServerV1 contract.
-    /// @param _hashRegistry The address of the HashRegistry contract.
-    /// @param _dapiDataRegistry The address of the DapiDataRegistry contract.
+    /// @param _api3ServerV1 Api3ServerV1 contract address
+    /// @param _hashRegistry HashRegistry contract address
+    /// @param _dapiDataRegistry DapiDataRegistry contract address
+    /// @param _dapiFallbackManagers dAPI fallback managers
     constructor(
-        address _accessControlRegistry,
-        string memory _adminRoleDescription,
-        address _manager,
         address _api3ServerV1,
         address _hashRegistry,
-        address _dapiDataRegistry
-    )
-        AccessControlRegistryAdminnedWithManager(
-            _accessControlRegistry,
-            _adminRoleDescription,
-            _manager
-        )
-    {
-        require(
-            _api3ServerV1 != address(0),
-            "api3ServerV1 Address cannot be zero"
-        );
-        require(
-            _hashRegistry != address(0),
-            "hashRegistry Address cannot be zero"
-        );
-        require(
-            _hashRegistry != address(0),
-            "hashRegistry Address cannot be zero"
-        );
+        address _dapiDataRegistry,
+        address[] memory _dapiFallbackManagers
+    ) {
+        require(_api3ServerV1 != address(0), "Api3ServerV1 address is zero");
+        require(_hashRegistry != address(0), "HashRegistry address is zero");
         require(
             _dapiDataRegistry != address(0),
-            "dapiDataRegistry Address cannot be zero"
-        );
-        fallbackExecuterRole = _deriveRole(
-            _deriveAdminRole(manager),
-            FALLBACK_EXECUTER_ROLE_DESCRIPTION
-        );
-        fallbackReverterRole = _deriveRole(
-            _deriveAdminRole(manager),
-            FALLBACK_REVERTER_ROLE_DESCRIPTION
+            "DapiDataRegistry address is zero"
         );
         api3ServerV1 = _api3ServerV1;
         hashRegistry = _hashRegistry;
         dapiDataRegistry = _dapiDataRegistry;
+        _setDapiFallbackManagers(_dapiFallbackManagers);
     }
 
-    /// @notice Allows the contract to receive funds.
-    /// @dev The receive function is executed on a call to the contract with empty calldata.
+    /// @notice Allows the contract to receive funds. These funds can then be
+    /// transferred to the sponsor wallets of the fallback data feeds by a dAPI
+    /// fallback manager or withdrawn by the owner
+    /// @dev The receive function is executed on a call to the contract with
+    /// empty calldata
     receive() external payable {}
 
-    /// @notice Allows the contract manager to withdraw funds from the contract.
-    /// @param amount The amount of funds to withdraw.
-    function withdraw(uint256 amount) external override {
-        require(msg.sender == manager, "Sender is not manager role");
-        require(amount != 0, "Amount zero");
-        Address.sendValue(payable(msg.sender), amount);
-        emit Withdrawn(msg.sender, amount, address(this).balance);
+    /// @notice Called by the owner to set the dAPI fallback managers
+    /// @param _dapiFallbackManagers dAPI fallback managers
+    function setDapiFallbackManagers(
+        address[] calldata _dapiFallbackManagers
+    ) external override onlyOwner {
+        _setDapiFallbackManagers(_dapiFallbackManagers);
+    }
+
+    /// @notice Called by the owner to withdraw funds
+    /// @param recipient Recipient address
+    /// @param amount Amount
+    function withdraw(
+        address payable recipient,
+        uint256 amount
+    ) external override onlyOwner {
+        _withdraw(recipient, amount);
+    }
+
+    /// @notice Called by the owner to withdraw the entire balance
+    /// @param recipient Recipient address
+    function withdrawAll(
+        address payable recipient
+    ) external override onlyOwner {
+        _withdraw(recipient, address(this).balance);
     }
 
     /// @notice Executes the dAPI fallback mechanism for data feed updates by using Merkle proofs
@@ -118,6 +113,7 @@ contract DapiFallbackV2 is
     /// After validations, it triggers the data feed update on the Api3Server.
     /// @param args A structured parameter of type `ExecuteDapiFallbackArgs`
     /// containing the necessary parameters for the dAPI fallback execution, including:
+    ///   - `dapiFallbackManagerInd`: Index of the manager in the dapiFallbackManagers array
     ///   - `dapiName`: Identifier of the dAPI.
     ///   - `dataFeedId`: New data feed ID for the dAPI.
     ///   - `fallbackRoot`: Root of the Merkle tree for the dAPI fallback mechanism.
@@ -131,21 +127,20 @@ contract DapiFallbackV2 is
     /// which is funded if the balance is below the required minimum.
     function executeDapiFallback(
         ExecuteDapiFallbackArgs calldata args
-    ) external override {
-        require(
-            msg.sender == manager ||
-                IAccessControlRegistry(accessControlRegistry).hasRole(
-                    fallbackExecuterRole,
-                    msg.sender
-                ),
-            "Sender is not manager or has fallback executer role"
-        );
+    )
+        external
+        override
+        onlyByDapiFallbackManagerWithInd(args.dapiFallbackManagerInd)
+    {
         require(args.dapiName != bytes32(0), "Dapi name is zero");
         require(args.dataFeedId != bytes32(0), "Data feed ID is zero");
         require(args.updateParams.length != 0, "Update params empty");
         require(args.duration != 0, "Duration is zero");
         require(args.price != 0, "Price is zero");
-        require(args.sponsorWallet != address(0), "Zero address");
+        require(
+            args.sponsorWallet != address(0),
+            "Sponsor wallet address is zero"
+        );
 
         bytes32 hashedUpdateParams = keccak256(args.updateParams);
 
@@ -155,7 +150,7 @@ contract DapiFallbackV2 is
         );
 
         bytes32 currentDataFeedId = IApi3ServerV1(api3ServerV1)
-            .dapiNameHashToDataFeedId(args.dapiName);
+            .dapiNameToDataFeedId(args.dapiName);
         require(
             currentDataFeedId != args.dataFeedId,
             "Data feed ID will not be changed"
@@ -244,6 +239,7 @@ contract DapiFallbackV2 is
     /// @param root dAPI Management Merkle tree root hash
     /// @param proof Array of hashes to verify a Merkle tree leaf
     function revertDapiFallback(
+        uint256 dapiFallbackManagerInd,
         bytes32 dapiName,
         bytes32 dataFeedId,
         address sponsorWallet,
@@ -252,15 +248,11 @@ contract DapiFallbackV2 is
         uint32 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
-    ) external override {
-        require(
-            msg.sender == manager ||
-                IAccessControlRegistry(accessControlRegistry).hasRole(
-                    fallbackReverterRole,
-                    msg.sender
-                ),
-            "Sender is not manager or has fallback reverter role"
-        );
+    )
+        external
+        override
+        onlyByDapiFallbackManagerWithInd(dapiFallbackManagerInd)
+    {
         require(
             fallbackedDapis.remove(dapiName),
             "dAPI fallback has not been executed"
@@ -278,6 +270,17 @@ contract DapiFallbackV2 is
         emit RevertedDapiFallback(dapiName, dataFeedId, sponsorWallet);
     }
 
+    /// @notice Returns the dAPI fallback managers
+    /// @return dAPI fallback managers
+    function getDapiFallbackManagers()
+        external
+        view
+        override
+        returns (address[] memory)
+    {
+        return dapiFallbackManagers;
+    }
+
     /// @notice Returns the dAPIs for which fallback has been executed
     /// @dev Fallback data feeds are single sourced and self funded data feeds
     /// with deviation threshold of 1% and heartbeat interval of 1 day (in secs).
@@ -292,6 +295,29 @@ contract DapiFallbackV2 is
         returns (bytes32[] memory dapis)
     {
         dapis = fallbackedDapis.values();
+    }
+
+    /// @notice Called privately to set the dAPI fallback managers
+    /// @param _dapiFallbackManagers dAPI fallback managers
+    function _setDapiFallbackManagers(
+        address[] memory _dapiFallbackManagers
+    ) private {
+        require(
+            _dapiFallbackManagers.length != 0,
+            "dAPI fallback managers is empty"
+        );
+        dapiFallbackManagers = _dapiFallbackManagers;
+        emit SetDapiFallbackManagers(_dapiFallbackManagers);
+    }
+
+    /// @notice Called privately to withdraw funds
+    /// @param recipient Recipient address
+    /// @param amount Amount
+    function _withdraw(address payable recipient, uint256 amount) private {
+        require(recipient != address(0), "Recipient address is zero");
+        require(amount != 0, "Amount is zero");
+        Address.sendValue(recipient, amount);
+        emit Withdrawn(recipient, amount, address(this).balance);
     }
 
     /// @notice Validates the Merkle tree structure by verifying its root and proofs.
