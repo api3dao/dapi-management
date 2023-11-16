@@ -32,7 +32,8 @@ export function createDapiFallbackMerkleTree(values: string[][]) {
 }
 
 export function createDapiManagementMerkleTree(values: string[][]) {
-  return StandardMerkleTree.of(values, ['bytes32', 'bytes32', 'address']);
+  const formattedValues = values.map((value) => [ethers.utils.formatBytes32String(value[0]), value[1], value[2]]);
+  return StandardMerkleTree.of(formattedValues, ['bytes32', 'bytes32', 'address']);
 }
 
 export function createDapiPricingMerkleTree(values: string[][]) {
