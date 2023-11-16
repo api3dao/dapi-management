@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import some from 'lodash/some';
 import { Diff2HtmlUI } from 'diff2html/lib/ui/js/diff2html-ui';
-import { InfoIcon, ShieldCheckIcon, ShieldEllipsisIcon } from 'lucide-react';
+import { AlertTriangleIcon, InfoIcon, ShieldCheckIcon, ShieldEllipsisIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
 import { Button } from '~/components/ui/button';
 import { Toggle } from '~/components/ui/toggle';
 import { cn } from '~/lib/utils';
+import { useWeb3Data } from '~/contexts/web3-data-context';
 import addressBook from '../../../data/address-book.json';
 import 'diff2html/bundles/css/diff2html.min.css';
 
@@ -42,6 +43,33 @@ export function TreeRootBadge(props: TreeRootBadgeProps) {
     >
       Root: {props.root}
     </span>
+  );
+}
+
+interface SignRootButtonProps {
+  signatures: Record<string, string>;
+  signRoot: () => void;
+  isSigning: boolean;
+}
+
+export function SignRootButton(props: SignRootButtonProps) {
+  const { signatures, signRoot, isSigning } = props;
+  const { address } = useWeb3Data();
+
+  const isSigner = !!signatures[address];
+  const canSign = signatures[address] === '0x' && !isSigning;
+  return (
+    <>
+      <Button disabled={!canSign} className="min-w-[15ch]" onClick={() => signRoot()}>
+        {isSigning ? 'Signing...' : 'Sign Root'}
+      </Button>
+      {!!address && !isSigner && (
+        <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
+          <AlertTriangleIcon className="w-4 text-gray-300" />
+          You are not a signer.
+        </p>
+      )}
+    </>
   );
 }
 

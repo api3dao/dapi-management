@@ -64,7 +64,7 @@ async function signMerkleTree(merkleTreeName) {
   };
 
   fs.writeFileSync(currentHashPath, JSON.stringify(updatedHashData, null, 2));
-  exec('yarn prettier');
+  exec('yarn format');
 }
 
 function deriveTreeHash(treeName, treeRoot, timestamp) {

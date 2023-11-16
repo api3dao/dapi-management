@@ -30,7 +30,7 @@ async function syncDapiFallbackValues() {
     };
     fs.writeFileSync(currentHashPath, JSON.stringify(merkleTeeData, null, 4));
 
-    exec('yarn prettier');
+    exec('yarn format');
     console.info('Current hash file updated.');
   }
 }

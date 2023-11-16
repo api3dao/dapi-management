@@ -5,7 +5,7 @@ import { exec } from 'child_process';
 import { z } from 'zod';
 import isObject from 'lodash/isObject';
 
-const execute = promisify(exec);
+export const execute = promisify(exec);
 
 export type TreeSubFolder =
   | 'dapi-fallback-merkle-tree-root'
@@ -15,6 +15,7 @@ export type TreeSubFolder =
 
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
+  hash: z.string(),
   signatures: z.record(z.string()),
   merkleTreeValues: z.object({
     values: z.array(z.array(z.any())),
@@ -64,7 +65,7 @@ export function readSignerDataFrom(subfolder: TreeSubFolder) {
 }
 
 export function writeMerkleTreeData(path: string, data: MerkleTreeData) {
-  writeFileSync(path, JSON.stringify(data));
+  writeFileSync(path, JSON.stringify(data, null, 2));
 }
 
 export async function createFileDiff(pathA: string, pathB: string) {

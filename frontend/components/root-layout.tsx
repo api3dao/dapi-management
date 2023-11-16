@@ -1,11 +1,13 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Inter } from 'next/font/google';
+import { LoaderIcon } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { Popover, PopoverTrigger, PopoverContent } from './ui/popover';
 import { Button } from './ui/button';
 import { useWeb3Data } from '~/contexts/web3-data-context';
+import { cn } from '~/lib/utils';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -46,14 +48,54 @@ interface NavLinkProps {
 }
 
 function NavLink(props: NavLinkProps) {
+  const { href } = props;
   const router = useRouter();
-  const isActive = router.pathname === props.href;
+  const isActive = router.pathname === href;
+  const [showLoader, setShowLoader] = useState(false);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    const handleStart = (path: string) => {
+      if (path === href) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => setShowLoader(true), 50);
+      }
+    };
+
+    const handleComplete = (path: string) => {
+      if (path === href) {
+        clearTimeout(timeoutId);
+        setShowLoader(false);
+      }
+    };
+
+    router.events.on('routeChangeStart', handleStart);
+    router.events.on('routeChangeComplete', handleComplete);
+    router.events.on('routeChangeError', handleComplete);
+
+    return () => {
+      router.events.off('routeChangeStart', handleStart);
+      router.events.off('routeChangeComplete', handleComplete);
+      router.events.off('routeChangeError', handleComplete);
+    };
+  }, [router, href]);
+
   return (
     <Link
-      className={isActive ? '-mx-2 -my-1 rounded bg-gray-200 px-2 py-1 text-gray-800' : 'hover:text-gray-800'}
-      href={props.href}
+      href={href}
+      className={
+        isActive ? 'relative -mx-2 -my-1 rounded bg-gray-200 px-2 py-1 text-gray-800' : 'relative hover:text-gray-800'
+      }
     >
       {props.children}
+      <LoaderIcon
+        className={cn(
+          'absolute h-4 w-4 animate-spin text-gray-400 transition-opacity duration-300',
+          isActive ? 'right-[5px] top-[6px]' : 'right-[-3px] top-[2px]',
+          showLoader ? 'opacity-100' : 'opacity-0'
+        )}
+      />
     </Link>
   );
 }
