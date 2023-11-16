@@ -11,9 +11,33 @@ import "./interfaces/IHashRegistry.sol";
 import "./interfaces/IDapiFallbackV2.sol";
 import "./interfaces/IDapiDataRegistry.sol";
 
-/// @title DapiFallbackV2 contract for handling dAPI fallbacks in case of primary data feed failure.
-/// @notice This contract contains the logic for executing dAPI fallbacks
-/// and ensuring data feed continuity by utilizing Merkle proofs for verification.
+/// @title Contract that sets dAPI names to fallback data feeds under specific
+/// conditions
+/// @notice The objective of this contract is to enable individual "dAPI
+/// fallback managers" to be able to execute a pre-planned response plan for
+/// dAPI emergencies. The plan is to redirect the dAPI from a more
+/// decentralized data feed that will not be able to respond to emergencies
+/// swiftly to a data feed that we can reasonably expect to not be affected by
+/// the factors that cause the emergency or at least quickly address these.
+/// The conditions to be able to execute the plan are as follow:
+/// - The sender must be a dAPI fallback manager
+/// - The respective fallback data feed must have been included in a Merkle
+/// tree whose root has been signed by all "root signers" and registered on the
+/// HashRegsitry contract.
+/// - The dAPI must have already been pointing to a data feed that is not the
+/// fallback data feed
+/// - Have enought funds to be able to top-up the data feed sponsor wallet for at
+/// least a day on the current chain according to the prices from the merkle tree
+/// In addition to executing fallbacks, the dAPI fallback managers are allowed
+/// to transfer funds from this contract to the sponsor wallets of the fallback
+/// data feeds (because both the fallback data feeds being operational and
+/// their sponsor wallets being funded are required for fallbacks to be
+/// executed). These manager can also undo the fallback execution by setting the
+/// dAPI back to a decentralized data feed.
+/// @dev This contract needs to be granted the dAPI name setter role by the
+/// manager of the respective Api3ServerV1 contract to be able to execute
+/// fallbacks. It also require the dAPI adder and dAPI remover roles from the
+/// DapiDataRegistry contract as well
 contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
