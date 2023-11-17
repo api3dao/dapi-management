@@ -334,14 +334,14 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     }
 
     /// @notice Returns the dAPI fallback managers
-    /// @return dAPI fallback managers
+    /// @return dapiFallbackManagers_ dAPI fallback managers
     function getDapiFallbackManagers()
         external
         view
         override
-        returns (address[] memory)
+        returns (address[] memory dapiFallbackManagers_)
     {
-        return dapiFallbackManagers.values();
+        dapiFallbackManagers_ = dapiFallbackManagers.values();
     }
 
     /// @notice Returns the dAPIs for which fallback has been executed
@@ -351,13 +351,14 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// information like beaconId or sponsor wallet can be read by off-chain apps
     /// straigth from the website/API or use the Merkle tree JSON file exported
     /// by the api3/dapi-management repo
+    /// @return fallbackedDapis_ Fallbacked dAPIs
     function getFallbackedDapis()
         external
         view
         override
-        returns (bytes32[] memory dapis)
+        returns (bytes32[] memory fallbackedDapis_)
     {
-        dapis = fallbackedDapis.values();
+        fallbackedDapis_ = fallbackedDapis.values();
     }
 
     /// @notice Called privately to initialize the dAPI fallback managers
