@@ -28,6 +28,7 @@ import "./interfaces/IDapiDataRegistry.sol";
 /// fallback data feed
 /// - Have enought funds to be able to top-up the data feed sponsor wallet for at
 /// least a day on the current chain according to the prices from the merkle tree
+/// - The fallback data feed must have been updated in the last day
 /// In addition to executing fallbacks, the dAPI fallback managers are allowed
 /// to transfer funds from this contract to the sponsor wallets of the fallback
 /// data feeds (because both the fallback data feeds being operational and
@@ -217,6 +218,16 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
             args.priceProof,
             args.priceRoot,
             priceLeaf
+        );
+
+        (, uint32 timestamp) = IApi3ServerV1(api3ServerV1).readDataFeedWithId(
+            args.dataFeedId
+        );
+        // Data feed must have been updated in the last day, assuming that the
+        // largest heartbeat interval is 1 day
+        require(
+            timestamp + 1 days > block.timestamp,
+            "Feed not updated in last day"
         );
 
         IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.dataFeedId);
