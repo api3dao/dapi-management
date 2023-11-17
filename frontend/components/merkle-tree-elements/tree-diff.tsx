@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import forEach from 'lodash/forEach';
 import { Diff2HtmlUI } from 'diff2html/lib/ui/js/diff2html-ui';
@@ -45,9 +45,10 @@ export function TreeDiff(props: TreeDiffProps) {
 
         while (matchingElement) {
           const root = createRoot(matchingElement);
+          const wrapInQuotes = matchingElement.textContent!.startsWith('"');
           const reactNode = (
             <TooltipProvider>
-              <DiffAlias alias={alias} value={value} wrapInQuotes={matchingElement.textContent!.startsWith('"')} />
+              <DiffAlias alias={alias} value={value} wrapInQuotes={wrapInQuotes} />
             </TooltipProvider>
           );
           roots.push([root, reactNode]);
@@ -120,35 +121,20 @@ interface DiffAliasProps {
 }
 
 function DiffAlias(props: DiffAliasProps) {
-  const triggerRef = useRef<HTMLElement>(null);
   const { alias, value, wrapInQuotes } = props;
   return (
-    <Tooltip delayDuration={0}>
+    <Tooltip delayDuration={0} preventCloseOnClick>
       {wrapInQuotes && '"'}
       <TooltipTrigger asChild>
         <span
-          ref={triggerRef}
+          className="cursor-default underline decoration-transparent/40 underline-offset-2 hover:decoration-transparent/70"
           role="button"
           tabIndex={0}
-          className="cursor-default underline decoration-transparent/40 underline-offset-2 hover:decoration-transparent/70"
-          onClick={(ev) => {
-            // We don't want to close the tooltip when the trigger is clicked
-            ev.preventDefault();
-          }}
         >
           {alias}
         </span>
       </TooltipTrigger>
-      <TooltipContent
-        onPointerDownOutside={(ev) => {
-          // We don't want to close the tooltip when the trigger is clicked
-          if (triggerRef.current!.contains(ev.target as Node)) {
-            ev.preventDefault();
-          }
-        }}
-      >
-        {value}
-      </TooltipContent>
+      <TooltipContent>{value}</TooltipContent>
       {wrapInQuotes && '"'}
     </Tooltip>
   );

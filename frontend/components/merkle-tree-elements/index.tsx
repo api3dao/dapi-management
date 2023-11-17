@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import some from 'lodash/some';
 import { AlertTriangleIcon, InfoIcon, ShieldCheckIcon, ShieldEllipsisIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
@@ -124,33 +123,15 @@ interface SignerInfoProps {
 }
 
 function SignerInfo(props: SignerInfoProps) {
-  const triggerRef = useRef<HTMLButtonElement>(null);
   return (
-    <Tooltip delayDuration={0}>
+    <Tooltip delayDuration={0} preventCloseOnClick>
       <TooltipTrigger asChild>
-        <Button
-          ref={triggerRef}
-          variant="ghost"
-          className="group inline-flex h-4 cursor-auto items-center gap-1.5 p-0"
-          onClick={(ev) => {
-            // We don't want to close the tooltip when the trigger is clicked
-            ev.preventDefault();
-          }}
-        >
+        <Button variant="ghost" className="group inline-flex h-4 cursor-auto items-center gap-1.5 p-0">
           <InfoIcon className="h-4 w-4 text-gray-300 group-hover:text-gray-400" />
           {props.name}
         </Button>
       </TooltipTrigger>
-      <TooltipContent
-        onPointerDownOutside={(ev) => {
-          // We don't want to close the tooltip when the trigger is clicked
-          if (triggerRef.current!.contains(ev.target as Node)) {
-            ev.preventDefault();
-          }
-        }}
-      >
-        {props.address}
-      </TooltipContent>
+      <TooltipContent>{props.address}</TooltipContent>
     </Tooltip>
   );
 }
