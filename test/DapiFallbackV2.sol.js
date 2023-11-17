@@ -348,30 +348,30 @@ describe('DapiFallbackV2', function () {
               const { roles, api3ServerV1, hashRegistry, dapiDataRegistry, dapiFallbackV2 } = await helpers.loadFixture(
                 deploy
               );
-              expect(await dapiFallbackV2.api3ServerV1()).to.equal(api3ServerV1.address);
-              expect(await dapiFallbackV2.hashRegistry()).to.equal(hashRegistry.address);
-              expect(await dapiFallbackV2.dapiDataRegistry()).to.equal(dapiDataRegistry.address);
-              expect(await dapiFallbackV2.getDapiFallbackManagers()).to.deep.equal([
+              const expectedDapiFallbackManagers = [
                 roles.dapiFallbackManager1.address,
                 roles.dapiFallbackManager2.address,
                 roles.dapiFallbackManager3.address,
-              ]);
-              expect(await dapiFallbackV2.dapiFallbackManagers(0)).to.equal(roles.dapiFallbackManager1.address);
-              expect(await dapiFallbackV2.dapiFallbackManagers(1)).to.equal(roles.dapiFallbackManager2.address);
-              expect(await dapiFallbackV2.dapiFallbackManagers(2)).to.equal(roles.dapiFallbackManager3.address);
+              ];
+              expect(await dapiFallbackV2.api3ServerV1()).to.equal(api3ServerV1.address);
+              expect(await dapiFallbackV2.hashRegistry()).to.equal(hashRegistry.address);
+              expect(await dapiFallbackV2.dapiDataRegistry()).to.equal(dapiDataRegistry.address);
+              expect(await dapiFallbackV2.getDapiFallbackManagers()).to.deep.equal(expectedDapiFallbackManagers);
+              const dapiFallbackManagers = await dapiFallbackV2.getDapiFallbackManagers();
+              expect(dapiFallbackManagers[0]).to.equal(roles.dapiFallbackManager1.address);
+              expect(dapiFallbackManagers[1]).to.equal(roles.dapiFallbackManager2.address);
+              expect(dapiFallbackManagers[2]).to.equal(roles.dapiFallbackManager3.address);
               const deploymentTransactionReceipt = await hre.ethers.provider.getTransactionReceipt(
                 dapiFallbackV2.deployTransaction.hash
               );
               const parsedLogs = deploymentTransactionReceipt.logs.map((log) => dapiFallbackV2.interface.parseLog(log));
-              const setDapiFallbackManagersLogs = parsedLogs.filter(
-                (parsedLog) => parsedLog.name === 'SetDapiFallbackManagers'
+              const addedDapiFallbackManagerLogs = parsedLogs.filter(
+                (parsedLog) => parsedLog.name === 'AddedDapiFallbackManager'
               );
-              expect(setDapiFallbackManagersLogs.length).to.equal(1);
-              expect(setDapiFallbackManagersLogs[0].args[0]).to.deep.equal([
-                roles.dapiFallbackManager1.address,
-                roles.dapiFallbackManager2.address,
-                roles.dapiFallbackManager3.address,
-              ]);
+              expect(addedDapiFallbackManagerLogs.length).to.equal(3);
+              addedDapiFallbackManagerLogs.forEach((log, i) =>
+                expect(log.args[0]).to.equal(expectedDapiFallbackManagers[i])
+              );
             });
           });
           context('dAPI fallback managers is empty', function () {
@@ -438,33 +438,92 @@ describe('DapiFallbackV2', function () {
     });
   });
 
-  describe('setDapiFallbackManagers', function () {
+  describe('addDapiFallbackManager', function () {
     context('Sender is the owner', function () {
-      context('dAPI fallback managers is not empty', function () {
-        it('sets dAPI fallback managers', async function () {
-          const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
-          const dapiFallbackManagers = [generateRandomAddress(), generateRandomAddress(), generateRandomAddress()];
-          await expect(dapiFallbackV2.connect(roles.owner).setDapiFallbackManagers(dapiFallbackManagers))
-            .to.emit(dapiFallbackV2, 'SetDapiFallbackManagers')
-            .withArgs(dapiFallbackManagers);
-          expect(await dapiFallbackV2.getDapiFallbackManagers()).to.deep.equal(dapiFallbackManagers);
+      context('dAPI fallback manager is not zero', function () {
+        context('dAPI fallback manager does not exist', function () {
+          it('adds a dAPI fallback manager', async function () {
+            const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
+            const dapiFallbackManager = generateRandomAddress();
+            await expect(dapiFallbackV2.connect(roles.owner).addDapiFallbackManager(dapiFallbackManager))
+              .to.emit(dapiFallbackV2, 'AddedDapiFallbackManager')
+              .withArgs(dapiFallbackManager);
+            expect(await dapiFallbackV2.getDapiFallbackManagers()).to.deep.equal([
+              roles.dapiFallbackManager1.address,
+              roles.dapiFallbackManager2.address,
+              roles.dapiFallbackManager3.address,
+              dapiFallbackManager,
+            ]);
+          });
+        });
+        context('dAPI fallback manager exists', function () {
+          it('reverts', async function () {
+            const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
+            await expect(
+              dapiFallbackV2.connect(roles.owner).addDapiFallbackManager(roles.dapiFallbackManager1.address)
+            ).to.have.been.revertedWith('dAPI fallback manager already exists');
+          });
         });
       });
-      context('dAPI fallback managers is empty', function () {
+      context('dAPI fallback managers is zero', function () {
         it('reverts', async function () {
           const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
-          await expect(dapiFallbackV2.connect(roles.owner).setDapiFallbackManagers([])).to.have.been.revertedWith(
-            'dAPI fallback managers is empty'
-          );
+          await expect(
+            dapiFallbackV2.connect(roles.owner).addDapiFallbackManager(hre.ethers.constants.AddressZero)
+          ).to.have.been.revertedWith('dAPI fallback manager is zero');
         });
       });
     });
     context('Sender is not the owner', function () {
       it('reverts', async function () {
         const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
-        const dapiFallbackManagers = [generateRandomAddress(), generateRandomAddress(), generateRandomAddress()];
         await expect(
-          dapiFallbackV2.connect(roles.randomPerson).setDapiFallbackManagers(dapiFallbackManagers)
+          dapiFallbackV2.connect(roles.randomPerson).addDapiFallbackManager(generateRandomAddress())
+        ).to.have.been.revertedWith('Ownable: caller is not the owner');
+      });
+    });
+  });
+
+  describe('removeDapiFallbackManager', function () {
+    context('Sender is the owner', function () {
+      context('dAPI fallback manager is not zero', function () {
+        context('dAPI fallback manager exists', function () {
+          it('removes the dAPI fallback manager', async function () {
+            const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
+            await expect(
+              dapiFallbackV2.connect(roles.owner).removeDapiFallbackManager(roles.dapiFallbackManager2.address)
+            )
+              .to.emit(dapiFallbackV2, 'RemovedDapiFallbackManager')
+              .withArgs(roles.dapiFallbackManager2.address);
+            expect(await dapiFallbackV2.getDapiFallbackManagers()).to.deep.equal([
+              roles.dapiFallbackManager1.address,
+              roles.dapiFallbackManager3.address,
+            ]);
+          });
+        });
+        context('dAPI fallback manager does not exist', function () {
+          it('reverts', async function () {
+            const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
+            await expect(
+              dapiFallbackV2.connect(roles.owner).removeDapiFallbackManager(generateRandomAddress())
+            ).to.have.been.revertedWith('dAPI fallback manager does not exist');
+          });
+        });
+      });
+      context('dAPI fallback managers is zero', function () {
+        it('reverts', async function () {
+          const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
+          await expect(
+            dapiFallbackV2.connect(roles.owner).removeDapiFallbackManager(hre.ethers.constants.AddressZero)
+          ).to.have.been.revertedWith('dAPI fallback manager is zero');
+        });
+      });
+    });
+    context('Sender is not the owner', function () {
+      it('reverts', async function () {
+        const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
+        await expect(
+          dapiFallbackV2.connect(roles.randomPerson).removeDapiFallbackManager(generateRandomAddress())
         ).to.have.been.revertedWith('Ownable: caller is not the owner');
       });
     });

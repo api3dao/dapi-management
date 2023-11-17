@@ -4,7 +4,8 @@ pragma solidity 0.8.18;
 import "@api3/airnode-protocol-v1/contracts/utils/interfaces/ISelfMulticall.sol";
 
 interface IDapiFallbackV2 is ISelfMulticall {
-    event SetDapiFallbackManagers(address[] dapiFallbackManagers);
+    event AddedDapiFallbackManager(address dapiFallbackManager);
+    event RemovedDapiFallbackManager(address dapiFallbackManager);
 
     struct ExecuteDapiFallbackArgs {
         uint256 dapiFallbackManagerInd; // dAPI fallback manager index
@@ -51,9 +52,9 @@ interface IDapiFallbackV2 is ISelfMulticall {
 
     function dapiDataRegistry() external view returns (address);
 
-    function setDapiFallbackManagers(
-        address[] calldata _dapiFallbackManagers
-    ) external;
+    function addDapiFallbackManager(address dapiFallbackManager) external;
+
+    function removeDapiFallbackManager(address dapiFallbackManager) external;
 
     function withdraw(address payable recipient, uint256 amount) external;
 
@@ -79,8 +80,6 @@ interface IDapiFallbackV2 is ISelfMulticall {
         external
         view
         returns (bytes32[] memory dapis);
-
-    function dapiFallbackManagers(uint256) external view returns (address);
 
     function getDapiFallbackManagers() external view returns (address[] memory);
 }

@@ -40,6 +40,7 @@ import "./interfaces/IDapiDataRegistry.sol";
 /// fallbacks. It also require the dAPI adder and dAPI remover roles from the
 /// DapiDataRegistry contract as well
 contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
+    using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     /// @notice Api3ServerV1 contract address
@@ -49,17 +50,16 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// @notice DapiDataRegistry contract address
     address public immutable override dapiDataRegistry;
 
-    /// TODO: switch to EnumerableSet.AddressSet?
     /// @notice dAPI fallback managers that can individually execute the
     /// response plan
-    address[] public override dapiFallbackManagers;
+    EnumerableSet.AddressSet private dapiFallbackManagers;
 
     /// @dev Reverts unless the sender is the dAPI fallback manager with the
     /// specified index
     /// @param dapiFallbackManagerInd dAPI fallback manager index
     modifier onlyByDapiFallbackManagerWithInd(uint256 dapiFallbackManagerInd) {
         require(
-            msg.sender == dapiFallbackManagers[dapiFallbackManagerInd] ||
+            msg.sender == dapiFallbackManagers.at(dapiFallbackManagerInd) ||
                 msg.sender == address(0),
             "Sender not manager with ID"
         );
@@ -94,7 +94,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         api3ServerV1 = _api3ServerV1;
         hashRegistry = _hashRegistry;
         dapiDataRegistry = _dapiDataRegistry;
-        _setDapiFallbackManagers(_dapiFallbackManagers);
+        _initializeDapiFallbackManagers(_dapiFallbackManagers);
     }
 
     /// @notice Allows the contract to receive funds. These funds can then be
@@ -104,12 +104,40 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// empty calldata
     receive() external payable {}
 
-    /// @notice Called by the owner to set the dAPI fallback managers
-    /// @param _dapiFallbackManagers dAPI fallback managers
-    function setDapiFallbackManagers(
-        address[] calldata _dapiFallbackManagers
+    /// @notice Called by the owner to add a dAPI fallback manager
+    /// @param dapiFallbackManager dAPI fallback manager address
+    function addDapiFallbackManager(
+        address dapiFallbackManager
+    ) public override onlyOwner {
+        require(
+            dapiFallbackManager != address(0),
+            "dAPI fallback manager is zero"
+        );
+        require(
+            dapiFallbackManagers.add(dapiFallbackManager),
+            "dAPI fallback manager already exists"
+        );
+        emit AddedDapiFallbackManager(dapiFallbackManager);
+    }
+
+    /// @notice Called by the owner to remove a dAPI fallback manager
+    /// @dev This operation might change the order in the AddressSet and this
+    /// must be considered when calling functions that require an index to be
+    /// passed as argument (i.e. executeDapiFallback() or any other function
+    /// using the onlyByDapiFallbackManagerWithInd modifier)
+    /// @param dapiFallbackManager dAPI fallback manager address
+    function removeDapiFallbackManager(
+        address dapiFallbackManager
     ) external override onlyOwner {
-        _setDapiFallbackManagers(_dapiFallbackManagers);
+        require(
+            dapiFallbackManager != address(0),
+            "dAPI fallback manager is zero"
+        );
+        require(
+            dapiFallbackManagers.remove(dapiFallbackManager),
+            "dAPI fallback manager does not exist"
+        );
+        emit RemovedDapiFallbackManager(dapiFallbackManager);
     }
 
     /// @notice Called by the owner to withdraw funds
@@ -313,7 +341,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         override
         returns (address[] memory)
     {
-        return dapiFallbackManagers;
+        return dapiFallbackManagers.values();
     }
 
     /// @notice Returns the dAPIs for which fallback has been executed
@@ -332,17 +360,19 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         dapis = fallbackedDapis.values();
     }
 
-    /// @notice Called privately to set the dAPI fallback managers
-    /// @param _dapiFallbackManagers dAPI fallback managers
-    function _setDapiFallbackManagers(
-        address[] memory _dapiFallbackManagers
+    /// @notice Called privately to initialize the dAPI fallback managers
+    /// @param dapiFallbackManagers_ dAPI fallback managers
+    function _initializeDapiFallbackManagers(
+        address[] memory dapiFallbackManagers_
     ) private {
         require(
-            _dapiFallbackManagers.length != 0,
+            dapiFallbackManagers_.length != 0,
             "dAPI fallback managers is empty"
         );
-        dapiFallbackManagers = _dapiFallbackManagers;
-        emit SetDapiFallbackManagers(_dapiFallbackManagers);
+        require(dapiFallbackManagers.length() == 0, "Already initialized");
+        for (uint256 ind = 0; ind < dapiFallbackManagers_.length; ind++) {
+            addDapiFallbackManager(dapiFallbackManagers_[ind]);
+        }
     }
 
     /// @notice Called privately to withdraw funds
