@@ -445,11 +445,11 @@ contract Api3Market is IApi3Market {
                     keccak256(abi.encodePacked((beacons[ind].url))))
             ) {
                 IDapiDataRegistry(dapiDataRegistry).registerAirnodeSignedApiUrl(
-                        beacons[ind].airnode,
-                        beacons[ind].url,
-                        signedApiUrlRoot,
-                        signedApiUrlProofs[ind]
-                    );
+                    beacons[ind].airnode,
+                    beacons[ind].url,
+                    signedApiUrlRoot,
+                    signedApiUrlProofs[ind]
+                );
             }
         }
     }
