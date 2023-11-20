@@ -25,7 +25,9 @@ import "./interfaces/IHashRegistry.sol";
 /// configuration does not change (i.e. same set of beacons that point to the
 /// same Airnode addresses for which signed API URLs have not changed). This is
 /// because there will be no need to update the values in the `DapiDataRegistry`
-/// contract. Deploying a dAPI proxy contract will also not be needed
+/// contract. This contract also handles deploying a new dAPI proxy contract if
+/// needed and value left from the purchase after making price adjustments will
+/// be returned to the caller
 contract Api3Market is IApi3Market {
     bytes32 private constant DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("dAPI pricing Merkle tree root"));
@@ -443,11 +445,11 @@ contract Api3Market is IApi3Market {
                     keccak256(abi.encodePacked((beacons[ind].url))))
             ) {
                 IDapiDataRegistry(dapiDataRegistry).registerAirnodeSignedApiUrl(
-                    beacons[ind].airnode,
-                    beacons[ind].url,
-                    signedApiUrlRoot,
-                    signedApiUrlProofs[ind]
-                );
+                        beacons[ind].airnode,
+                        beacons[ind].url,
+                        signedApiUrlRoot,
+                        signedApiUrlProofs[ind]
+                    );
             }
         }
     }
