@@ -13,6 +13,9 @@ import { readTreeDataFrom, readSignerDataFrom, createFileDiff } from '~/lib/serv
 import { createDapiPricingMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
+import { useState } from 'react';
+import { Unit, convertWeiTo } from '~/lib/utils';
 
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
@@ -45,6 +48,7 @@ type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 
 export default function DapiPricingTree(props: Props) {
   const { currentTree, signers } = props;
+  const [priceUnit, setPriceUnit] = useState<Unit>('ether');
 
   const merkleTree = createDapiPricingMerkleTree(currentTree.merkleTreeValues.values);
 
@@ -87,7 +91,18 @@ export default function DapiPricingTree(props: Props) {
                 <TableHead>Chain ID</TableHead>
                 <TableHead>dAPI Update Parameters</TableHead>
                 <TableHead>Duration</TableHead>
-                <TableHead>Price</TableHead>
+                <TableHead className="flex items-center gap-2">
+                  Price
+                  <Select onValueChange={(unit: Unit) => setPriceUnit(unit)} defaultValue="ether">
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ether">Ether</SelectItem>
+                      <SelectItem value="wei">Wei</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -97,7 +112,7 @@ export default function DapiPricingTree(props: Props) {
                   <TableCell>{pricing[1]}</TableCell>
                   <TableCell>{pricing[2]}</TableCell>
                   <TableCell>{pricing[3]}</TableCell>
-                  <TableCell>{pricing[4]}</TableCell>
+                  <TableCell>{convertWeiTo(priceUnit, pricing[4])}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
