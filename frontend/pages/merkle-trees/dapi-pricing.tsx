@@ -15,7 +15,9 @@ import { InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { useState } from 'react';
-import { Unit, convertWeiTo } from '~/lib/utils';
+import { ethers } from 'ethers';
+
+export type Unit = 'wei' | 'ether';
 
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
@@ -62,6 +64,10 @@ export default function DapiPricingTree(props: Props) {
     signers
   );
 
+  const convertPrice = (price: string) => {
+    return priceUnit === 'ether' ? ethers.utils.commify(ethers.utils.formatEther(price)) : price;
+  };
+
   return (
     <RootLayout>
       <div>
@@ -91,10 +97,10 @@ export default function DapiPricingTree(props: Props) {
                 <TableHead>Chain ID</TableHead>
                 <TableHead>dAPI Update Parameters</TableHead>
                 <TableHead>Duration</TableHead>
-                <TableHead className="flex items-center gap-2">
+                <TableHead>
                   Price
                   <Select onValueChange={(unit: Unit) => setPriceUnit(unit)} defaultValue="ether">
-                    <SelectTrigger className="w-[100px]">
+                    <SelectTrigger className="ml-1 inline-flex h-8 w-[100px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -112,7 +118,7 @@ export default function DapiPricingTree(props: Props) {
                   <TableCell>{pricing[1]}</TableCell>
                   <TableCell>{pricing[2]}</TableCell>
                   <TableCell>{pricing[3]}</TableCell>
-                  <TableCell>{convertWeiTo(priceUnit, pricing[4])}</TableCell>
+                  <TableCell>{convertPrice(pricing[4])}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
