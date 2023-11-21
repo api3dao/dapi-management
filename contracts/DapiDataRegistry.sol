@@ -11,7 +11,7 @@ import "./interfaces/IHashRegistry.sol";
 /// @title Contract used to store and manage dAPI related information
 /// @notice The DapiDataRegistry contract main use case is storing all the active
 /// dAPI names. By active we mean the list of data feeds currently being updated.
-/// This conract will also require that caller also provides update parameter
+/// This contract will also require that caller also provides update parameter
 /// information at the time a new dAPI is added. Previous to this, the user must
 /// have called registerDataFeed() to store data feed data that is needed for
 /// updating the data feed the dAPI name is point to. For instance, storing an
@@ -139,8 +139,8 @@ contract DapiDataRegistry is
 
     /// @notice Called to register data about a data feed
     /// @dev Data feed IDs are derived based on this data. If the encoded bytes
-    /// has a length of 64 it is considered to be data for deriving a beacon ID.
-    /// Otherwise it is considered data for deriving beacon IDs that are then
+    /// have a length of 64, it is considered data for deriving a beacon ID.
+    /// Otherwise, it is considered data for deriving beacon IDs that are then
     /// used to derive the beacon set ID
     /// @param dataFeed Encoded data feed data
     function registerDataFeed(
@@ -153,7 +153,6 @@ contract DapiDataRegistry is
                 (address, bytes32)
             );
             // Derive beacon ID
-            // https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/DataFeedServer.sol#L83-L92
             dataFeedId = keccak256(abi.encodePacked(airnode, templateId));
         } else {
             require(dataFeed.length != 0, "Data feed is empty");
@@ -168,13 +167,11 @@ contract DapiDataRegistry is
             bytes32[] memory beaconIds = new bytes32[](airnodes.length);
             for (uint256 i = 0; i < airnodes.length; i++) {
                 // Derive beacon ID
-                // https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/DataFeedServer.sol#L83-L92
                 beaconIds[i] = keccak256(
                     abi.encodePacked(airnodes[i], templateIds[i])
                 );
             }
             // Derive beacon set ID
-            // https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/DataFeedServer.sol#L94-L102
             dataFeedId = keccak256(abi.encode(beaconIds));
         }
 
@@ -318,7 +315,6 @@ contract DapiDataRegistry is
         require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
 
         // This contract needs to be granted the dAPI name setter role
-        // https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/DapiServer.sol#L26
         IApi3ServerV1(api3ServerV1).setDapiName(dapiName, dataFeedId);
 
         emit UpdatedDapiDataFeedId(
