@@ -68,18 +68,11 @@ async function signMerkleTree(merkleTreeName) {
 }
 
 function deriveTreeHash(treeName, treeRoot, timestamp) {
-  const encodedHash = ethers.utils.toUtf8Bytes(`${treeName} root`);
-  const hashType = ethers.utils.keccak256(encodedHash);
+  const hashType = ethers.utils.solidityKeccak256(['string'], [`${treeName} root`]);
 
-  const encodedValues = ethers.utils.defaultAbiCoder.encode(
-    ['string', 'bytes32', 'uint256'],
-    [hashType, treeRoot, timestamp]
+  return ethers.utils.arrayify(
+    ethers.utils.solidityKeccak256(['bytes32', 'bytes32', 'uint256'], [hashType, treeRoot, timestamp])
   );
-
-  // Hash the encoded parameters
-  const hash = ethers.utils.keccak256(encodedValues);
-
-  return ethers.utils.arrayify(hash);
 }
 
 signMerkleTree(merkleTreeName).catch((error) => {
