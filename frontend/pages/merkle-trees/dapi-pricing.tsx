@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~
 import { useState } from 'react';
 import { ethers } from 'ethers';
 
-export type Unit = 'wei' | 'ether';
+type Unit = 'wei' | 'ether';
 
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
