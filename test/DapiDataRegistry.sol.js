@@ -79,8 +79,7 @@ describe('DapiDataRegistry', function () {
     }, {});
 
     const HashRegistry = await hre.ethers.getContractFactory('HashRegistry', roles.deployer);
-    const hashRegistry = await HashRegistry.deploy();
-    await hashRegistry.connect(roles.deployer).transferOwnership(roles.owner.address);
+    const hashRegistry = await HashRegistry.deploy(roles.owner.address);
 
     const AccessControlRegistry = await hre.ethers.getContractFactory('AccessControlRegistry', roles.deployer);
     const accessControlRegistry = await AccessControlRegistry.deploy();

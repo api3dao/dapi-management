@@ -21,8 +21,7 @@ describe('HashRegistry', function () {
     }, {});
 
     const HashRegistry = await hre.ethers.getContractFactory('HashRegistry', roles.deployer);
-    const hashRegistry = await HashRegistry.deploy();
-    await hashRegistry.connect(roles.deployer).transferOwnership(roles.owner.address);
+    const hashRegistry = await HashRegistry.deploy(roles.owner.address);
 
     const dapiName = 'API3/USD';
     const fallbackBeaconTemplateId = generateRandomBytes32();
