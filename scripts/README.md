@@ -1,11 +1,15 @@
 ## Usage Of Merkle Tree Signing Scripts
 
-1. Navigate to the respective directory under `data/` corresponding to each Merkle tree. Before updating the values of the `current-hash.json` file, please copy the contents of the `current-hash.json` file into the `previous-hash.json` file. Thereafter, you can update the current-hash.json file with the necessary values, ensuring it has the following structure:
+### 1. Prepare JSON Files:
+
+- Navigate to the respective directory under `data/` corresponding to each Merkle tree.
+- Transfer the contents of `current-hash.json` into `previous-hash.json`.
+- Update `current-hash.json` with the new values. Ensure it follows the format:
 
 ```json
 {
-  "timestamp": 1676940000,
-  "hash": "0x1234...",
+  "timestamp": [Unix Timestamp in seconds],
+  "hash": "[Merkle Root Hash]",
   "signatures": {
   },
   "merkleTreeValues": {
@@ -14,7 +18,9 @@
 }
 ```
 
-2. Run the script by specifying the Merkle tree's name as follows:
+### 2. Run the Script:
+
+- Execute the script for a specific Merkle tree:
 
 ```bash
 yarn sign [MerkleTreeName]
@@ -28,11 +34,13 @@ yarn sign "dAPI fallback Merkle tree"
 
 This command constructs the Merkle tree based on the data, signs the root, and updates `current-hash.json` in the specified directory.
 
-3. After running the script, confirm that `current-hash.json` is updated with the new Merkle root and the signature.
+### 3. Verification:
+
+- After running the script, confirm that `current-hash.json` is updated with the new Merkle root and the signature.
 
 ## Data File Details
 
-- **current-hash.json:** Stores the state of the Merkle tree. Updated by the script with each execution, recording the new Merkle root, its signature, and the timestamp.
+- **current-hash.json:** Stores the state of the Merkle tree. Updated by the script with each execution, recording the new Merkle root, signatures, and the timestamp.
 
 - **previous-hash.json:** Stores the state of the previous Merkle tree. This is used to present the user with a diff view between the previous and current states.
 
@@ -41,23 +49,23 @@ This command constructs the Merkle tree based on the data, signs the root, and u
 ### 1. dAPI pricing Merkle Tree
 
 - **Values**:
-  - **dAPI Name (bytes32)**: The name of the dAPI, hashed.
+  - **dAPI Name (bytes32)**: dAPI name string formatted as bytes32.
   - **Chain ID (uint256)**: Identifier for the blockchain network.
-  - **dAPI Update Parameters (bytes)**: Parameters associated with the dAPI update.
-  - **Duration (uint256)**: The duration for which the price is valid.
-  - **Price (uint256)**: The cost in the native currency of the chain. There is no minimum USD price.
+  - **dAPI Update Parameters (bytes)**: Encoded parameters for dAPI updates. It decodes as, Deviation Threshold in Percentage (uint256) [multiplied by 1e8](https://github.com/api3dao/airnode-protocol-v1/blob/b45d225ef33257d82124dd895731846bc7e46eed/contracts/api3-server-v1/extensions/BeaconSetUpdatesWithPsp.sol#L27), Deviation Reference (int224), Heartbeat Interval (uint32) in seconds.
+  - **Duration (uint256)**: The duration in seconds for which the price is valid.
+  - **Price (uint256)**: The cost in the native currency of the chain, expressed in wei.
 
 ### 2. dAPI management Merkle Tree
 
 - **Values**:
-  - **dAPI Name (bytes32)**: The name of the dAPI, hashed.
+  - **dAPI Name (bytes32)**: dAPI name string formatted as bytes32.
   - **Data Feed ID (bytes32)**: Identifier for the data feed.
   - **dAPI Sponsor Wallet Address (address)**: Wallet address of the dAPI sponsor wallet.
 
 ### 3. dAPI fallback Merkle Tree
 
 - **Values**:
-  - **dAPI Name (bytes32)**: The name of the dAPI, hashed.
+  - **dAPI Name (bytes32)**: dAPI name string formatted as bytes32.
   - **Data Feed ID (bytes32)**: Identifier for the data feed.
   - **Sponsor Wallet Address (address)**: Address of the sponsor wallet.
 
