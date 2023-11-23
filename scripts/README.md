@@ -52,7 +52,7 @@ This command constructs the Merkle tree based on the data, signs the root, and u
   - **dAPI Name (bytes32)**: dAPI name string formatted as bytes32.
   - **Chain ID (uint256)**: Identifier for the blockchain network.
   - **dAPI Update Parameters (bytes)**: Encoded parameters for dAPI updates. It decodes as, Deviation Threshold in Percentage (uint256) multiplied by 1e8, Deviation Reference (int224), Heartbeat Interval (uint32) in seconds.
-  - **Duration (uint256)**: The duration for which the price is valid, in seconds.
+  - **Duration (uint256)**: The duration in seconds for which the price is valid.
   - **Price (uint256)**: The cost in the native currency of the chain, expressed in wei.
 
 ### 2. dAPI management Merkle Tree
