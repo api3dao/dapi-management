@@ -54,18 +54,14 @@ function NavLink(props: NavLinkProps) {
   const [showLoader, setShowLoader] = useState(false);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
     const handleStart = (path: string) => {
       if (path === href) {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => setShowLoader(true), 50);
+        setShowLoader(true);
       }
     };
 
     const handleComplete = (path: string) => {
       if (path === href) {
-        clearTimeout(timeoutId);
         setShowLoader(false);
       }
     };
