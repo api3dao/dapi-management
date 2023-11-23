@@ -59,14 +59,14 @@ This command constructs the Merkle tree based on the data, signs the root, and u
 
 - **Values**:
   - **dAPI Name (bytes32)**: dAPI name string formatted as bytes32.
-  - **Beacon Set ID (bytes32)**: Identifier for the beacon set.
+  - **Data Feed ID (bytes32)**: Identifier for the data feed.
   - **dAPI Sponsor Wallet Address (address)**: Wallet address of the dAPI sponsor wallet.
 
 ### 3. dAPI fallback Merkle Tree
 
 - **Values**:
   - **dAPI Name (bytes32)**: dAPI name string formatted as bytes32.
-  - **Beacon ID (bytes32)**: Identifier for the Beacon.
+  - **Data Feed ID (bytes32)**: Identifier for the data feed.
   - **Sponsor Wallet Address (address)**: Address of the sponsor wallet.
 
 ### 4. Signed API URL Merkle Tree

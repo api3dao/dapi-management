@@ -85,7 +85,7 @@ export default function DapiFallbackTree(props: Props) {
             <TableHeader sticky>
               <TableRow>
                 <TableHead>dAPI Name</TableHead>
-                <TableHead>Beacon ID</TableHead>
+                <TableHead>Data Feed ID</TableHead>
                 <TableHead>Sponsor Wallet Address</TableHead>
               </TableRow>
             </TableHeader>
