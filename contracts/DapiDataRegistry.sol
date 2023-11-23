@@ -30,9 +30,6 @@ contract DapiDataRegistry is
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
-    /// @notice Number that represents 100%
-    uint256 public constant override HUNDRED_PERCENT = 1e8;
-
     /// @notice dAPI adder role description
     string public constant override DAPI_ADDER_ROLE_DESCRIPTION = "dAPI adder";
     /// @notice dAPI remover role description

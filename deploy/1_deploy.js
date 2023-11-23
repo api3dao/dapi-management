@@ -53,8 +53,6 @@ module.exports = async ({ deployments, getUnnamedAccounts, ethers, network }) =>
     api3ServerV1Address = airnodeProtocolV1.references.Api3ServerV1[network.config.chainId.toString()];
     proxyFactoryAddress = airnodeProtocolV1.references.ProxyFactory[network.config.chainId.toString()];
 
-    // TODO: Is this the right list of manager accounts?
-    // These are the ones that will be allowed to execute and revert fallbacks
     dapiFallbackManagers = dapiHashSigners;
   }
 

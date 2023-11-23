@@ -37,8 +37,6 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
         uint32 timestamp;
     }
 
-    function HUNDRED_PERCENT() external view returns (uint256);
-
     function DAPI_ADDER_ROLE_DESCRIPTION()
         external
         view
