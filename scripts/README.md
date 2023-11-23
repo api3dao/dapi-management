@@ -49,23 +49,23 @@ This command constructs the Merkle tree based on the data, signs the root, and u
 ### 1. dAPI pricing Merkle Tree
 
 - **Values**:
-  - **dAPI Name (bytes32)**: Encoded dAPI name.
+  - **dAPI Name (bytes32)**: dAPI name string formatted as bytes32.
   - **Chain ID (uint256)**: Identifier for the blockchain network.
-  - **dAPI Update Parameters (bytes)**: Encoded parameters for dAPI updates. It decodes as, Deviation Threshold in Percentage (uint256), Deviation Reference (int224), Heartbeat Interval (uint32).
-  - **Duration (uint256)**: The duration for which the price is valid.
-  - **Price (uint256)**: The cost in the native currency of the chain. There is no minimum USD price.
+  - **dAPI Update Parameters (bytes)**: Encoded parameters for dAPI updates. It decodes as, Deviation Threshold in Percentage (uint256) multiplied by 1e8, Deviation Reference (int224), Heartbeat Interval (uint32) in seconds.
+  - **Duration (uint256)**: The duration for which the price is valid, in seconds.
+  - **Price (uint256)**: The cost in the native currency of the chain, expressed in wei.
 
 ### 2. dAPI management Merkle Tree
 
 - **Values**:
-  - **dAPI Name (bytes32)**: Encoded dAPI name.
+  - **dAPI Name (bytes32)**: dAPI name string formatted as bytes32.
   - **Beacon Set ID (bytes32)**: Identifier for the beacon set.
   - **dAPI Sponsor Wallet Address (address)**: Wallet address of the dAPI sponsor wallet.
 
 ### 3. dAPI fallback Merkle Tree
 
 - **Values**:
-  - **dAPI Name (bytes32)**: Encoded dAPI name.
+  - **dAPI Name (bytes32)**: dAPI name string formatted as bytes32.
   - **Beacon ID (bytes32)**: Identifier for the Beacon.
   - **Sponsor Wallet Address (address)**: Address of the sponsor wallet.
 
