@@ -18,82 +18,106 @@ import {
   deriveTreeHash,
 } from '~/lib/merkle-tree-utils';
 
-describe('dAPI fallback Merkle tree values', () => {
+describe('dAPI fallback Merkle tree current-hash.json', () => {
   it('has the correct tree root', () => {
     const tree = createDapiFallbackMerkleTree(dapiFallbackTree.merkleTreeValues.values);
     expect(dapiFallbackTree.hash).toEqual(tree.root);
   });
 
-  it.skip('has no pending signatures', () => {
-    expect(Object.keys(dapiFallbackTree.signatures).sort()).toEqual(dapiFallbackTreeSigners.hashSigners.sort());
+  // TODO: Enable when the time comes to sign
+  describe.skip('signatures', () => {
+    it('has keys that match the hash signers array', () => {
+      expect(Object.keys(dapiFallbackTree.signatures)).toEqual(dapiFallbackTreeSigners.hashSigners);
+    });
 
-    const hashToSign = deriveTreeHash(
-      'dAPI fallback Merkle tree root',
-      dapiFallbackTree.hash,
-      dapiFallbackTree.timestamp
-    );
+    it('only contains verified signatures', () => {
+      const hashToSign = deriveTreeHash(
+        'dAPI fallback Merkle tree root',
+        dapiFallbackTree.hash,
+        dapiFallbackTree.timestamp
+      );
 
-    forEach(dapiFallbackTree.signatures, (signature, address) => {
-      expect(ethers.utils.verifyMessage(hashToSign, signature)).toEqual(address);
+      forEach(dapiFallbackTree.signatures, (signature, address) => {
+        expect(ethers.utils.verifyMessage(hashToSign, signature)).toEqual(address);
+      });
     });
   });
 });
 
-describe('dAPI management Merkle tree values', () => {
+describe('dAPI management Merkle tree current-hash.json', () => {
   it('has the correct tree root', () => {
     const tree = createDapiManagementMerkleTree(dapiManagementTree.merkleTreeValues.values);
     expect(dapiManagementTree.hash).toEqual(tree.root);
   });
 
-  it.skip('has no pending signatures', () => {
-    expect(Object.keys(dapiManagementTree.signatures).sort()).toEqual(dapiManagementTreeSigners.hashSigners.sort());
+  // TODO: Enable when the time comes to sign
+  describe.skip('signatures', () => {
+    it('has keys that match the hash signers array', () => {
+      expect(Object.keys(dapiManagementTree.signatures)).toEqual(dapiManagementTreeSigners.hashSigners);
+    });
 
-    const hashToSign = deriveTreeHash(
-      'dAPI management Merkle tree root',
-      dapiManagementTree.hash,
-      dapiManagementTree.timestamp
-    );
+    it('only contains verified signatures', () => {
+      const hashToSign = deriveTreeHash(
+        'dAPI fallback Merkle tree root',
+        dapiManagementTree.hash,
+        dapiManagementTree.timestamp
+      );
 
-    forEach(dapiManagementTree.signatures, (signature, address) => {
-      expect(ethers.utils.verifyMessage(hashToSign, signature)).toEqual(address);
+      forEach(dapiManagementTree.signatures, (signature, address) => {
+        expect(ethers.utils.verifyMessage(hashToSign, signature)).toEqual(address);
+      });
     });
   });
 });
 
-describe('dAPI pricing Merkle tree values', () => {
+describe('dAPI pricing Merkle tree current-hash.json', () => {
   it('has the correct tree root', () => {
     const tree = createDapiPricingMerkleTree(dapiPricingTree.merkleTreeValues.values);
     expect(dapiPricingTree.hash).toEqual(tree.root);
   });
 
-  it.skip('has no pending signatures', () => {
-    expect(Object.keys(dapiPricingTree.signatures).sort()).toEqual(dapiPricingTreeSigners.hashSigners.sort());
+  // TODO: Enable when the time comes to sign
+  describe.skip('signatures', () => {
+    it('has keys that match the hash signers array', () => {
+      expect(Object.keys(dapiPricingTree.signatures)).toEqual(dapiPricingTreeSigners.hashSigners);
+    });
 
-    const hashToSign = deriveTreeHash('dAPI pricing Merkle tree root', dapiPricingTree.hash, dapiPricingTree.timestamp);
+    it('only contains verified signatures', () => {
+      const hashToSign = deriveTreeHash(
+        'dAPI fallback Merkle tree root',
+        dapiPricingTree.hash,
+        dapiPricingTree.timestamp
+      );
 
-    forEach(dapiPricingTree.signatures, (signature, address) => {
-      expect(ethers.utils.verifyMessage(hashToSign, signature)).toEqual(address);
+      forEach(dapiPricingTree.signatures, (signature, address) => {
+        expect(ethers.utils.verifyMessage(hashToSign, signature)).toEqual(address);
+      });
     });
   });
 });
 
-describe('Signed API URL Merkle tree values', () => {
+describe('Signed API URL Merkle tree current-hash.json', () => {
   it('has the correct tree root', () => {
     const tree = createSignedApiUrlMerkleTree(signedApiUrlTree.merkleTreeValues.values);
     expect(signedApiUrlTree.hash).toEqual(tree.root);
   });
 
-  it.skip('has no pending signatures', () => {
-    expect(Object.keys(signedApiUrlTree.signatures).sort()).toEqual(signedApiUrlTreeSigners.hashSigners.sort());
+  // TODO: Enable when the time comes to sign
+  describe.skip('signatures', () => {
+    it('has keys that match the hash signers array', () => {
+      expect(Object.keys(signedApiUrlTree.signatures)).toEqual(signedApiUrlTreeSigners.hashSigners);
+    });
 
-    const hashToSign = deriveTreeHash(
-      'Signed API URL Merkle tree root',
-      signedApiUrlTree.hash,
-      signedApiUrlTree.timestamp
-    );
+    it('only contains verified signatures', () => {
+      const hashToSign = deriveTreeHash(
+        'dAPI fallback Merkle tree root',
+        signedApiUrlTree.hash,
+        signedApiUrlTree.timestamp
+      );
 
-    forEach(signedApiUrlTree.signatures, (signature, address) => {
-      expect(ethers.utils.verifyMessage(hashToSign, signature)).toEqual(address);
+      forEach(signedApiUrlTree.signatures, (signature, address) => {
+        expect(ethers.utils.verifyMessage(hashToSign, signature)).toEqual(address);
+      });
     });
   });
 });
