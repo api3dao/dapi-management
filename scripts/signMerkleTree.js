@@ -56,11 +56,11 @@ async function signMerkleTree(merkleTreeName) {
 
   const updatedHashData = {
     ...currentHashData,
-    hash: merkleRoot,
-    signatures: {
-      ...currentHashData.signatures,
-      [signerAddress]: signature,
-    },
+    signatures: validateSignatures(
+      treeHash,
+      { ...currentHashData.signatures, [signerAddress]: signature },
+      signerData.hashSigners
+    ),
   };
 
   fs.writeFileSync(currentHashPath, JSON.stringify(updatedHashData, null, 2));
@@ -73,6 +73,24 @@ function deriveTreeHash(treeName, treeRoot, timestamp) {
   return ethers.utils.arrayify(
     ethers.utils.solidityKeccak256(['bytes32', 'bytes32', 'uint256'], [hashType, treeRoot, timestamp])
   );
+}
+
+function validateSignatures(treeHash, signatures, signers) {
+  return signers.reduce((acc, signer) => {
+    const signature = signatures[signer];
+
+    try {
+      if (signer === ethers.utils.verifyMessage(treeHash, signature)) {
+        acc[signer] = signature;
+        return acc;
+      }
+    } catch {
+      // Do nothing
+    }
+
+    acc[signer] = '0x';
+    return acc;
+  }, {});
 }
 
 signMerkleTree(merkleTreeName).catch((error) => {

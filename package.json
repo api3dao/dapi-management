@@ -29,8 +29,8 @@
     "frontend:build": "cd frontend && next build",
     "frontend:start": "cd frontend && next start",
     "frontend:type-check": "yarn tsc --project ./frontend/tsconfig.json",
-    "frontend:add-component": "npx shadcn-ui@latest add --cwd frontend",
-    "frontend:test": "jest --config frontend/jest.config.js"
+    "frontend:test": "jest --config frontend/jest.config.js",
+    "frontend:add-component": "npx shadcn-ui@latest add --cwd frontend"
   },
   "devDependencies": {
     "@api3/chains": "^3.5.1",
