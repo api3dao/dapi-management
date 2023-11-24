@@ -31,7 +31,10 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     /// @notice Timestamps representing when each hash was signed
     mapping(bytes32 => uint256) public override hashTypeToTimestamp;
 
-    constructor() {}
+    /// @param _owner Owner address
+    constructor(address _owner) {
+        transferOwnership(_owner);
+    }
 
     /// @notice Called by the owner to set the hash signers
     /// @param hashType Hash representing a hash type

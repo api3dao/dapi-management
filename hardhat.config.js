@@ -1,5 +1,6 @@
 require('@nomicfoundation/hardhat-toolbox');
 const { hardhatConfig } = require('@api3/chains');
+require('hardhat-deploy');
 require('dotenv').config();
 
 module.exports = {

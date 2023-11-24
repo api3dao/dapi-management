@@ -22,6 +22,8 @@ describe('Api3Market', function () {
       'deployer',
       'manager',
       'hashRegistryOwner',
+      'dapiFallbackManager1',
+      'dapiFallbackManager2',
       'apiRootSigner1',
       'apiRootSigner2',
       'apiRootSigner3',
@@ -44,8 +46,7 @@ describe('Api3Market', function () {
     }, {});
 
     const HashRegistry = await hre.ethers.getContractFactory('HashRegistry', roles.deployer);
-    const hashRegistry = await HashRegistry.deploy();
-    await hashRegistry.connect(roles.deployer).transferOwnership(roles.hashRegistryOwner.address);
+    const hashRegistry = await HashRegistry.deploy(roles.hashRegistryOwner.address);
 
     const AccessControlRegistry = await hre.ethers.getContractFactory('AccessControlRegistry', roles.deployer);
     const accessControlRegistry = await AccessControlRegistry.deploy();
@@ -68,15 +69,12 @@ describe('Api3Market', function () {
       api3ServerV1.address
     );
 
-    const dapiFallbackV2AdminRoleDescription = 'DapiFallbackV2 admin';
     const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
     const dapiFallbackV2 = await DapiFallbackV2.deploy(
-      accessControlRegistry.address,
-      dapiFallbackV2AdminRoleDescription,
-      roles.manager.address,
       api3ServerV1.address,
       hashRegistry.address,
-      dapiDataRegistry.address
+      dapiDataRegistry.address,
+      [roles.dapiFallbackManager1.address, roles.dapiFallbackManager2.address]
     );
 
     const proxyFactoryFactory = await hre.ethers.getContractFactory('ProxyFactory', roles.deployer);
