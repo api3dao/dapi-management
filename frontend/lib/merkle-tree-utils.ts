@@ -48,7 +48,7 @@ export function createDapiPricingMerkleTree(values: string[][]) {
 }
 
 export function createSignedApiUrlMerkleTree(values: string[][]) {
-  return StandardMerkleTree.of(values, ['address', 'bytes32']);
+  return StandardMerkleTree.of(values, ['address', 'string']);
 }
 
 export const DAPI_FALLBACK_MERKLE_TREE_TYPE = 'dAPI fallback Merkle tree';
