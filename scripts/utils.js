@@ -23,7 +23,7 @@ function createDapiPricingMerkleTree(values) {
 }
 
 function createSignedApiUrlMerkleTree(values) {
-  return StandardMerkleTree.of(values, ['address', 'bytes32']);
+  return StandardMerkleTree.of(values, ['address', 'string']);
 }
 
 module.exports = {
