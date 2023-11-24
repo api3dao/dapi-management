@@ -8,6 +8,8 @@ typechain-types
 # Hardhat files
 cache
 artifacts
+deployments/localhost
+
 
 # IDE files
 .idea

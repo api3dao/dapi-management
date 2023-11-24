@@ -56,3 +56,19 @@ The contract is expected to receive the payment based on the price from the pric
 then the total amount to be paid may differ from the original amount and the difference will be returned to the caller. The actual payment will be redirected to sponsor wallet in charge of keeping the data feed up-to-date.
 
 In the same transaction while making a purchase, the contract will also try to [deploy a DapiProxy contract](https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/proxies/ProxyFactory.sol#L48) that can be used for reading the current value of a data feed and it will also try to update the underlying data feed values with signed data (stored in [Api3ServerV1](https://github.com/api3dao/airnode-protocol-v1/blob/v2.10.0/contracts/api3-server-v1/DataFeedServer.sol#L27)) if it hasn't been updated recently.
+
+## Local development
+
+In order to deploy all the contracts to a local running ETH node, you must run the following command:
+
+```sh
+yarn run node
+
+```
+
+If you want to re-deploy the contracts then you can run this command on a new terminal:
+
+```sh
+NETWORK=localhost yarn run deploy
+
+```
