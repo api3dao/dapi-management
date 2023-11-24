@@ -1,8 +1,8 @@
-# GitHub Actions Workflow: Deploy to GitHub Pages
+# github-pages.yml
 
-This GitHub Actions workflow automates the process of deploying new files from the main branch to the gh-pages branch, updating the contents of a `data` folder.
+This GitHub Actions workflow detects changes to the data folder on the main branch, and pushes those changes to the gh-pages branch.
 
-## Workflow Details
+## Details
 
 - **Trigger:** The workflow is triggered on each push to the main branch.
 - **Job:** The workflow consists of a single job named `deploy`.
