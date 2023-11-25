@@ -43,13 +43,19 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         bytes32 hashType,
         address[] calldata signers
     ) external override onlyOwner {
+        require(hashType != bytes32(0), "Hash type is zero");
         require(signers.length != 0, "Signers is empty");
         require(
             _hashTypeToSigners[hashType].length() == 0,
             "Hash type signers is not empty"
         );
+        EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
+            hashType
+        ];
         for (uint256 ind = 0; ind < signers.length; ind++) {
-            _addSigner(hashType, signers[ind]);
+            address signer = signers[ind];
+            require(signer != address(0), "Signer is zero");
+            require(_signers.add(signer), "Signer already exists");
         }
         emit SetUpSigners(hashType, signers);
     }
@@ -61,7 +67,12 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         bytes32 hashType,
         address signer
     ) external override onlyOwner {
-        _addSigner(hashType, signer);
+        require(hashType != bytes32(0), "Hash type is zero");
+        require(signer != address(0), "Signer is zero");
+        require(
+            _hashTypeToSigners[hashType].add(signer),
+            "Signer already exists"
+        );
         emit AddedSigner(hashType, signer);
     }
 
@@ -128,17 +139,5 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         hashTypeToHash[hashType] = hash;
         hashTypeToTimestamp[hashType] = timestamp;
         emit RegisteredHash(hashType, hash, timestamp);
-    }
-
-    /// @notice Called privately to add a new signer to the set of addresses
-    /// @param hashType Hash representing a hash type
-    /// @param signer // Signer address
-    function _addSigner(bytes32 hashType, address signer) private {
-        require(hashType != bytes32(0), "Hash type is zero");
-        require(signer != address(0), "Signer is zero");
-        require(
-            _hashTypeToSigners[hashType].add(signer),
-            "Signer already exists"
-        );
     }
 }
