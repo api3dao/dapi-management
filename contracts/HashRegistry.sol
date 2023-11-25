@@ -54,18 +54,6 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         emit SetUpSigners(hashType, signers);
     }
 
-    /// @notice Called privately to add a new signer to the set of addresses
-    /// @param hashType Hash representing a hash type
-    /// @param signer // Signer address
-    function _addSigner(bytes32 hashType, address signer) private {
-        require(hashType != bytes32(0), "Hash type is zero");
-        require(signer != address(0), "Signer is zero");
-        require(
-            _hashTypeToSigners[hashType].add(signer),
-            "Signer already exists"
-        );
-    }
-
     /// @notice Called by the owner to add a new signer to the address set
     /// @param hashType Hash representing a hash type
     /// @param signer // Signer address
@@ -140,5 +128,17 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         hashTypeToHash[hashType] = hash;
         hashTypeToTimestamp[hashType] = timestamp;
         emit RegisteredHash(hashType, hash, timestamp);
+    }
+
+    /// @notice Called privately to add a new signer to the set of addresses
+    /// @param hashType Hash representing a hash type
+    /// @param signer // Signer address
+    function _addSigner(bytes32 hashType, address signer) private {
+        require(hashType != bytes32(0), "Hash type is zero");
+        require(signer != address(0), "Signer is zero");
+        require(
+            _hashTypeToSigners[hashType].add(signer),
+            "Signer already exists"
+        );
     }
 }
