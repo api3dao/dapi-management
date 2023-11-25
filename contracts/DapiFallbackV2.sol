@@ -223,11 +223,9 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
             keccak256(args.updateParams) == HASHED_FALLBACK_UPDATE_PARAMS,
             "Invalid update parameters"
         );
-
-        bytes32 currentDataFeedId = IApi3ServerV1(api3ServerV1)
-            .dapiNameToDataFeedId(args.dapiName);
         require(
-            currentDataFeedId != args.dataFeedId,
+            IApi3ServerV1(api3ServerV1).dapiNameToDataFeedId(args.dapiName) !=
+                args.dataFeedId,
             "Data feed ID will not change"
         );
 
