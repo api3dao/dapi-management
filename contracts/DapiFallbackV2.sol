@@ -229,7 +229,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
             "Data feed ID will not change"
         );
 
-        _validateTree(
+        _verifyMerkleProof(
             DAPI_FALLBACK_MERKLE_TREE_ROOT_HASH_TYPE,
             args.fallbackProof,
             args.fallbackRoot,
@@ -246,7 +246,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
             )
         );
 
-        _validateTree(
+        _verifyMerkleProof(
             DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE,
             args.priceProof,
             args.priceRoot,
@@ -381,12 +381,12 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         emit Withdrawn(recipient, amount, address(this).balance);
     }
 
-    /// @notice Validates the Merkle tree structure by verifying its root and proofs.
+    /// @notice Verifies the Merkle proof associated with the leaf
     /// @param treeType The type of the tree, denoted by its specific hash type.
     /// @param proof Proofs for the Merkle tree leaves.
     /// @param root The known root of the Merkle tree.
     /// @param leaf The specific leaf node of the Merkle tree being validated.
-    function _validateTree(
+    function _verifyMerkleProof(
         bytes32 treeType,
         bytes32[] calldata proof,
         bytes32 root,
