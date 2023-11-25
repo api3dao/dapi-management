@@ -1453,10 +1453,19 @@ describe('DapiFallbackV2', function () {
           expect(await dapiFallbackV2.getRevertableDapiFallbacks()).to.deep.equal([]);
         });
       });
-      context('dAPI fallback has been executed', function () {
+      context('dAPI fallback has not been executed', function () {
         it('reverts', async function () {
-          const { roles, dapiFallbackV2, dapiName, dapiDataRegistry, dataFeeds, dapiTree, dapiTreeValues } =
-            await helpers.loadFixture(deploy);
+          const {
+            roles,
+            api3ServerV1,
+            dapiFallbackV2,
+            dapiName,
+            fallbackBeaconTemplateId,
+            dapiDataRegistry,
+            dataFeeds,
+            dapiTree,
+            dapiTreeValues,
+          } = await helpers.loadFixture(deploy);
           const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
           const [dataFeed] = dataFeeds;
           const { airnodes, templateIds } = dataFeed.reduce(
@@ -1490,6 +1499,15 @@ describe('DapiFallbackV2', function () {
               dapiTree.root,
               dapiTree.getProof(dapiTreeValue)
             );
+
+          await updateBeacon(roles.airnode1, api3ServerV1, fallbackBeaconTemplateId, await helpers.time.latest());
+          await updateBeaconSet(
+            [roles.airnode1, roles.airnode2, roles.airnode3, roles.airnode4, roles.airnode5],
+            api3ServerV1,
+            templateIds,
+            await helpers.time.latest()
+          );
+
           await expect(
             dapiFallbackV2
               .connect(dapiFallbackAdmin)
