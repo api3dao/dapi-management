@@ -50,9 +50,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
             "Hash type signers is not empty"
         );
         for (uint256 ind = 0; ind < signers.length; ind++) {
-            address signer = signers[ind];
-            require(signer != address(0), "Signer address zero");
-            _addSigner(hashType, signer);
+            _addSigner(hashType, signers[ind]);
         }
         emit SetUpSigners(hashType, signers);
     }
