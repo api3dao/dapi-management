@@ -55,7 +55,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     bytes32 private constant DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("dAPI pricing Merkle tree root"));
     bytes32 private constant HASHED_PARAMS =
-        keccak256(abi.encode(uint256(1e6), int224(0), uint32(1 days)));
+        keccak256(abi.encode(uint256(1e6), int224(0), uint256(1 days)));
 
     /// @notice dAPI fallback admins that can individually execute the
     /// response plan
