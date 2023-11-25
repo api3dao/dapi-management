@@ -96,14 +96,6 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         emit RemovedSigner(hashType, signer);
     }
 
-    /// @notice Returns the signers that are required to sign the hash for a type
-    /// @param hashType Hash representing a hash type
-    function getSigners(
-        bytes32 hashType
-    ) external view override returns (address[] memory signers) {
-        signers = _hashTypeToSigners[hashType].values();
-    }
-
     /// @notice Called to register a new hash for a type
     /// @param hashType Hash representing a hash type
     /// @param hash Signed hash
@@ -139,5 +131,13 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         hashTypeToHash[hashType] = hash;
         hashTypeToTimestamp[hashType] = timestamp;
         emit RegisteredHash(hashType, hash, timestamp);
+    }
+
+    /// @notice Returns the signers that are required to sign the hash for a type
+    /// @param hashType Hash representing a hash type
+    function getSigners(
+        bytes32 hashType
+    ) external view override returns (address[] memory signers) {
+        signers = _hashTypeToSigners[hashType].values();
     }
 }

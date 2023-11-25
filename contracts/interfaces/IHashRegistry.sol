@@ -31,16 +31,16 @@ interface IHashRegistry is ISelfMulticall {
         address signer
     ) external returns (address[] memory signers);
 
-    function getSigners(
-        bytes32 hashType
-    ) external view returns (address[] memory signers);
-
     function registerHash(
         bytes32 hashType,
         bytes32 hash,
         uint256 timestamp,
         bytes[] calldata signatures
     ) external;
+
+    function getSigners(
+        bytes32 hashType
+    ) external view returns (address[] memory signers);
 
     function hashTypeToHash(
         bytes32 hashType
