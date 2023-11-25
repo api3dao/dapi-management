@@ -24,12 +24,12 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     using ECDSA for bytes32;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    mapping(bytes32 => EnumerableSet.AddressSet) private hashTypeToSigners;
-
     /// @notice Hashes by type (i.e. a merkle tree root, etc)
     mapping(bytes32 => bytes32) public override hashTypeToHash;
     /// @notice Timestamps representing when each hash was signed
     mapping(bytes32 => uint256) public override hashTypeToTimestamp;
+
+    mapping(bytes32 => EnumerableSet.AddressSet) private hashTypeToSigners;
 
     /// @param _owner Owner address
     constructor(address _owner) {
