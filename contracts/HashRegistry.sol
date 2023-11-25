@@ -111,8 +111,10 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
             timestamp > hashTypeToTimestamp[hashType],
             "Timestamp is not newer"
         );
-        EnumerableSet.AddressSet storage signers = _hashTypeToSigners[hashType];
-        uint256 signersCount = signers.length();
+        EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
+            hashType
+        ];
+        uint256 signersCount = _signers.length();
         require(signersCount != 0, "Signers have not been set");
         require(
             signatures.length == signersCount,
@@ -123,7 +125,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
                 (
                     keccak256(abi.encode(hashType, hash, timestamp))
                         .toEthSignedMessageHash()
-                ).recover(signatures[ind]) == signers.at(ind),
+                ).recover(signatures[ind]) == _signers.at(ind),
                 "Signature mismatch"
             );
         }
