@@ -66,13 +66,14 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     function addSigner(
         bytes32 hashType,
         address signer
-    ) external override onlyOwner {
+    ) external override onlyOwner returns (address[] memory signers) {
         require(hashType != bytes32(0), "Hash type is zero");
         require(signer != address(0), "Signer is zero");
-        require(
-            _hashTypeToSigners[hashType].add(signer),
-            "Signer already exists"
-        );
+        EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
+            hashType
+        ];
+        require(_signers.add(signer), "Signer already exists");
+        signers = _signers.values();
         emit AddedSigner(hashType, signer);
     }
 
@@ -86,11 +87,12 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     function removeSigner(
         bytes32 hashType,
         address signer
-    ) external override onlyOwner {
-        require(
-            _hashTypeToSigners[hashType].remove(signer),
-            "Signer does not exist"
-        );
+    ) external override onlyOwner returns (address[] memory signers) {
+        EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
+            hashType
+        ];
+        require(_signers.remove(signer), "Signer does not exist");
+        signers = _signers.values();
         emit RemovedSigner(hashType, signer);
     }
 

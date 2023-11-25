@@ -21,9 +21,15 @@ interface IHashRegistry is ISelfMulticall {
         address[] calldata signers
     ) external;
 
-    function addSigner(bytes32 hashType, address signer) external;
+    function addSigner(
+        bytes32 hashType,
+        address signer
+    ) external returns (address[] memory signers);
 
-    function removeSigner(bytes32 hashType, address signer) external;
+    function removeSigner(
+        bytes32 hashType,
+        address signer
+    ) external returns (address[] memory signers);
 
     function getSigners(
         bytes32 hashType
