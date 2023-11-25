@@ -229,33 +229,18 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
             "Data feed ID will not change"
         );
 
-        bytes32 fallbackLeaf = keccak256(
-            bytes.concat(
-                keccak256(
-                    abi.encode(
-                        args.dapiName,
-                        args.dataFeedId,
-                        args.sponsorWallet
-                    )
-                )
-            )
-        );
         _validateTree(
             DAPI_FALLBACK_MERKLE_TREE_ROOT_HASH_TYPE,
             args.fallbackProof,
             args.fallbackRoot,
-            fallbackLeaf
-        );
-
-        bytes32 priceLeaf = keccak256(
-            bytes.concat(
-                keccak256(
-                    abi.encode(
-                        args.dapiName,
-                        block.chainid,
-                        args.updateParams,
-                        args.duration,
-                        args.price
+            keccak256(
+                bytes.concat(
+                    keccak256(
+                        abi.encode(
+                            args.dapiName,
+                            args.dataFeedId,
+                            args.sponsorWallet
+                        )
                     )
                 )
             )
@@ -265,7 +250,19 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
             DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE,
             args.priceProof,
             args.priceRoot,
-            priceLeaf
+            keccak256(
+                bytes.concat(
+                    keccak256(
+                        abi.encode(
+                            args.dapiName,
+                            block.chainid,
+                            args.updateParams,
+                            args.duration,
+                            args.price
+                        )
+                    )
+                )
+            )
         );
 
         (, uint32 timestamp) = IApi3ServerV1(api3ServerV1).readDataFeedWithId(
