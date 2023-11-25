@@ -63,6 +63,10 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
                 uint256(1 days)
             )
         );
+    uint256 private constant MAXIMUM_DATA_FEED_UPDATE_AGE = 1 days;
+    uint256
+        private constant MINIMUM_DAPI_SUBSCRIPTION_PERIOD_THAT_SPONSOR_WALLET_MUST_AFFORD =
+        1 days;
 
     /// @notice dAPI fallback admins that can individually execute the
     /// response plan
@@ -270,7 +274,10 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         );
         // Data feed must have been updated in the last day, assuming that the
         // largest heartbeat interval is 1 day
-        require(timestamp + 1 days > block.timestamp, "Fallback feed stale");
+        require(
+            timestamp + MAXIMUM_DATA_FEED_UPDATE_AGE >= block.timestamp,
+            "Fallback feed stale"
+        );
 
         IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.dataFeedId);
 
@@ -281,8 +288,9 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
 
         IDapiDataRegistry(dapiDataRegistry).removeDapi(args.dapiName);
 
-        uint256 minSponsorWalletBalance = (args.price * 1 days) / args.duration;
-
+        uint256 minSponsorWalletBalance = (args.price *
+            MINIMUM_DAPI_SUBSCRIPTION_PERIOD_THAT_SPONSOR_WALLET_MUST_AFFORD) /
+            args.duration;
         uint256 sponsorWalletBalance = args.sponsorWallet.balance;
         if (sponsorWalletBalance < minSponsorWalletBalance) {
             uint256 amount = minSponsorWalletBalance - sponsorWalletBalance;
