@@ -107,7 +107,6 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         uint256 timestamp,
         bytes[] calldata signatures
     ) external override {
-        require(hashType != bytes32(0), "Hash type is zero");
         require(
             timestamp > hashTypeToTimestamp[hashType],
             "Timestamp is not newer"
