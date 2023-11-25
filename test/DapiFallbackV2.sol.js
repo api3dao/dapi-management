@@ -1369,7 +1369,7 @@ describe('DapiFallbackV2', function () {
   });
 
   describe('revertDapiFallback', function () {
-    context('Sender is the dAPI fallback admin with the ID', function () {
+    context('Sender is the owner', function () {
       context('dAPI fallback has been executed', function () {
         it('reverts dAPI fallback', async function () {
           const {
@@ -1435,9 +1435,8 @@ describe('DapiFallbackV2', function () {
 
           await expect(
             dapiFallbackV2
-              .connect(dapiFallbackAdmin)
+              .connect(roles.owner)
               .revertDapiFallback(
-                dapiFallbackAdminId,
                 hre.ethers.utils.formatBytes32String(dapiName),
                 beaconSetId,
                 sponsorWallet,
@@ -1510,9 +1509,8 @@ describe('DapiFallbackV2', function () {
 
           await expect(
             dapiFallbackV2
-              .connect(dapiFallbackAdmin)
+              .connect(roles.owner)
               .revertDapiFallback(
-                dapiFallbackAdminId,
                 hre.ethers.utils.formatBytes32String(dapiName),
                 beaconSetId,
                 sponsorWallet,
@@ -1526,31 +1524,14 @@ describe('DapiFallbackV2', function () {
         });
       });
     });
-    context('Sender is not the dAPI fallback admin with the ID', function () {
+    context('Sender is not the owner', function () {
       it('reverts', async function () {
         const { roles, dapiFallbackV2, dapiName } = await helpers.loadFixture(deploy);
-        const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
 
-        await expect(
-          dapiFallbackV2
-            .connect(dapiFallbackAdmin)
-            .revertDapiFallback(
-              (dapiFallbackAdminId + 1) % 3,
-              hre.ethers.utils.formatBytes32String(dapiName),
-              generateRandomBytes32(),
-              generateRandomAddress(),
-              1,
-              0,
-              86400,
-              generateRandomBytes32(),
-              []
-            )
-        ).to.have.been.revertedWith('Sender not admin with ID');
         await expect(
           dapiFallbackV2
             .connect(roles.randomPerson)
             .revertDapiFallback(
-              dapiFallbackAdminId,
               hre.ethers.utils.formatBytes32String(dapiName),
               generateRandomBytes32(),
               generateRandomAddress(),
@@ -1560,7 +1541,7 @@ describe('DapiFallbackV2', function () {
               generateRandomBytes32(),
               []
             )
-        ).to.have.been.revertedWith('Sender not admin with ID');
+        ).to.have.been.revertedWith('Ownable: caller is not the owner');
       });
     });
   });

@@ -297,7 +297,6 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// @param root dAPI Management Merkle tree root hash
     /// @param proof Array of hashes to verify a Merkle tree leaf
     function revertDapiFallback(
-        uint256 dapiFallbackAdminInd,
         bytes32 dapiName,
         bytes32 dataFeedId,
         address sponsorWallet,
@@ -306,7 +305,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         uint256 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
-    ) external override onlyDapiFallbackAdminWithInd(dapiFallbackAdminInd) {
+    ) external override onlyOwner {
         // Data feed must have been updated in the last day, assuming that the
         // largest heartbeat interval is 1 day
         (, uint32 timestamp) = IApi3ServerV1(api3ServerV1).readDataFeedWithId(
