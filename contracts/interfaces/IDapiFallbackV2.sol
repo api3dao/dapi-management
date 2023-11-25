@@ -5,7 +5,7 @@ import "@api3/airnode-protocol-v1/contracts/utils/interfaces/ISelfMulticall.sol"
 
 interface IDapiFallbackV2 is ISelfMulticall {
     struct ExecuteDapiFallbackArgs {
-        uint256 dapiFallbackAdminInd; // dAPI fallback admin index
+        uint256 dapiFallbackExecutorInd; // dAPI fallback executor index
         bytes32 dapiName; // Encoded bytes32 dAPI name
         bytes32 dataFeedId; // Identifier for the data feed receiving the update
         bytes32 fallbackRoot; // Root of the Merkle tree representing the dAPI's fallback structure
@@ -18,11 +18,11 @@ interface IDapiFallbackV2 is ISelfMulticall {
         address payable sponsorWallet; // Address of the sponsor wallet for funding
     }
 
-    event SetUpDapiFallbackAdmins(address[] dapiFallbackAdmins);
+    event SetUpDapiFallbackExecutors(address[] dapiFallbackExecutors);
 
-    event AddedDapiFallbackAdmin(address dapiFallbackAdmin);
+    event AddedDapiFallbackExecutor(address dapiFallbackExecutor);
 
-    event RemovedDapiFallbackAdmin(address dapiFallbackAdmin);
+    event RemovedDapiFallbackExecutor(address dapiFallbackExecutor);
 
     event Withdrawn(
         address indexed recipient,
@@ -49,17 +49,17 @@ interface IDapiFallbackV2 is ISelfMulticall {
         address sponsorWallet
     );
 
-    function setUpDapiFallbackAdmins(
-        address[] calldata dapiFallbackAdmins
+    function setUpDapiFallbackExecutors(
+        address[] calldata dapiFallbackExecutors
     ) external;
 
-    function addDapiFallbackAdmin(
-        address dapiFallbackAdmin
-    ) external returns (address[] memory dapiFallbackAdmins);
+    function addDapiFallbackExecutor(
+        address dapiFallbackExecutor
+    ) external returns (address[] memory dapiFallbackExecutors);
 
-    function removeDapiFallbackAdmin(
-        address dapiFallbackAdmin
-    ) external returns (address[] memory dapiFallbackAdmins);
+    function removeDapiFallbackExecutor(
+        address dapiFallbackExecutor
+    ) external returns (address[] memory dapiFallbackExecutors);
 
     function withdraw(address payable recipient, uint256 amount) external;
 
@@ -87,7 +87,10 @@ interface IDapiFallbackV2 is ISelfMulticall {
         view
         returns (bytes32[] memory dapis);
 
-    function getDapiFallbackAdmins() external view returns (address[] memory);
+    function getDapiFallbackExecutors()
+        external
+        view
+        returns (address[] memory);
 
     function api3ServerV1() external view returns (address);
 
