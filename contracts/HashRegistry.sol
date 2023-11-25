@@ -24,7 +24,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     using ECDSA for bytes32;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    mapping(bytes32 => EnumerableSet.AddressSet) private _hashTypeToSigners;
+    mapping(bytes32 => EnumerableSet.AddressSet) private hashTypeToSigners;
 
     /// @notice Hashes by type (i.e. a merkle tree root, etc)
     mapping(bytes32 => bytes32) public override hashTypeToHash;
@@ -45,7 +45,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     ) external override onlyOwner {
         require(signers.length != 0, "Signers is empty");
         require(
-            _hashTypeToSigners[hashType].length() == 0,
+            hashTypeToSigners[hashType].length() == 0,
             "Hash type signers is not empty"
         );
         for (uint256 ind = 0; ind < signers.length; ind++) {
@@ -61,7 +61,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         require(hashType != bytes32(0), "Hash type is zero");
         require(signer != address(0), "Signer is zero");
         require(
-            _hashTypeToSigners[hashType].add(signer),
+            hashTypeToSigners[hashType].add(signer),
             "Signer already exists"
         );
     }
@@ -91,7 +91,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         require(hashType != bytes32(0), "Hash type is zero");
         require(signer != address(0), "Signer is zero");
         require(
-            _hashTypeToSigners[hashType].remove(signer),
+            hashTypeToSigners[hashType].remove(signer),
             "Signer does not exist"
         );
         emit RemovedSigner(hashType, signer);
@@ -102,7 +102,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     function getSigners(
         bytes32 hashType
     ) external view override returns (address[] memory signers) {
-        signers = _hashTypeToSigners[hashType].values();
+        signers = hashTypeToSigners[hashType].values();
     }
 
     /// @notice Called to register a new hash for a type
@@ -121,7 +121,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
             timestamp > hashTypeToTimestamp[hashType],
             "Timestamp is not newer"
         );
-        EnumerableSet.AddressSet storage signers = _hashTypeToSigners[hashType];
+        EnumerableSet.AddressSet storage signers = hashTypeToSigners[hashType];
         uint256 signersCount = signers.length();
         require(signersCount != 0, "Signers have not been set");
         require(
