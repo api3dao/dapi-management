@@ -705,7 +705,7 @@ describe('DapiDataRegistry', function () {
           });
         });
       });
-      context('Data feed ID is zero', function () {
+      context('Data feed ID zero', function () {
         it('reverts', async function () {
           const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
@@ -722,7 +722,7 @@ describe('DapiDataRegistry', function () {
                 generateRandomBytes32(),
                 [generateRandomBytes32(), generateRandomBytes32(), generateRandomBytes32()]
               )
-          ).to.be.revertedWith('Data feed ID is zero');
+          ).to.be.revertedWith('Data feed ID zero');
         });
       });
     });
@@ -1102,7 +1102,7 @@ describe('DapiDataRegistry', function () {
           });
         });
       });
-      context('Data feed ID is zero', function () {
+      context('Data feed ID zero', function () {
         it('reverts', async function () {
           const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
@@ -1116,7 +1116,7 @@ describe('DapiDataRegistry', function () {
                 generateRandomBytes32(),
                 [generateRandomBytes32(), generateRandomBytes32(), generateRandomBytes32()]
               )
-          ).to.be.revertedWith('Data feed ID is zero');
+          ).to.be.revertedWith('Data feed ID zero');
         });
       });
     });

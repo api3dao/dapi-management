@@ -260,7 +260,7 @@ describe('Api3Market', function () {
                 expect(await api3Market.api3ServerV1()).to.equal(api3ServerV1.address);
               });
             });
-            context('Api3ServerV1 address is zero', function () {
+            context('Api3ServerV1 address zero', function () {
               it('reverts', async function () {
                 const { roles, hashRegistry, dapiDataRegistry, dapiFallbackV2, proxyFactory } =
                   await helpers.loadFixture(deploy);
@@ -274,7 +274,7 @@ describe('Api3Market', function () {
                     proxyFactory.address,
                     hre.ethers.constants.AddressZero
                   )
-                ).to.have.been.revertedWith('Api3ServerV1 address is zero');
+                ).to.have.been.revertedWith('Api3ServerV1 address zero');
               });
             });
           });
@@ -316,7 +316,7 @@ describe('Api3Market', function () {
           });
         });
       });
-      context('DapiDataRegistry address is zero', function () {
+      context('DapiDataRegistry address zero', function () {
         it('reverts', async function () {
           const { roles, hashRegistry, dapiFallbackV2, proxyFactory, api3ServerV1 } = await helpers.loadFixture(deploy);
           const Api3Market = await hre.ethers.getContractFactory('Api3Market', roles.deployer);
@@ -329,11 +329,11 @@ describe('Api3Market', function () {
               proxyFactory.address,
               api3ServerV1.address
             )
-          ).to.have.been.revertedWith('DapiDataRegistry address is zero');
+          ).to.have.been.revertedWith('DapiDataRegistry address zero');
         });
       });
     });
-    context('HashRegistry address is zero', function () {
+    context('HashRegistry address zero', function () {
       it('reverts', async function () {
         const { roles, dapiDataRegistry, dapiFallbackV2, proxyFactory, api3ServerV1 } = await helpers.loadFixture(
           deploy
@@ -348,7 +348,7 @@ describe('Api3Market', function () {
             proxyFactory.address,
             api3ServerV1.address
           )
-        ).to.have.been.revertedWith('HashRegistry address is zero');
+        ).to.have.been.revertedWith('HashRegistry address zero');
       });
     });
   });

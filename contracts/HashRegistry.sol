@@ -43,19 +43,19 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         bytes32 hashType,
         address[] calldata signers
     ) external override onlyOwner {
-        require(hashType != bytes32(0), "Hash type is zero");
-        require(signers.length != 0, "Signers is empty");
+        require(hashType != bytes32(0), "Hash type zero");
+        require(signers.length != 0, "Signers empty");
         require(
             _hashTypeToSigners[hashType].length() == 0,
-            "Hash type signers is not empty"
+            "Signers already initialized"
         );
         EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
             hashType
         ];
         for (uint256 ind = 0; ind < signers.length; ind++) {
             address signer = signers[ind];
-            require(signer != address(0), "Signer is zero");
-            require(_signers.add(signer), "Signer already exists");
+            require(signer != address(0), "Signer address zero");
+            require(_signers.add(signer), "Duplicate signer address");
         }
         emit SetUpSigners(hashType, signers);
     }
@@ -67,12 +67,12 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         bytes32 hashType,
         address signer
     ) external override onlyOwner returns (address[] memory signers) {
-        require(hashType != bytes32(0), "Hash type is zero");
-        require(signer != address(0), "Signer is zero");
+        require(hashType != bytes32(0), "Hash type zero");
+        require(signer != address(0), "Signer address zero");
         EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
             hashType
         ];
-        require(_signers.add(signer), "Signer already exists");
+        require(_signers.add(signer), "Duplicate signer address");
         signers = _signers.values();
         emit AddedSigner(hashType, signer);
     }
@@ -109,13 +109,13 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     ) external override {
         require(
             timestamp > hashTypeToTimestamp[hashType],
-            "Timestamp is not newer"
+            "Timestamp not larger"
         );
         EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
             hashType
         ];
         uint256 signersCount = _signers.length();
-        require(signersCount != 0, "Signers have not been set");
+        require(signersCount != 0, "Signers not initialized");
         require(
             signatures.length == signersCount,
             "Invalid number of signatures"

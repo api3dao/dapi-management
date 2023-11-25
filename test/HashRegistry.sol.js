@@ -92,7 +92,7 @@ describe('HashRegistry', function () {
           expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal(signers);
         });
       });
-      context('Hash type signers is not empty', function () {
+      context('Signers already initialized', function () {
         it('reverts', async function () {
           const { roles, hashRegistry, dapiFallbackHashType } = await helpers.loadFixture(deploy);
           expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([]);
@@ -108,7 +108,7 @@ describe('HashRegistry', function () {
                 roles.dapiFallbackRootSigner2.address,
                 roles.dapiFallbackRootSigner3.address,
               ])
-          ).to.be.revertedWith('Hash type signers is not empty');
+          ).to.be.revertedWith('Signers already initialized');
         });
       });
     });
@@ -116,7 +116,7 @@ describe('HashRegistry', function () {
       it('reverts', async function () {
         const { roles, hashRegistry } = await helpers.loadFixture(deploy);
         await expect(hashRegistry.connect(roles.owner).setUpSigners(generateRandomBytes32(), [])).to.be.revertedWith(
-          'Signers is empty'
+          'Signers empty'
         );
       });
     });
@@ -160,27 +160,27 @@ describe('HashRegistry', function () {
                 .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
               await expect(
                 hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
-              ).to.be.revertedWith('Signer already exists');
+              ).to.be.revertedWith('Duplicate signer address');
             });
           });
         });
-        context('Signer is zero', function () {
+        context('Signer address zero', function () {
           it('reverts', async function () {
             const { roles, hashRegistry } = await helpers.loadFixture(deploy);
             await expect(
               hashRegistry.connect(roles.owner).addSigner(generateRandomBytes32(), hre.ethers.constants.AddressZero)
-            ).to.be.revertedWith('Signer is zero');
+            ).to.be.revertedWith('Signer address zero');
           });
         });
       });
-      context('Hash type is zero', function () {
+      context('Hash type zero', function () {
         it('reverts', async function () {
           const { roles, hashRegistry } = await helpers.loadFixture(deploy);
           await expect(
             hashRegistry
               .connect(roles.owner)
               .addSigner(hre.ethers.constants.HashZero, roles.dapiFallbackRootSigner1.address)
-          ).to.be.revertedWith('Hash type is zero');
+          ).to.be.revertedWith('Hash type zero');
         });
       });
     });
@@ -283,7 +283,7 @@ describe('HashRegistry', function () {
               expect(await hashRegistry.hashTypeToTimestamp(dapiFallbackHashType)).to.equal(timestamp);
             });
           });
-          context('Timestamp is not newer', function () {
+          context('Timestamp not larger', function () {
             it('reverts', async function () {
               const { roles, hashRegistry, dapiFallbackHashType, root, timestamp, signatures } =
                 await helpers.loadFixture(deploy);
@@ -305,7 +305,7 @@ describe('HashRegistry', function () {
                 .withArgs(dapiFallbackHashType, root, timestamp);
               await expect(
                 hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, signatures)
-              ).to.be.revertedWith('Timestamp is not newer');
+              ).to.be.revertedWith('Timestamp not larger');
             });
           });
         });
@@ -379,11 +379,11 @@ describe('HashRegistry', function () {
         });
       });
     });
-    context('Signers is empty', function () {
+    context('Signers empty', function () {
       it('reverts', async function () {
         const { hashRegistry, dapiFallbackHashType, root, timestamp } = await helpers.loadFixture(deploy);
         await expect(hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, [])).to.be.revertedWith(
-          'Signers have not been set'
+          'Signers not initialized'
         );
       });
     });

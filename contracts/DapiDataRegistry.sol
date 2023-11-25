@@ -87,8 +87,8 @@ contract DapiDataRegistry is
             _manager
         )
     {
-        require(_hashRegistry != address(0), "HashRegistry address is zero");
-        require(_api3ServerV1 != address(0), "Api3ServerV1 address is zero");
+        require(_hashRegistry != address(0), "HashRegistry address zero");
+        require(_api3ServerV1 != address(0), "Api3ServerV1 address zero");
         dapiAdderRole = _deriveRole(
             _deriveAdminRole(manager),
             DAPI_ADDER_ROLE_DESCRIPTION
@@ -218,7 +218,7 @@ contract DapiDataRegistry is
             "Sender is not manager or has dAPI adder role"
         );
         require(dapiName != bytes32(0), "dAPI name is zero");
-        require(dataFeedId != bytes32(0), "Data feed ID is zero");
+        require(dataFeedId != bytes32(0), "Data feed ID zero");
         require(sponsorWallet != address(0), "Sponsor wallet is zero");
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(
@@ -291,7 +291,7 @@ contract DapiDataRegistry is
         bytes32[] calldata proof
     ) external override {
         require(dapiName != bytes32(0), "dAPI name is zero");
-        require(dataFeedId != bytes32(0), "Data feed ID is zero");
+        require(dataFeedId != bytes32(0), "Data feed ID zero");
         require(sponsorWallet != address(0), "Sponsor wallet is zero");
         require(dapis.contains(dapiName), "dAPI name has not been added");
         require(

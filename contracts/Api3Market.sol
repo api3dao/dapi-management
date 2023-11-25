@@ -59,17 +59,17 @@ contract Api3Market is IApi3Market {
         address _proxyFactory,
         address _api3ServerV1
     ) {
-        require(_hashRegistry != address(0), "HashRegistry address is zero");
+        require(_hashRegistry != address(0), "HashRegistry address zero");
         require(
             _dapiDataRegistry != address(0),
-            "DapiDataRegistry address is zero"
+            "DapiDataRegistry address zero"
         );
         require(
             _dapiFallbackV2 != address(0),
             "DapiFallbackV2 address is zero"
         );
         require(_proxyFactory != address(0), "ProxyFactory address is zero");
-        require(_api3ServerV1 != address(0), "Api3ServerV1 address is zero");
+        require(_api3ServerV1 != address(0), "Api3ServerV1 address zero");
         hashRegistry = _hashRegistry;
         dapiDataRegistry = _dapiDataRegistry;
         dapiFallbackV2 = _dapiFallbackV2;

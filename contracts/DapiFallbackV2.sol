@@ -90,11 +90,11 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         address _hashRegistry,
         address _dapiDataRegistry
     ) {
-        require(_api3ServerV1 != address(0), "Api3ServerV1 address is zero");
-        require(_hashRegistry != address(0), "HashRegistry address is zero");
+        require(_api3ServerV1 != address(0), "Api3ServerV1 address zero");
+        require(_hashRegistry != address(0), "HashRegistry address zero");
         require(
             _dapiDataRegistry != address(0),
-            "DapiDataRegistry address is zero"
+            "DapiDataRegistry address zero"
         );
         api3ServerV1 = _api3ServerV1;
         hashRegistry = _hashRegistry;
@@ -120,7 +120,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         );
         for (uint256 ind = 0; ind < dapiFallbackAdmins.length; ind++) {
             address dapiFallbackAdmin = dapiFallbackAdmins[ind];
-            require(dapiFallbackAdmin != address(0), "Zero admin address");
+            require(dapiFallbackAdmin != address(0), "Admin address zero");
             require(
                 _dapiFallbackAdmins.add(dapiFallbackAdmin),
                 "Duplicate admin address"
@@ -134,10 +134,10 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     function addDapiFallbackAdmin(
         address dapiFallbackAdmin
     ) public override onlyOwner {
-        require(dapiFallbackAdmin != address(0), "dAPI fallback admin is zero");
+        require(dapiFallbackAdmin != address(0), "Admin address zero");
         require(
             _dapiFallbackAdmins.add(dapiFallbackAdmin),
-            "dAPI fallback admin already exists"
+            "Duplicate admin address"
         );
         emit AddedDapiFallbackAdmin(dapiFallbackAdmin);
     }
@@ -151,10 +151,10 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     function removeDapiFallbackAdmin(
         address dapiFallbackAdmin
     ) external override onlyOwner {
-        require(dapiFallbackAdmin != address(0), "dAPI fallback admin is zero");
+        require(dapiFallbackAdmin != address(0), "Admin address zero");
         require(
             _dapiFallbackAdmins.remove(dapiFallbackAdmin),
-            "dAPI fallback admin does not exist"
+            "Admin does not exist"
         );
         emit RemovedDapiFallbackAdmin(dapiFallbackAdmin);
     }
@@ -204,28 +204,28 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         override
         onlyDapiFallbackAdminWithInd(args.dapiFallbackAdminInd)
     {
-        require(args.dapiName != bytes32(0), "Dapi name is zero");
-        require(args.dataFeedId != bytes32(0), "Data feed ID is zero");
-        require(args.updateParams.length != 0, "Update params empty");
-        require(args.duration != 0, "Duration is zero");
-        require(args.price != 0, "Price is zero");
+        require(args.dapiName != bytes32(0), "dAPI name zero");
+        require(args.dataFeedId != bytes32(0), "Data feed ID zero");
+        require(args.updateParams.length != 0, "Update parameters empty");
+        require(args.duration != 0, "Duration zero");
+        require(args.price != 0, "Price zero");
         require(
             args.sponsorWallet != address(0),
-            "Sponsor wallet address is zero"
+            "Sponsor wallet address zero"
         );
 
         bytes32 hashedUpdateParams = keccak256(args.updateParams);
 
         require(
             hashedUpdateParams == HASHED_FALLBACK_UPDATE_PARAMS,
-            "Update params does not match"
+            "Invalid update parameters"
         );
 
         bytes32 currentDataFeedId = IApi3ServerV1(api3ServerV1)
             .dapiNameToDataFeedId(args.dapiName);
         require(
             currentDataFeedId != args.dataFeedId,
-            "Data feed ID will not be changed"
+            "Data feed ID will not change"
         );
 
         bytes32 fallbackLeaf = keccak256(
@@ -272,16 +272,13 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         );
         // Data feed must have been updated in the last day, assuming that the
         // largest heartbeat interval is 1 day
-        require(
-            timestamp + 1 days > block.timestamp,
-            "Feed not updated in last day"
-        );
+        require(timestamp + 1 days > block.timestamp, "Fallback feed stale");
 
         IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.dataFeedId);
 
         require(
             _revertableDapiFallbacks.add(args.dapiName),
-            "dAPI fallback already executed"
+            "Fallback already executed"
         );
 
         IDapiDataRegistry(dapiDataRegistry).removeDapi(args.dapiName);
@@ -333,7 +330,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     ) external override onlyDapiFallbackAdminWithInd(dapiFallbackAdminInd) {
         require(
             _revertableDapiFallbacks.remove(dapiName),
-            "dAPI fallback has not been executed"
+            "Fallback not revertable"
         );
         IDapiDataRegistry(dapiDataRegistry).addDapi(
             dapiName,
@@ -381,7 +378,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// @param amount Amount
     function _withdraw(address payable recipient, uint256 amount) private {
         require(recipient != address(0), "Recipient address is zero");
-        require(amount != 0, "Amount is zero");
+        require(amount != 0, "Amount zero");
         Address.sendValue(recipient, amount);
         emit Withdrawn(recipient, amount, address(this).balance);
     }
@@ -397,11 +394,11 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         bytes32 root,
         bytes32 leaf
     ) private view {
-        require(proof.length != 0, "Proof is empty");
-        require(root != bytes32(0), "Root is zero");
+        require(proof.length != 0, "Proof empty");
+        require(root != bytes32(0), "Root zero");
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(treeType) == root,
-            "Tree has not been registered"
+            "Tree root not registered"
         );
         require(MerkleProof.verify(proof, root, leaf), "Invalid tree proof");
     }

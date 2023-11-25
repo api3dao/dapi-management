@@ -365,33 +365,33 @@ describe('DapiFallbackV2', function () {
             expect(dapiFallbackAdmins[2]).to.equal(roles.dapiFallbackAdmin3.address);
           });
         });
-        context('DapiDataRegistry address is zero', function () {
+        context('DapiDataRegistry address zero', function () {
           it('reverts', async function () {
             const { roles, api3ServerV1, hashRegistry } = await helpers.loadFixture(deploy);
             const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
             await expect(
               DapiFallbackV2.deploy(api3ServerV1.address, hashRegistry.address, hre.ethers.constants.AddressZero)
-            ).to.have.been.revertedWith('DapiDataRegistry address is zero');
+            ).to.have.been.revertedWith('DapiDataRegistry address zero');
           });
         });
       });
-      context('HashRegistry address is zero', function () {
+      context('HashRegistry address zero', function () {
         it('reverts', async function () {
           const { roles, api3ServerV1, dapiDataRegistry } = await helpers.loadFixture(deploy);
           const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
           await expect(
             DapiFallbackV2.deploy(api3ServerV1.address, hre.ethers.constants.AddressZero, dapiDataRegistry.address)
-          ).to.have.been.revertedWith('HashRegistry address is zero');
+          ).to.have.been.revertedWith('HashRegistry address zero');
         });
       });
     });
-    context('Api3ServerV1 address is zero', function () {
+    context('Api3ServerV1 address zero', function () {
       it('reverts', async function () {
         const { roles, hashRegistry, dapiDataRegistry } = await helpers.loadFixture(deploy);
         const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
         await expect(
           DapiFallbackV2.deploy(hre.ethers.constants.AddressZero, hashRegistry.address, dapiDataRegistry.address)
-        ).to.have.been.revertedWith('Api3ServerV1 address is zero');
+        ).to.have.been.revertedWith('Api3ServerV1 address zero');
       });
     });
   });
@@ -410,7 +410,7 @@ describe('DapiFallbackV2', function () {
   describe('addDapiFallbackAdmin', function () {
     context('Sender is the owner', function () {
       context('dAPI fallback admin is not zero', function () {
-        context('dAPI fallback admin does not exist', function () {
+        context('Admin does not exist', function () {
           it('adds a dAPI fallback admin', async function () {
             const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
             const dapiFallbackAdmin = generateRandomAddress();
@@ -430,7 +430,7 @@ describe('DapiFallbackV2', function () {
             const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
             await expect(
               dapiFallbackV2.connect(roles.owner).addDapiFallbackAdmin(roles.dapiFallbackAdmin1.address)
-            ).to.have.been.revertedWith('dAPI fallback admin already exists');
+            ).to.have.been.revertedWith('Duplicate admin address');
           });
         });
       });
@@ -439,7 +439,7 @@ describe('DapiFallbackV2', function () {
           const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
           await expect(
             dapiFallbackV2.connect(roles.owner).addDapiFallbackAdmin(hre.ethers.constants.AddressZero)
-          ).to.have.been.revertedWith('dAPI fallback admin is zero');
+          ).to.have.been.revertedWith('Admin address zero');
         });
       });
     });
@@ -468,12 +468,12 @@ describe('DapiFallbackV2', function () {
             ]);
           });
         });
-        context('dAPI fallback admin does not exist', function () {
+        context('Admin does not exist', function () {
           it('reverts', async function () {
             const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
             await expect(
               dapiFallbackV2.connect(roles.owner).removeDapiFallbackAdmin(generateRandomAddress())
-            ).to.have.been.revertedWith('dAPI fallback admin does not exist');
+            ).to.have.been.revertedWith('Admin does not exist');
           });
         });
       });
@@ -482,7 +482,7 @@ describe('DapiFallbackV2', function () {
           const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
           await expect(
             dapiFallbackV2.connect(roles.owner).removeDapiFallbackAdmin(hre.ethers.constants.AddressZero)
-          ).to.have.been.revertedWith('dAPI fallback admin is zero');
+          ).to.have.been.revertedWith('Admin address zero');
         });
       });
     });
@@ -530,13 +530,13 @@ describe('DapiFallbackV2', function () {
             });
           });
         });
-        context('Amount is zero', function () {
+        context('Amount zero', function () {
           it('reverts', async function () {
             const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
             const recipientAddress = roles.randomPerson.address;
             await expect(
               dapiFallbackV2.connect(roles.owner).withdraw(recipientAddress, hre.ethers.constants.Zero)
-            ).to.have.been.revertedWith('Amount is zero');
+            ).to.have.been.revertedWith('Amount zero');
           });
         });
       });
@@ -599,7 +599,7 @@ describe('DapiFallbackV2', function () {
             const recipientAddress = roles.randomPerson.address;
             await dapiFallbackV2.connect(roles.owner).withdrawAll(roles.deployer.address);
             await expect(dapiFallbackV2.connect(roles.owner).withdrawAll(recipientAddress)).to.have.been.revertedWith(
-              'Amount is zero'
+              'Amount zero'
             );
           });
         });
@@ -810,7 +810,7 @@ describe('DapiFallbackV2', function () {
                                       });
                                     });
                                   });
-                                  context('dAPI fallback already executed', function () {
+                                  context('Fallback already executed', function () {
                                     it('reverts', async function () {
                                       const {
                                         roles,
@@ -896,7 +896,7 @@ describe('DapiFallbackV2', function () {
                                           sponsorWallet: fallbackSponsorWalletAddress2,
                                           fallbackProof: fallbackProof2,
                                         })
-                                      ).to.have.been.revertedWith('dAPI fallback already executed');
+                                      ).to.have.been.revertedWith('Fallback already executed');
                                     });
                                   });
                                 });
@@ -923,7 +923,7 @@ describe('DapiFallbackV2', function () {
                                         ...executeDapiFallbackArgs,
                                         dapiFallbackAdminInd: dapiFallbackAdminId,
                                       })
-                                    ).to.have.been.revertedWith('Feed not updated in last day');
+                                    ).to.have.been.revertedWith('Fallback feed stale');
                                   });
                                 });
                               });
@@ -1038,7 +1038,7 @@ describe('DapiFallbackV2', function () {
                               });
                             });
                           });
-                          context('Tree has not been registered', function () {
+                          context('Tree root not registered', function () {
                             it('reverts', async function () {
                               const { roles, dapiFallbackV2, updateParams, priceRoot, priceProof, duration, price } =
                                 await helpers.loadFixture(deploy);
@@ -1084,11 +1084,11 @@ describe('DapiFallbackV2', function () {
                               };
                               await expect(
                                 dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
-                              ).to.have.been.revertedWith('Tree has not been registered');
+                              ).to.have.been.revertedWith('Tree root not registered');
                             });
                           });
                         });
-                        context('Root is zero', function () {
+                        context('Root zero', function () {
                           it('reverts', async function () {
                             const {
                               roles,
@@ -1119,11 +1119,11 @@ describe('DapiFallbackV2', function () {
                             };
                             await expect(
                               dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
-                            ).to.have.been.revertedWith('Root is zero');
+                            ).to.have.been.revertedWith('Root zero');
                           });
                         });
                       });
-                      context('Proof is empty', function () {
+                      context('Proof empty', function () {
                         it('reverts', async function () {
                           const {
                             roles,
@@ -1154,11 +1154,11 @@ describe('DapiFallbackV2', function () {
                           };
                           await expect(
                             dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
-                          ).to.have.been.revertedWith('Proof is empty');
+                          ).to.have.been.revertedWith('Proof empty');
                         });
                       });
                     });
-                    context('Data feed ID will not be changed', function () {
+                    context('Data feed ID will not change', function () {
                       it('reverts', async function () {
                         const {
                           roles,
@@ -1194,11 +1194,11 @@ describe('DapiFallbackV2', function () {
                         };
                         await expect(
                           dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
-                        ).to.have.been.revertedWith('Data feed ID will not be changed');
+                        ).to.have.been.revertedWith('Data feed ID will not change');
                       });
                     });
                   });
-                  context('Update params does not match', function () {
+                  context('Invalid update parameters', function () {
                     it('reverts', async function () {
                       const {
                         roles,
@@ -1237,11 +1237,11 @@ describe('DapiFallbackV2', function () {
                       };
                       await expect(
                         dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
-                      ).to.have.been.revertedWith('Update params does not match');
+                      ).to.have.been.revertedWith('Invalid update parameters');
                     });
                   });
                 });
-                context('Sponsor wallet address is zero', function () {
+                context('Sponsor wallet address zero', function () {
                   it('reverts', async function () {
                     const {
                       roles,
@@ -1273,11 +1273,11 @@ describe('DapiFallbackV2', function () {
                     };
                     await expect(
                       dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
-                    ).to.have.been.revertedWith('Sponsor wallet address is zero');
+                    ).to.have.been.revertedWith('Sponsor wallet address zero');
                   });
                 });
               });
-              context('Price is zero', function () {
+              context('Price zero', function () {
                 it('reverts', async function () {
                   const {
                     roles,
@@ -1308,11 +1308,11 @@ describe('DapiFallbackV2', function () {
                   };
                   await expect(
                     dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
-                  ).to.have.been.revertedWith('Price is zero');
+                  ).to.have.been.revertedWith('Price zero');
                 });
               });
             });
-            context('Duration is zero', function () {
+            context('Duration zero', function () {
               it('reverts', async function () {
                 const {
                   roles,
@@ -1343,7 +1343,7 @@ describe('DapiFallbackV2', function () {
                 };
                 await expect(
                   dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
-                ).to.have.been.revertedWith('Duration is zero');
+                ).to.have.been.revertedWith('Duration zero');
               });
             });
           });
@@ -1379,11 +1379,11 @@ describe('DapiFallbackV2', function () {
               };
               await expect(
                 dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
-              ).to.have.been.revertedWith('Update params empty');
+              ).to.have.been.revertedWith('Update parameters empty');
             });
           });
         });
-        context('Data feed ID is zero', function () {
+        context('Data feed ID zero', function () {
           it('reverts', async function () {
             const {
               roles,
@@ -1415,11 +1415,11 @@ describe('DapiFallbackV2', function () {
             };
             await expect(
               dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
-            ).to.have.been.revertedWith('Data feed ID is zero');
+            ).to.have.been.revertedWith('Data feed ID zero');
           });
         });
       });
-      context('Dapi name is zero', function () {
+      context('dAPI name zero', function () {
         it('reverts', async function () {
           const { roles, dapiFallbackV2, updateParams, priceRoot, priceProof, duration, price } =
             await helpers.loadFixture(deploy);
@@ -1461,7 +1461,7 @@ describe('DapiFallbackV2', function () {
           };
           await expect(
             dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
-          ).to.have.been.revertedWith('Dapi name is zero');
+          ).to.have.been.revertedWith('dAPI name zero');
         });
       });
     });
@@ -1628,7 +1628,7 @@ describe('DapiFallbackV2', function () {
                 dapiTree.root,
                 dapiTree.getProof(dapiTreeValue)
               )
-          ).to.have.been.revertedWith('dAPI fallback has not been executed');
+          ).to.have.been.revertedWith('Fallback not revertable');
         });
       });
     });
