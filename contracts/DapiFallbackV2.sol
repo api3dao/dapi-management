@@ -57,11 +57,11 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     bytes32 private constant HASHED_PARAMS =
         keccak256(abi.encode(uint256(1e6), int224(0), uint32(1 days)));
 
-    EnumerableSet.Bytes32Set private fallbackedDapis;
-
     /// @notice dAPI fallback admins that can individually execute the
     /// response plan
     EnumerableSet.AddressSet private _dapiFallbackAdmins;
+
+    EnumerableSet.Bytes32Set private fallbackedDapis;
 
     /// @dev Reverts unless the sender is the dAPI fallback admin with the
     /// specified index
