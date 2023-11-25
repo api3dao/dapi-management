@@ -14,7 +14,7 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
         address sponsorWallet,
         uint256 deviationThresholdInPercentage,
         int224 deviationReference,
-        uint32 heartbeatInterval
+        uint256 heartbeatInterval
     );
 
     event RemovedDapi(bytes32 indexed dapiName, address sender);
@@ -29,7 +29,7 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
     struct UpdateParameters {
         uint256 deviationThresholdInPercentage;
         int224 deviationReference;
-        uint32 heartbeatInterval;
+        uint256 heartbeatInterval;
     }
 
     struct DataFeedValue {
@@ -63,7 +63,7 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
 
     function dapiNameToUpdateParameters(
         bytes32
-    ) external view returns (uint256, int224, uint32);
+    ) external view returns (uint256, int224, uint256);
 
     function registerAirnodeSignedApiUrl(
         address airnode,
@@ -82,7 +82,7 @@ interface IDapiDataRegistry is IAccessControlRegistryAdminnedWithManager {
         address sponsorWallet,
         uint256 deviationThresholdInPercentage,
         int224 deviationReference,
-        uint32 heartbeatInterval,
+        uint256 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
     ) external;

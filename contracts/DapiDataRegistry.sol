@@ -87,8 +87,8 @@ contract DapiDataRegistry is
             _manager
         )
     {
-        require(_hashRegistry != address(0), "HashRegistry address is zero");
-        require(_api3ServerV1 != address(0), "Api3ServerV1 address is zero");
+        require(_hashRegistry != address(0), "HashRegistry address zero");
+        require(_api3ServerV1 != address(0), "Api3ServerV1 address zero");
         dapiAdderRole = _deriveRole(
             _deriveAdminRole(manager),
             DAPI_ADDER_ROLE_DESCRIPTION
@@ -205,7 +205,7 @@ contract DapiDataRegistry is
         address sponsorWallet,
         uint256 deviationThresholdInPercentage,
         int224 deviationReference,
-        uint32 heartbeatInterval,
+        uint256 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
     ) external override {
@@ -218,7 +218,7 @@ contract DapiDataRegistry is
             "Sender is not manager or has dAPI adder role"
         );
         require(dapiName != bytes32(0), "dAPI name is zero");
-        require(dataFeedId != bytes32(0), "Data feed ID is zero");
+        require(dataFeedId != bytes32(0), "Data feed ID zero");
         require(sponsorWallet != address(0), "Sponsor wallet is zero");
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(
@@ -238,8 +238,7 @@ contract DapiDataRegistry is
         require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
 
         dapis.add(dapiName);
-        bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
-        dapiNameToUpdateParameters[dapiNameHash] = UpdateParameters(
+        dapiNameToUpdateParameters[dapiName] = UpdateParameters(
             deviationThresholdInPercentage,
             deviationReference,
             heartbeatInterval
@@ -271,8 +270,7 @@ contract DapiDataRegistry is
             "Sender is not manager or has dAPI remover role"
         );
         require(dapis.remove(dapiName), "dAPI name has not been added");
-        bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
-        delete dapiNameToUpdateParameters[dapiNameHash];
+        delete dapiNameToUpdateParameters[dapiName];
         emit RemovedDapi(dapiName, msg.sender);
     }
 
@@ -291,7 +289,7 @@ contract DapiDataRegistry is
         bytes32[] calldata proof
     ) external override {
         require(dapiName != bytes32(0), "dAPI name is zero");
-        require(dataFeedId != bytes32(0), "Data feed ID is zero");
+        require(dataFeedId != bytes32(0), "Data feed ID zero");
         require(sponsorWallet != address(0), "Sponsor wallet is zero");
         require(dapis.contains(dapiName), "dAPI name has not been added");
         require(
@@ -349,14 +347,13 @@ contract DapiDataRegistry is
             string[] memory signedApiUrls
         )
     {
-        bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         bytes32 dataFeedId = IApi3ServerV1(api3ServerV1)
-            .dapiNameHashToDataFeedId(dapiNameHash);
+            .dapiNameHashToDataFeedId(keccak256(abi.encodePacked(dapiName)));
         if (dataFeedId != bytes32(0)) {
             (int224 value, uint32 timestamp) = IApi3ServerV1(api3ServerV1)
                 .dataFeeds(dataFeedId);
             dataFeedValue = DataFeedValue(value, timestamp);
-            updateParameters = dapiNameToUpdateParameters[dapiNameHash];
+            updateParameters = dapiNameToUpdateParameters[dapiName];
             dataFeed = dataFeeds[dataFeedId];
             if (dataFeed.length == 64) {
                 (address airnode, ) = abi.decode(dataFeed, (address, bytes32));

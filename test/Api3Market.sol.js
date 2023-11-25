@@ -22,8 +22,8 @@ describe('Api3Market', function () {
       'deployer',
       'manager',
       'hashRegistryOwner',
-      'dapiFallbackManager1',
-      'dapiFallbackManager2',
+      'dapiFallbackExecutor1',
+      'dapiFallbackExecutor2',
       'apiRootSigner1',
       'apiRootSigner2',
       'apiRootSigner3',
@@ -73,9 +73,12 @@ describe('Api3Market', function () {
     const dapiFallbackV2 = await DapiFallbackV2.deploy(
       api3ServerV1.address,
       hashRegistry.address,
-      dapiDataRegistry.address,
-      [roles.dapiFallbackManager1.address, roles.dapiFallbackManager2.address]
+      dapiDataRegistry.address
     );
+    await dapiFallbackV2.setUpDapiFallbackExecutors([
+      roles.dapiFallbackExecutor1.address,
+      roles.dapiFallbackExecutor2.address,
+    ]);
 
     const proxyFactoryFactory = await hre.ethers.getContractFactory('ProxyFactory', roles.deployer);
     const proxyFactory = await proxyFactoryFactory.deploy(api3ServerV1.address);
@@ -136,7 +139,7 @@ describe('Api3Market', function () {
     const apiTreeRootSignatures = await Promise.all(
       apiTreeRootSigners.map(async (rootSigner) => await rootSigner.signMessage(apiMessage))
     );
-    await hashRegistry.connect(roles.hashRegistryOwner).setupSigners(
+    await hashRegistry.connect(roles.hashRegistryOwner).setUpSigners(
       apiHashType,
       apiTreeRootSigners.map((rootSigner) => rootSigner.address)
     );
@@ -175,7 +178,7 @@ describe('Api3Market', function () {
     const dapiTreeRootSignatures = await Promise.all(
       dapiTreeRootSigners.map(async (rootSigner) => await rootSigner.signMessage(dapiMessages))
     );
-    await hashRegistry.connect(roles.hashRegistryOwner).setupSigners(
+    await hashRegistry.connect(roles.hashRegistryOwner).setUpSigners(
       dapiHashType,
       dapiTreeRootSigners.map((rootSigner) => rootSigner.address)
     );
@@ -188,19 +191,19 @@ describe('Api3Market', function () {
     const deviationReference = 0;
     const heartbeatInterval = 86400; // 1 day in seconds
     const updateParamsOne = hre.ethers.utils.defaultAbiCoder.encode(
-      ['uint256', 'int224', 'uint32'],
+      ['uint256', 'int224', 'uint256'],
       [deviationThresholdInPercentage, deviationReference, heartbeatInterval]
     );
     const updateParamsTwo = hre.ethers.utils.defaultAbiCoder.encode(
-      ['uint256', 'int224', 'uint32'],
+      ['uint256', 'int224', 'uint256'],
       [deviationThresholdInPercentage * 2, deviationReference, heartbeatInterval]
     );
     const updateParamsFour = hre.ethers.utils.defaultAbiCoder.encode(
-      ['uint256', 'int224', 'uint32'],
+      ['uint256', 'int224', 'uint256'],
       [deviationThresholdInPercentage * 4, deviationReference, heartbeatInterval]
     );
     const updateParamsEight = hre.ethers.utils.defaultAbiCoder.encode(
-      ['uint256', 'int224', 'uint32'],
+      ['uint256', 'int224', 'uint256'],
       [deviationThresholdInPercentage * 8, deviationReference, heartbeatInterval]
     );
     const priceTreeValues = dapiNamesWithSponsorWallets
@@ -220,7 +223,7 @@ describe('Api3Market', function () {
     const priceSignatures = await Promise.all(
       priceRootSigners.map(async (rootSigner) => await rootSigner.signMessage(priceMessage))
     );
-    await hashRegistry.connect(roles.hashRegistryOwner).setupSigners(
+    await hashRegistry.connect(roles.hashRegistryOwner).setUpSigners(
       priceHashType,
       priceRootSigners.map((rootSigner) => rootSigner.address)
     );
@@ -260,7 +263,7 @@ describe('Api3Market', function () {
                 expect(await api3Market.api3ServerV1()).to.equal(api3ServerV1.address);
               });
             });
-            context('Api3ServerV1 address is zero', function () {
+            context('Api3ServerV1 address zero', function () {
               it('reverts', async function () {
                 const { roles, hashRegistry, dapiDataRegistry, dapiFallbackV2, proxyFactory } =
                   await helpers.loadFixture(deploy);
@@ -274,7 +277,7 @@ describe('Api3Market', function () {
                     proxyFactory.address,
                     hre.ethers.constants.AddressZero
                   )
-                ).to.have.been.revertedWith('Api3ServerV1 address is zero');
+                ).to.have.been.revertedWith('Api3ServerV1 address zero');
               });
             });
           });
@@ -316,7 +319,7 @@ describe('Api3Market', function () {
           });
         });
       });
-      context('DapiDataRegistry address is zero', function () {
+      context('DapiDataRegistry address zero', function () {
         it('reverts', async function () {
           const { roles, hashRegistry, dapiFallbackV2, proxyFactory, api3ServerV1 } = await helpers.loadFixture(deploy);
           const Api3Market = await hre.ethers.getContractFactory('Api3Market', roles.deployer);
@@ -329,11 +332,11 @@ describe('Api3Market', function () {
               proxyFactory.address,
               api3ServerV1.address
             )
-          ).to.have.been.revertedWith('DapiDataRegistry address is zero');
+          ).to.have.been.revertedWith('DapiDataRegistry address zero');
         });
       });
     });
-    context('HashRegistry address is zero', function () {
+    context('HashRegistry address zero', function () {
       it('reverts', async function () {
         const { roles, dapiDataRegistry, dapiFallbackV2, proxyFactory, api3ServerV1 } = await helpers.loadFixture(
           deploy
@@ -348,7 +351,7 @@ describe('Api3Market', function () {
             proxyFactory.address,
             api3ServerV1.address
           )
-        ).to.have.been.revertedWith('HashRegistry address is zero');
+        ).to.have.been.revertedWith('HashRegistry address zero');
       });
     });
   });
@@ -462,7 +465,7 @@ describe('Api3Market', function () {
                   const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
                     await dapiDataRegistry.readDapiWithName(dapiName);
                   expect(updateParameters).to.deep.equal(
-                    hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], updateParams)
+                    hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint256'], updateParams)
                   );
                   expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
                   expect(dataFeed).to.equal(encodedBeaconSetData);
@@ -604,7 +607,7 @@ describe('Api3Market', function () {
                         const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
                           await dapiDataRegistry.readDapiWithName(dapiName);
                         expect(updateParameters).to.deep.equal(
-                          hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], updateParams)
+                          hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint256'], updateParams)
                         );
                         expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
                         expect(dataFeed).to.equal(encodedBeaconSetData);
@@ -769,7 +772,7 @@ describe('Api3Market', function () {
                         const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
                           await dapiDataRegistry.readDapiWithName(dapiName);
                         expect(updateParameters).to.deep.equal(
-                          hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], updateParams)
+                          hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint256'], updateParams)
                         );
                         expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
                         expect(dataFeed).to.equal(encodedBeaconSetData);
@@ -1137,7 +1140,7 @@ describe('Api3Market', function () {
                     const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
                       await dapiDataRegistry.readDapiWithName(dapiName);
                     expect(updateParameters).to.deep.equal(
-                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], upgradeUpdateParams)
+                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint256'], upgradeUpdateParams)
                     );
                     expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
                     expect(dataFeed).to.equal(encodedBeaconSetData);
@@ -1329,7 +1332,7 @@ describe('Api3Market', function () {
                     const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
                       await dapiDataRegistry.readDapiWithName(dapiName);
                     expect(updateParameters).to.deep.equal(
-                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], upgradeUpdateParams)
+                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint256'], upgradeUpdateParams)
                     );
                     expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
                     expect(dataFeed).to.equal(encodedBeaconSetData);
@@ -1530,7 +1533,7 @@ describe('Api3Market', function () {
                     const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
                       await dapiDataRegistry.readDapiWithName(dapiName);
                     expect(updateParameters).to.deep.equal(
-                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], upgradeUpdateParams)
+                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint256'], upgradeUpdateParams)
                     );
                     expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
                     expect(dataFeed).to.equal(encodedBeaconSetData);

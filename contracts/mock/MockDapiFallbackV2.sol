@@ -2,7 +2,7 @@
 pragma solidity 0.8.18;
 
 contract MockDapiFallbackV2 {
-    function getFallbackedDapis()
+    function getRevertableDapiFallbacks()
         external
         pure
         returns (bytes32[] memory dapis)

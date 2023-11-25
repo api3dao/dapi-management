@@ -156,7 +156,7 @@ describe('DapiDataRegistry', function () {
     const apiTreeRootSignatures = await Promise.all(
       rootSigners.map(async (rootSigner) => await rootSigner.signMessage(apiMessage))
     );
-    await hashRegistry.connect(roles.owner).setupSigners(
+    await hashRegistry.connect(roles.owner).setUpSigners(
       apiHashType,
       rootSigners.map((rootSigner) => rootSigner.address)
     );
@@ -194,7 +194,7 @@ describe('DapiDataRegistry', function () {
     const dapiTreeRootSignatures = await Promise.all(
       rootSigners.map(async (rootSigner) => await rootSigner.signMessage(dapiMessage))
     );
-    await hashRegistry.connect(roles.owner).setupSigners(
+    await hashRegistry.connect(roles.owner).setUpSigners(
       dapiHashType,
       rootSigners.map((rootSigner) => rootSigner.address)
     );
@@ -705,7 +705,7 @@ describe('DapiDataRegistry', function () {
           });
         });
       });
-      context('Data feed ID is zero', function () {
+      context('Data feed ID zero', function () {
         it('reverts', async function () {
           const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
@@ -722,7 +722,7 @@ describe('DapiDataRegistry', function () {
                 generateRandomBytes32(),
                 [generateRandomBytes32(), generateRandomBytes32(), generateRandomBytes32()]
               )
-          ).to.be.revertedWith('Data feed ID is zero');
+          ).to.be.revertedWith('Data feed ID zero');
         });
       });
     });
@@ -1102,7 +1102,7 @@ describe('DapiDataRegistry', function () {
           });
         });
       });
-      context('Data feed ID is zero', function () {
+      context('Data feed ID zero', function () {
         it('reverts', async function () {
           const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
@@ -1116,7 +1116,7 @@ describe('DapiDataRegistry', function () {
                 generateRandomBytes32(),
                 [generateRandomBytes32(), generateRandomBytes32(), generateRandomBytes32()]
               )
-          ).to.be.revertedWith('Data feed ID is zero');
+          ).to.be.revertedWith('Data feed ID zero');
         });
       });
     });

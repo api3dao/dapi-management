@@ -53,7 +53,7 @@ interface IApi3Market {
     struct UpdateParams {
         uint256 deviationThresholdInPercentage;
         int224 deviationReference;
-        uint32 heartbeatInterval;
+        uint256 heartbeatInterval;
     }
 
     function hashRegistry() external view returns (address);
