@@ -73,7 +73,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// @dev Reverts unless the sender is the dAPI fallback admin with the
     /// specified index
     /// @param dapiFallbackAdminInd dAPI fallback admin index
-    modifier onlyByDapiFallbackAdminWithInd(uint256 dapiFallbackAdminInd) {
+    modifier onlyDapiFallbackAdminWithInd(uint256 dapiFallbackAdminInd) {
         require(
             msg.sender == _dapiFallbackAdmins.at(dapiFallbackAdminInd) ||
                 msg.sender == address(0),
@@ -128,7 +128,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// @dev This operation might change the order in the AddressSet and this
     /// must be considered when calling functions that require an index to be
     /// passed as argument (i.e. executeDapiFallback() or any other function
-    /// using the onlyByDapiFallbackAdminWithInd modifier)
+    /// using the onlyDapiFallbackAdminWithInd modifier)
     /// @param dapiFallbackAdmin dAPI fallback admin address
     function removeDapiFallbackAdmin(
         address dapiFallbackAdmin
@@ -184,7 +184,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     )
         external
         override
-        onlyByDapiFallbackAdminWithInd(args.dapiFallbackAdminInd)
+        onlyDapiFallbackAdminWithInd(args.dapiFallbackAdminInd)
     {
         require(args.dapiName != bytes32(0), "Dapi name is zero");
         require(args.dataFeedId != bytes32(0), "Data feed ID is zero");
@@ -312,7 +312,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         uint32 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
-    ) external override onlyByDapiFallbackAdminWithInd(dapiFallbackAdminInd) {
+    ) external override onlyDapiFallbackAdminWithInd(dapiFallbackAdminInd) {
         require(
             _revertableDapiFallbacks.remove(dapiName),
             "dAPI fallback has not been executed"
