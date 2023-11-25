@@ -227,12 +227,6 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
             keccak256(args.updateParams) == HASHED_FALLBACK_UPDATE_PARAMS,
             "Invalid update parameters"
         );
-        require(
-            IApi3ServerV1(api3ServerV1).dapiNameToDataFeedId(args.dapiName) !=
-                args.dataFeedId,
-            "Data feed ID will not change"
-        );
-
         _verifyMerkleProof(
             DAPI_FALLBACK_MERKLE_TREE_ROOT_HASH_TYPE,
             args.fallbackProof,
@@ -249,7 +243,6 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
                 )
             )
         );
-
         _verifyMerkleProof(
             DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE,
             args.priceProof,
@@ -269,22 +262,28 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
             )
         );
 
+        require(
+            IApi3ServerV1(api3ServerV1).dapiNameToDataFeedId(args.dapiName) !=
+                args.dataFeedId,
+            "Data feed ID will not change"
+        );
+
+        // Data feed must have been updated in the last day, assuming that the
+        // largest heartbeat interval is 1 day
         (, uint32 timestamp) = IApi3ServerV1(api3ServerV1).readDataFeedWithId(
             args.dataFeedId
         );
-        // Data feed must have been updated in the last day, assuming that the
-        // largest heartbeat interval is 1 day
         require(
             timestamp + MAXIMUM_DATA_FEED_UPDATE_AGE >= block.timestamp,
             "Fallback feed stale"
         );
 
-        IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.dataFeedId);
-
         require(
             _revertableDapiFallbacks.add(args.dapiName),
             "Fallback already executed"
         );
+
+        IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.dataFeedId);
 
         IDapiDataRegistry(dapiDataRegistry).removeDapi(args.dapiName);
 
@@ -302,7 +301,6 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
                 msg.sender
             );
         }
-
         emit ExecutedDapiFallback(args.dapiName, args.dataFeedId, msg.sender);
     }
 
