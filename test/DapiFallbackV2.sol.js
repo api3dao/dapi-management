@@ -13,10 +13,10 @@ const {
 describe('DapiFallbackV2', function () {
   const HUNDRED_PERCENT = 1e8;
 
-  function getRandomDapiFallbackManager(roles) {
-    const dapiFallbackManagerId = Math.floor(Math.random() * 3);
-    const dapiFallbackManager = roles[`dapiFallbackManager${dapiFallbackManagerId + 1}`];
-    return { dapiFallbackManagerId, dapiFallbackManager };
+  function getRandomDapiFallbackAdmin(roles) {
+    const dapiFallbackAdminId = Math.floor(Math.random() * 3);
+    const dapiFallbackAdmin = roles[`dapiFallbackAdmin${dapiFallbackAdminId + 1}`];
+    return { dapiFallbackAdminId, dapiFallbackAdmin };
   }
 
   async function updateFallbackBeacon(
@@ -50,9 +50,9 @@ describe('DapiFallbackV2', function () {
       'deployer',
       'owner',
       'manager',
-      'dapiFallbackManager1',
-      'dapiFallbackManager2',
-      'dapiFallbackManager3',
+      'dapiFallbackAdmin1',
+      'dapiFallbackAdmin2',
+      'dapiFallbackAdmin3',
       'hashRegistryOwner',
       'dapiFallbackRootSigner1',
       'dapiFallbackRootSigner2',
@@ -102,7 +102,7 @@ describe('DapiFallbackV2', function () {
       api3ServerV1.address,
       hashRegistry.address,
       dapiDataRegistry.address,
-      [roles.dapiFallbackManager1.address, roles.dapiFallbackManager2.address, roles.dapiFallbackManager3.address]
+      [roles.dapiFallbackAdmin1.address, roles.dapiFallbackAdmin2.address, roles.dapiFallbackAdmin3.address]
     );
 
     await dapiFallbackV2.connect(roles.deployer).transferOwnership(roles.owner.address);
@@ -342,44 +342,44 @@ describe('DapiFallbackV2', function () {
     context('Api3ServerV1 address is not zero', function () {
       context('HashRegistry address is not zero', function () {
         context('DapiDataRegistry address is not zero', function () {
-          context('dAPI fallback managers is not empty', function () {
+          context('dAPI fallback admins is not empty', function () {
             it('constructs', async function () {
               const { roles, api3ServerV1, hashRegistry, dapiDataRegistry, dapiFallbackV2 } = await helpers.loadFixture(
                 deploy
               );
-              const expectedDapiFallbackManagers = [
-                roles.dapiFallbackManager1.address,
-                roles.dapiFallbackManager2.address,
-                roles.dapiFallbackManager3.address,
+              const expectedDapiFallbackAdmins = [
+                roles.dapiFallbackAdmin1.address,
+                roles.dapiFallbackAdmin2.address,
+                roles.dapiFallbackAdmin3.address,
               ];
               expect(await dapiFallbackV2.api3ServerV1()).to.equal(api3ServerV1.address);
               expect(await dapiFallbackV2.hashRegistry()).to.equal(hashRegistry.address);
               expect(await dapiFallbackV2.dapiDataRegistry()).to.equal(dapiDataRegistry.address);
-              expect(await dapiFallbackV2.getDapiFallbackManagers()).to.deep.equal(expectedDapiFallbackManagers);
-              const dapiFallbackManagers = await dapiFallbackV2.getDapiFallbackManagers();
-              expect(dapiFallbackManagers[0]).to.equal(roles.dapiFallbackManager1.address);
-              expect(dapiFallbackManagers[1]).to.equal(roles.dapiFallbackManager2.address);
-              expect(dapiFallbackManagers[2]).to.equal(roles.dapiFallbackManager3.address);
+              expect(await dapiFallbackV2.getDapiFallbackAdmins()).to.deep.equal(expectedDapiFallbackAdmins);
+              const dapiFallbackAdmins = await dapiFallbackV2.getDapiFallbackAdmins();
+              expect(dapiFallbackAdmins[0]).to.equal(roles.dapiFallbackAdmin1.address);
+              expect(dapiFallbackAdmins[1]).to.equal(roles.dapiFallbackAdmin2.address);
+              expect(dapiFallbackAdmins[2]).to.equal(roles.dapiFallbackAdmin3.address);
               const deploymentTransactionReceipt = await hre.ethers.provider.getTransactionReceipt(
                 dapiFallbackV2.deployTransaction.hash
               );
               const parsedLogs = deploymentTransactionReceipt.logs.map((log) => dapiFallbackV2.interface.parseLog(log));
-              const addedDapiFallbackManagerLogs = parsedLogs.filter(
-                (parsedLog) => parsedLog.name === 'AddedDapiFallbackManager'
+              const addedDapiFallbackAdminLogs = parsedLogs.filter(
+                (parsedLog) => parsedLog.name === 'AddedDapiFallbackAdmin'
               );
-              expect(addedDapiFallbackManagerLogs.length).to.equal(3);
-              addedDapiFallbackManagerLogs.forEach((log, i) =>
-                expect(log.args[0]).to.equal(expectedDapiFallbackManagers[i])
+              expect(addedDapiFallbackAdminLogs.length).to.equal(3);
+              addedDapiFallbackAdminLogs.forEach((log, i) =>
+                expect(log.args[0]).to.equal(expectedDapiFallbackAdmins[i])
               );
             });
           });
-          context('dAPI fallback managers is empty', function () {
+          context('dAPI fallback admins is empty', function () {
             it('reverts', async function () {
               const { roles, api3ServerV1, hashRegistry, dapiDataRegistry } = await helpers.loadFixture(deploy);
               const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
               await expect(
                 DapiFallbackV2.deploy(api3ServerV1.address, hashRegistry.address, dapiDataRegistry.address, [])
-              ).to.have.been.revertedWith('dAPI fallback managers is empty');
+              ).to.have.been.revertedWith('dAPI fallback admins is empty');
             });
           });
         });
@@ -389,9 +389,9 @@ describe('DapiFallbackV2', function () {
             const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
             await expect(
               DapiFallbackV2.deploy(api3ServerV1.address, hashRegistry.address, hre.ethers.constants.AddressZero, [
-                roles.dapiFallbackManager1.address,
-                roles.dapiFallbackManager2.address,
-                roles.dapiFallbackManager3.address,
+                roles.dapiFallbackAdmin1.address,
+                roles.dapiFallbackAdmin2.address,
+                roles.dapiFallbackAdmin3.address,
               ])
             ).to.have.been.revertedWith('DapiDataRegistry address is zero');
           });
@@ -403,9 +403,9 @@ describe('DapiFallbackV2', function () {
           const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
           await expect(
             DapiFallbackV2.deploy(api3ServerV1.address, hre.ethers.constants.AddressZero, dapiDataRegistry.address, [
-              roles.dapiFallbackManager1.address,
-              roles.dapiFallbackManager2.address,
-              roles.dapiFallbackManager3.address,
+              roles.dapiFallbackAdmin1.address,
+              roles.dapiFallbackAdmin2.address,
+              roles.dapiFallbackAdmin3.address,
             ])
           ).to.have.been.revertedWith('HashRegistry address is zero');
         });
@@ -417,9 +417,9 @@ describe('DapiFallbackV2', function () {
         const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
         await expect(
           DapiFallbackV2.deploy(hre.ethers.constants.AddressZero, hashRegistry.address, dapiDataRegistry.address, [
-            roles.dapiFallbackManager1.address,
-            roles.dapiFallbackManager2.address,
-            roles.dapiFallbackManager3.address,
+            roles.dapiFallbackAdmin1.address,
+            roles.dapiFallbackAdmin2.address,
+            roles.dapiFallbackAdmin3.address,
           ])
         ).to.have.been.revertedWith('Api3ServerV1 address is zero');
       });
@@ -437,39 +437,39 @@ describe('DapiFallbackV2', function () {
     });
   });
 
-  describe('addDapiFallbackManager', function () {
+  describe('addDapiFallbackAdmin', function () {
     context('Sender is the owner', function () {
-      context('dAPI fallback manager is not zero', function () {
-        context('dAPI fallback manager does not exist', function () {
-          it('adds a dAPI fallback manager', async function () {
+      context('dAPI fallback admin is not zero', function () {
+        context('dAPI fallback admin does not exist', function () {
+          it('adds a dAPI fallback admin', async function () {
             const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
-            const dapiFallbackManager = generateRandomAddress();
-            await expect(dapiFallbackV2.connect(roles.owner).addDapiFallbackManager(dapiFallbackManager))
-              .to.emit(dapiFallbackV2, 'AddedDapiFallbackManager')
-              .withArgs(dapiFallbackManager);
-            expect(await dapiFallbackV2.getDapiFallbackManagers()).to.deep.equal([
-              roles.dapiFallbackManager1.address,
-              roles.dapiFallbackManager2.address,
-              roles.dapiFallbackManager3.address,
-              dapiFallbackManager,
+            const dapiFallbackAdmin = generateRandomAddress();
+            await expect(dapiFallbackV2.connect(roles.owner).addDapiFallbackAdmin(dapiFallbackAdmin))
+              .to.emit(dapiFallbackV2, 'AddedDapiFallbackAdmin')
+              .withArgs(dapiFallbackAdmin);
+            expect(await dapiFallbackV2.getDapiFallbackAdmins()).to.deep.equal([
+              roles.dapiFallbackAdmin1.address,
+              roles.dapiFallbackAdmin2.address,
+              roles.dapiFallbackAdmin3.address,
+              dapiFallbackAdmin,
             ]);
           });
         });
-        context('dAPI fallback manager exists', function () {
+        context('dAPI fallback admin exists', function () {
           it('reverts', async function () {
             const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
             await expect(
-              dapiFallbackV2.connect(roles.owner).addDapiFallbackManager(roles.dapiFallbackManager1.address)
-            ).to.have.been.revertedWith('dAPI fallback manager already exists');
+              dapiFallbackV2.connect(roles.owner).addDapiFallbackAdmin(roles.dapiFallbackAdmin1.address)
+            ).to.have.been.revertedWith('dAPI fallback admin already exists');
           });
         });
       });
-      context('dAPI fallback managers is zero', function () {
+      context('dAPI fallback admins is zero', function () {
         it('reverts', async function () {
           const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
           await expect(
-            dapiFallbackV2.connect(roles.owner).addDapiFallbackManager(hre.ethers.constants.AddressZero)
-          ).to.have.been.revertedWith('dAPI fallback manager is zero');
+            dapiFallbackV2.connect(roles.owner).addDapiFallbackAdmin(hre.ethers.constants.AddressZero)
+          ).to.have.been.revertedWith('dAPI fallback admin is zero');
         });
       });
     });
@@ -477,44 +477,42 @@ describe('DapiFallbackV2', function () {
       it('reverts', async function () {
         const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
         await expect(
-          dapiFallbackV2.connect(roles.randomPerson).addDapiFallbackManager(generateRandomAddress())
+          dapiFallbackV2.connect(roles.randomPerson).addDapiFallbackAdmin(generateRandomAddress())
         ).to.have.been.revertedWith('Ownable: caller is not the owner');
       });
     });
   });
 
-  describe('removeDapiFallbackManager', function () {
+  describe('removeDapiFallbackAdmin', function () {
     context('Sender is the owner', function () {
-      context('dAPI fallback manager is not zero', function () {
-        context('dAPI fallback manager exists', function () {
-          it('removes the dAPI fallback manager', async function () {
+      context('dAPI fallback admin is not zero', function () {
+        context('dAPI fallback admin exists', function () {
+          it('removes the dAPI fallback admin', async function () {
             const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
-            await expect(
-              dapiFallbackV2.connect(roles.owner).removeDapiFallbackManager(roles.dapiFallbackManager2.address)
-            )
-              .to.emit(dapiFallbackV2, 'RemovedDapiFallbackManager')
-              .withArgs(roles.dapiFallbackManager2.address);
-            expect(await dapiFallbackV2.getDapiFallbackManagers()).to.deep.equal([
-              roles.dapiFallbackManager1.address,
-              roles.dapiFallbackManager3.address,
+            await expect(dapiFallbackV2.connect(roles.owner).removeDapiFallbackAdmin(roles.dapiFallbackAdmin2.address))
+              .to.emit(dapiFallbackV2, 'RemovedDapiFallbackAdmin')
+              .withArgs(roles.dapiFallbackAdmin2.address);
+            expect(await dapiFallbackV2.getDapiFallbackAdmins()).to.deep.equal([
+              roles.dapiFallbackAdmin1.address,
+              roles.dapiFallbackAdmin3.address,
             ]);
           });
         });
-        context('dAPI fallback manager does not exist', function () {
+        context('dAPI fallback admin does not exist', function () {
           it('reverts', async function () {
             const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
             await expect(
-              dapiFallbackV2.connect(roles.owner).removeDapiFallbackManager(generateRandomAddress())
-            ).to.have.been.revertedWith('dAPI fallback manager does not exist');
+              dapiFallbackV2.connect(roles.owner).removeDapiFallbackAdmin(generateRandomAddress())
+            ).to.have.been.revertedWith('dAPI fallback admin does not exist');
           });
         });
       });
-      context('dAPI fallback managers is zero', function () {
+      context('dAPI fallback admins is zero', function () {
         it('reverts', async function () {
           const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
           await expect(
-            dapiFallbackV2.connect(roles.owner).removeDapiFallbackManager(hre.ethers.constants.AddressZero)
-          ).to.have.been.revertedWith('dAPI fallback manager is zero');
+            dapiFallbackV2.connect(roles.owner).removeDapiFallbackAdmin(hre.ethers.constants.AddressZero)
+          ).to.have.been.revertedWith('dAPI fallback admin is zero');
         });
       });
     });
@@ -522,7 +520,7 @@ describe('DapiFallbackV2', function () {
       it('reverts', async function () {
         const { roles, dapiFallbackV2 } = await helpers.loadFixture(deploy);
         await expect(
-          dapiFallbackV2.connect(roles.randomPerson).removeDapiFallbackManager(generateRandomAddress())
+          dapiFallbackV2.connect(roles.randomPerson).removeDapiFallbackAdmin(generateRandomAddress())
         ).to.have.been.revertedWith('Ownable: caller is not the owner');
       });
     });
@@ -657,7 +655,7 @@ describe('DapiFallbackV2', function () {
   });
 
   describe('executeDapiFallback', function () {
-    context('Sender is the dAPI fallback manager with the ID', function () {
+    context('Sender is the dAPI fallback admin with the ID', function () {
       context('Dapi name is not zero', function () {
         context('Data feed ID is not zero', function () {
           context('Update params are not empty', function () {
@@ -689,8 +687,8 @@ describe('DapiFallbackV2', function () {
                                           dapiTree,
                                           dapiTreeValues,
                                         } = await helpers.loadFixture(deploy);
-                                        const { dapiFallbackManagerId, dapiFallbackManager } =
-                                          getRandomDapiFallbackManager(roles);
+                                        const { dapiFallbackAdminId, dapiFallbackAdmin } =
+                                          getRandomDapiFallbackAdmin(roles);
                                         const initialBalanceOfDapiFallbackV2 = await hre.ethers.provider.getBalance(
                                           dapiFallbackV2.address
                                         );
@@ -744,16 +742,16 @@ describe('DapiFallbackV2', function () {
                                         );
 
                                         await expect(
-                                          dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback({
+                                          dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback({
                                             ...executeDapiFallbackArgs,
-                                            dapiFallbackManagerInd: dapiFallbackManagerId,
+                                            dapiFallbackAdminInd: dapiFallbackAdminId,
                                           })
                                         )
                                           .to.emit(dapiFallbackV2, 'ExecutedDapiFallback')
                                           .withArgs(
                                             hre.ethers.utils.formatBytes32String(dapiName),
                                             fallbackBeaconId,
-                                            dapiFallbackManager.address
+                                            dapiFallbackAdmin.address
                                           );
                                         const finalBalanceOfSponsor = await hre.ethers.provider.getBalance(
                                           fallbackSponsorWalletAddress
@@ -783,8 +781,8 @@ describe('DapiFallbackV2', function () {
                                           dapiTree,
                                           dapiTreeValues,
                                         } = await helpers.loadFixture(deploy);
-                                        const { dapiFallbackManagerId, dapiFallbackManager } =
-                                          getRandomDapiFallbackManager(roles);
+                                        const { dapiFallbackAdminId, dapiFallbackAdmin } =
+                                          getRandomDapiFallbackAdmin(roles);
 
                                         const [dataFeed] = dataFeeds;
                                         const { airnodes, templateIds } = dataFeed.reduce(
@@ -834,9 +832,9 @@ describe('DapiFallbackV2', function () {
                                         await dapiFallbackV2.connect(roles.owner).withdrawAll(roles.deployer.address);
 
                                         await expect(
-                                          dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback({
+                                          dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback({
                                             ...executeDapiFallbackArgs,
-                                            dapiFallbackManagerInd: dapiFallbackManagerId,
+                                            dapiFallbackAdminInd: dapiFallbackAdminId,
                                           })
                                         ).to.have.been.revertedWith('Address: insufficient balance');
                                       });
@@ -860,8 +858,8 @@ describe('DapiFallbackV2', function () {
                                         dapiTree,
                                         dapiTreeValues,
                                       } = await helpers.loadFixture(deploy);
-                                      const { dapiFallbackManagerId, dapiFallbackManager } =
-                                        getRandomDapiFallbackManager(roles);
+                                      const { dapiFallbackAdminId, dapiFallbackAdmin } =
+                                        getRandomDapiFallbackAdmin(roles);
 
                                       const [dataFeed] = dataFeeds;
                                       const { airnodes, templateIds } = dataFeed.reduce(
@@ -915,15 +913,15 @@ describe('DapiFallbackV2', function () {
                                         await helpers.time.latest()
                                       );
 
-                                      await dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback({
+                                      await dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback({
                                         ...executeDapiFallbackArgs,
-                                        dapiFallbackManagerInd: dapiFallbackManagerId,
+                                        dapiFallbackAdminInd: dapiFallbackAdminId,
                                       });
 
                                       await expect(
-                                        dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback({
+                                        dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback({
                                           ...executeDapiFallbackArgs,
-                                          dapiFallbackManagerInd: dapiFallbackManagerId,
+                                          dapiFallbackAdminInd: dapiFallbackAdminId,
                                           dataFeedId: fallbackBeaconId2,
                                           sponsorWallet: fallbackSponsorWalletAddress2,
                                           fallbackProof: fallbackProof2,
@@ -948,12 +946,12 @@ describe('DapiFallbackV2', function () {
                                       fallbackBeaconTemplateId,
                                       (await helpers.time.latest()) - 24 * 60 * 60
                                     );
-                                    const { dapiFallbackManagerId, dapiFallbackManager } =
-                                      getRandomDapiFallbackManager(roles);
+                                    const { dapiFallbackAdminId, dapiFallbackAdmin } =
+                                      getRandomDapiFallbackAdmin(roles);
                                     await expect(
-                                      dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback({
+                                      dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback({
                                         ...executeDapiFallbackArgs,
-                                        dapiFallbackManagerInd: dapiFallbackManagerId,
+                                        dapiFallbackAdminInd: dapiFallbackAdminId,
                                       })
                                     ).to.have.been.revertedWith('Feed not updated in last day');
                                   });
@@ -971,8 +969,7 @@ describe('DapiFallbackV2', function () {
                                     dapiTree,
                                     dapiTreeValues,
                                   } = await helpers.loadFixture(deploy);
-                                  const { dapiFallbackManagerId, dapiFallbackManager } =
-                                    getRandomDapiFallbackManager(roles);
+                                  const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
                                   const [dataFeed] = dataFeeds;
                                   const { airnodes, templateIds } = dataFeed.reduce(
                                     (acc, { airnode, templateId }) => ({
@@ -1010,9 +1007,9 @@ describe('DapiFallbackV2', function () {
                                       dapiTree.getProof(dapiTreeValue)
                                     );
                                   await expect(
-                                    dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback({
+                                    dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback({
                                       ...executeDapiFallbackArgs,
-                                      dapiFallbackManagerInd: dapiFallbackManagerId,
+                                      dapiFallbackAdminInd: dapiFallbackAdminId,
                                     })
                                   ).to.have.been.revertedWith('Data feed not initialized');
                                 });
@@ -1033,8 +1030,7 @@ describe('DapiFallbackV2', function () {
                                   price,
                                   fallbackSponsorWalletAddress,
                                 } = await helpers.loadFixture(deploy);
-                                const { dapiFallbackManagerId, dapiFallbackManager } =
-                                  getRandomDapiFallbackManager(roles);
+                                const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
                                 const invalidFallbackTreeEntry = [
                                   hre.ethers.utils.formatBytes32String('invalidFallbackProof'),
                                   fallbackBeaconId,
@@ -1054,7 +1050,7 @@ describe('DapiFallbackV2', function () {
                                 ]);
                                 const invalidFallbackProof = invalidFallbackTree.getProof(invalidFallbackTreeEntry);
                                 const executeDapiFallbackArgs = {
-                                  dapiFallbackManagerInd: dapiFallbackManagerId,
+                                  dapiFallbackAdminInd: dapiFallbackAdminId,
                                   dapiName: hre.ethers.utils.formatBytes32String(dapiName),
                                   dataFeedId: fallbackBeaconId,
                                   fallbackRoot: fallbackRoot,
@@ -1067,9 +1063,7 @@ describe('DapiFallbackV2', function () {
                                   sponsorWallet: fallbackSponsorWalletAddress,
                                 };
                                 await expect(
-                                  dapiFallbackV2
-                                    .connect(dapiFallbackManager)
-                                    .executeDapiFallback(executeDapiFallbackArgs)
+                                  dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
                                 ).to.have.been.revertedWith('Invalid tree proof');
                               });
                             });
@@ -1078,8 +1072,7 @@ describe('DapiFallbackV2', function () {
                             it('reverts', async function () {
                               const { roles, dapiFallbackV2, updateParams, priceRoot, priceProof, duration, price } =
                                 await helpers.loadFixture(deploy);
-                              const { dapiFallbackManagerId, dapiFallbackManager } =
-                                getRandomDapiFallbackManager(roles);
+                              const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
                               const dapiName = 'API3/USD';
                               const fallbackBeaconTemplateId = generateRandomBytes32();
                               const fallbackBeaconId = hre.ethers.utils.solidityKeccak256(
@@ -1107,7 +1100,7 @@ describe('DapiFallbackV2', function () {
                               const fallbackRoot = fallbackTree.root;
                               const fallbackProof = fallbackTree.getProof(fallbackTreeEntry);
                               const executeDapiFallbackArgs = {
-                                dapiFallbackManagerInd: dapiFallbackManagerId,
+                                dapiFallbackAdminInd: dapiFallbackAdminId,
                                 dapiName: hre.ethers.utils.formatBytes32String(dapiName),
                                 dataFeedId: fallbackBeaconId,
                                 fallbackRoot: fallbackRoot,
@@ -1120,7 +1113,7 @@ describe('DapiFallbackV2', function () {
                                 sponsorWallet: fallbackSponsorWalletAddress,
                               };
                               await expect(
-                                dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback(executeDapiFallbackArgs)
+                                dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
                               ).to.have.been.revertedWith('Tree has not been registered');
                             });
                           });
@@ -1139,10 +1132,10 @@ describe('DapiFallbackV2', function () {
                               price,
                               fallbackSponsorWalletAddress,
                             } = await helpers.loadFixture(deploy);
-                            const { dapiFallbackManagerId, dapiFallbackManager } = getRandomDapiFallbackManager(roles);
+                            const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
                             const zeroRoot = hre.ethers.constants.HashZero;
                             const executeDapiFallbackArgs = {
-                              dapiFallbackManagerInd: dapiFallbackManagerId,
+                              dapiFallbackAdminInd: dapiFallbackAdminId,
                               dapiName: hre.ethers.utils.formatBytes32String(dapiName),
                               dataFeedId: fallbackBeaconId,
                               fallbackRoot: zeroRoot,
@@ -1155,7 +1148,7 @@ describe('DapiFallbackV2', function () {
                               sponsorWallet: fallbackSponsorWalletAddress,
                             };
                             await expect(
-                              dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback(executeDapiFallbackArgs)
+                              dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
                             ).to.have.been.revertedWith('Root is zero');
                           });
                         });
@@ -1174,10 +1167,10 @@ describe('DapiFallbackV2', function () {
                             price,
                             fallbackSponsorWalletAddress,
                           } = await helpers.loadFixture(deploy);
-                          const { dapiFallbackManagerId, dapiFallbackManager } = getRandomDapiFallbackManager(roles);
+                          const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
                           const emptyProof = [];
                           const executeDapiFallbackArgs = {
-                            dapiFallbackManagerInd: dapiFallbackManagerId,
+                            dapiFallbackAdminInd: dapiFallbackAdminId,
                             dapiName: hre.ethers.utils.formatBytes32String(dapiName),
                             dataFeedId: fallbackBeaconId,
                             fallbackRoot: fallbackRoot,
@@ -1190,7 +1183,7 @@ describe('DapiFallbackV2', function () {
                             sponsorWallet: fallbackSponsorWalletAddress,
                           };
                           await expect(
-                            dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback(executeDapiFallbackArgs)
+                            dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
                           ).to.have.been.revertedWith('Proof is empty');
                         });
                       });
@@ -1212,12 +1205,12 @@ describe('DapiFallbackV2', function () {
                           price,
                           fallbackSponsorWalletAddress,
                         } = await helpers.loadFixture(deploy);
-                        const { dapiFallbackManagerId, dapiFallbackManager } = getRandomDapiFallbackManager(roles);
+                        const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
                         await api3ServerV1
                           .connect(roles.manager)
                           .setDapiName(hre.ethers.utils.formatBytes32String(dapiName), fallbackBeaconId);
                         const executeDapiFallbackArgs = {
-                          dapiFallbackManagerInd: dapiFallbackManagerId,
+                          dapiFallbackAdminInd: dapiFallbackAdminId,
                           dapiName: hre.ethers.utils.formatBytes32String(dapiName),
                           dataFeedId: fallbackBeaconId,
                           fallbackRoot: fallbackRoot,
@@ -1230,7 +1223,7 @@ describe('DapiFallbackV2', function () {
                           sponsorWallet: fallbackSponsorWalletAddress,
                         };
                         await expect(
-                          dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback(executeDapiFallbackArgs)
+                          dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
                         ).to.have.been.revertedWith('Data feed ID will not be changed');
                       });
                     });
@@ -1250,7 +1243,7 @@ describe('DapiFallbackV2', function () {
                         price,
                         fallbackSponsorWalletAddress,
                       } = await helpers.loadFixture(deploy);
-                      const { dapiFallbackManagerId, dapiFallbackManager } = getRandomDapiFallbackManager(roles);
+                      const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
                       const deviationThresholdInPercentage = hre.ethers.utils.parseUnits('25', 4); // 0.25%
                       const heartbeatInterval = 86400; // 1 day in seconds
                       const deviationReference = 0;
@@ -1260,7 +1253,7 @@ describe('DapiFallbackV2', function () {
                         [deviationThresholdInPercentage, deviationReference, heartbeatInterval]
                       );
                       const executeDapiFallbackArgs = {
-                        dapiFallbackManagerInd: dapiFallbackManagerId,
+                        dapiFallbackAdminInd: dapiFallbackAdminId,
                         dapiName: hre.ethers.utils.formatBytes32String(dapiName),
                         dataFeedId: fallbackBeaconId,
                         fallbackRoot: fallbackRoot,
@@ -1273,7 +1266,7 @@ describe('DapiFallbackV2', function () {
                         sponsorWallet: fallbackSponsorWalletAddress,
                       };
                       await expect(
-                        dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback(executeDapiFallbackArgs)
+                        dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
                       ).to.have.been.revertedWith('Update params does not match');
                     });
                   });
@@ -1293,10 +1286,10 @@ describe('DapiFallbackV2', function () {
                       duration,
                       price,
                     } = await helpers.loadFixture(deploy);
-                    const { dapiFallbackManagerId, dapiFallbackManager } = getRandomDapiFallbackManager(roles);
+                    const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
                     const zeroAddress = hre.ethers.constants.AddressZero;
                     const executeDapiFallbackArgs = {
-                      dapiFallbackManagerInd: dapiFallbackManagerId,
+                      dapiFallbackAdminInd: dapiFallbackAdminId,
                       dapiName: hre.ethers.utils.formatBytes32String(dapiName),
                       dataFeedId: fallbackBeaconId,
                       fallbackRoot: fallbackRoot,
@@ -1309,7 +1302,7 @@ describe('DapiFallbackV2', function () {
                       sponsorWallet: zeroAddress,
                     };
                     await expect(
-                      dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback(executeDapiFallbackArgs)
+                      dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
                     ).to.have.been.revertedWith('Sponsor wallet address is zero');
                   });
                 });
@@ -1329,9 +1322,9 @@ describe('DapiFallbackV2', function () {
                     duration,
                     fallbackSponsorWalletAddress,
                   } = await helpers.loadFixture(deploy);
-                  const { dapiFallbackManagerId, dapiFallbackManager } = getRandomDapiFallbackManager(roles);
+                  const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
                   const executeDapiFallbackArgs = {
-                    dapiFallbackManagerInd: dapiFallbackManagerId,
+                    dapiFallbackAdminInd: dapiFallbackAdminId,
                     dapiName: hre.ethers.utils.formatBytes32String(dapiName),
                     dataFeedId: fallbackBeaconId,
                     fallbackRoot: fallbackRoot,
@@ -1344,7 +1337,7 @@ describe('DapiFallbackV2', function () {
                     sponsorWallet: fallbackSponsorWalletAddress,
                   };
                   await expect(
-                    dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback(executeDapiFallbackArgs)
+                    dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
                   ).to.have.been.revertedWith('Price is zero');
                 });
               });
@@ -1364,9 +1357,9 @@ describe('DapiFallbackV2', function () {
                   price,
                   fallbackSponsorWalletAddress,
                 } = await helpers.loadFixture(deploy);
-                const { dapiFallbackManagerId, dapiFallbackManager } = getRandomDapiFallbackManager(roles);
+                const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
                 const executeDapiFallbackArgs = {
-                  dapiFallbackManagerInd: dapiFallbackManagerId,
+                  dapiFallbackAdminInd: dapiFallbackAdminId,
                   dapiName: hre.ethers.utils.formatBytes32String(dapiName),
                   dataFeedId: fallbackBeaconId,
                   fallbackRoot: fallbackRoot,
@@ -1379,7 +1372,7 @@ describe('DapiFallbackV2', function () {
                   sponsorWallet: fallbackSponsorWalletAddress,
                 };
                 await expect(
-                  dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback(executeDapiFallbackArgs)
+                  dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
                 ).to.have.been.revertedWith('Duration is zero');
               });
             });
@@ -1399,10 +1392,10 @@ describe('DapiFallbackV2', function () {
                 duration,
                 fallbackSponsorWalletAddress,
               } = await helpers.loadFixture(deploy);
-              const { dapiFallbackManagerId, dapiFallbackManager } = getRandomDapiFallbackManager(roles);
+              const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
               const emptyUpdateParams = [];
               const executeDapiFallbackArgs = {
-                dapiFallbackManagerInd: dapiFallbackManagerId,
+                dapiFallbackAdminInd: dapiFallbackAdminId,
                 dapiName: hre.ethers.utils.formatBytes32String(dapiName),
                 dataFeedId: fallbackBeaconId,
                 fallbackRoot: fallbackRoot,
@@ -1415,7 +1408,7 @@ describe('DapiFallbackV2', function () {
                 sponsorWallet: fallbackSponsorWalletAddress,
               };
               await expect(
-                dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback(executeDapiFallbackArgs)
+                dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
               ).to.have.been.revertedWith('Update params empty');
             });
           });
@@ -1435,10 +1428,10 @@ describe('DapiFallbackV2', function () {
               duration,
               fallbackSponsorWalletAddress,
             } = await helpers.loadFixture(deploy);
-            const { dapiFallbackManagerId, dapiFallbackManager } = getRandomDapiFallbackManager(roles);
+            const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
             const zeroDatafeedID = hre.ethers.constants.HashZero;
             const executeDapiFallbackArgs = {
-              dapiFallbackManagerInd: dapiFallbackManagerId,
+              dapiFallbackAdminInd: dapiFallbackAdminId,
               dapiName: hre.ethers.utils.formatBytes32String(dapiName),
               dataFeedId: zeroDatafeedID,
               fallbackRoot: fallbackRoot,
@@ -1451,7 +1444,7 @@ describe('DapiFallbackV2', function () {
               sponsorWallet: fallbackSponsorWalletAddress,
             };
             await expect(
-              dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback(executeDapiFallbackArgs)
+              dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
             ).to.have.been.revertedWith('Data feed ID is zero');
           });
         });
@@ -1460,7 +1453,7 @@ describe('DapiFallbackV2', function () {
         it('reverts', async function () {
           const { roles, dapiFallbackV2, updateParams, priceRoot, priceProof, duration, price } =
             await helpers.loadFixture(deploy);
-          const { dapiFallbackManagerId, dapiFallbackManager } = getRandomDapiFallbackManager(roles);
+          const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
           const dapiName = '';
           const fallbackBeaconTemplateId = generateRandomBytes32();
           const fallbackBeaconId = hre.ethers.utils.solidityKeccak256(
@@ -1484,7 +1477,7 @@ describe('DapiFallbackV2', function () {
           const fallbackRoot = fallbackTree.root;
           const fallbackProof = fallbackTree.getProof(fallbackTreeEntry);
           const executeDapiFallbackArgs = {
-            dapiFallbackManagerInd: dapiFallbackManagerId,
+            dapiFallbackAdminInd: dapiFallbackAdminId,
             dapiName: hre.ethers.utils.formatBytes32String(dapiName),
             dataFeedId: fallbackBeaconId,
             fallbackRoot: fallbackRoot,
@@ -1497,17 +1490,17 @@ describe('DapiFallbackV2', function () {
             sponsorWallet: fallbackSponsorWalletAddress,
           };
           await expect(
-            dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback(executeDapiFallbackArgs)
+            dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
           ).to.have.been.revertedWith('Dapi name is zero');
         });
       });
     });
-    context('Sender is not the dAPI fallback manager with the ID', function () {
+    context('Sender is not the dAPI fallback admin with the ID', function () {
       it('reverts', async function () {
         const { roles, dapiFallbackV2, duration, price } = await helpers.loadFixture(deploy);
-        const { dapiFallbackManagerId, dapiFallbackManager } = getRandomDapiFallbackManager(roles);
+        const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
         const executeDapiFallbackArgs = {
-          dapiFallbackManagerInd: (dapiFallbackManagerId + 1) % 3,
+          dapiFallbackAdminInd: (dapiFallbackAdminId + 1) % 3,
           dapiName: generateRandomBytes32(),
           dataFeedId: generateRandomBytes32(),
           fallbackRoot: generateRandomBytes32(),
@@ -1520,17 +1513,17 @@ describe('DapiFallbackV2', function () {
           sponsorWallet: generateRandomAddress(),
         };
         await expect(
-          dapiFallbackV2.connect(dapiFallbackManager).executeDapiFallback(executeDapiFallbackArgs)
-        ).to.have.been.revertedWith('Sender not manager with ID');
+          dapiFallbackV2.connect(dapiFallbackAdmin).executeDapiFallback(executeDapiFallbackArgs)
+        ).to.have.been.revertedWith('Sender not admin with ID');
         await expect(
           dapiFallbackV2.connect(roles.randomPerson).executeDapiFallback(executeDapiFallbackArgs)
-        ).to.have.been.revertedWith('Sender not manager with ID');
+        ).to.have.been.revertedWith('Sender not admin with ID');
       });
     });
   });
 
   describe('revertDapiFallback', function () {
-    context('Sender is the dAPI fallback manager with the ID', function () {
+    context('Sender is the dAPI fallback admin with the ID', function () {
       context('dAPI fallback has been executed', function () {
         it('reverts dAPI fallback', async function () {
           const {
@@ -1545,7 +1538,7 @@ describe('DapiFallbackV2', function () {
             dapiTree,
             dapiTreeValues,
           } = await helpers.loadFixture(deploy);
-          const { dapiFallbackManagerId, dapiFallbackManager } = getRandomDapiFallbackManager(roles);
+          const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
           const [dataFeed] = dataFeeds;
           const { airnodes, templateIds } = dataFeed.reduce(
             (acc, { airnode, templateId }) => ({
@@ -1588,17 +1581,17 @@ describe('DapiFallbackV2', function () {
           );
 
           await dapiFallbackV2
-            .connect(dapiFallbackManager)
-            .executeDapiFallback({ ...executeDapiFallbackArgs, dapiFallbackManagerInd: dapiFallbackManagerId });
+            .connect(dapiFallbackAdmin)
+            .executeDapiFallback({ ...executeDapiFallbackArgs, dapiFallbackAdminInd: dapiFallbackAdminId });
           expect(await dapiFallbackV2.getFallbackedDapis()).to.deep.equal([
             hre.ethers.utils.formatBytes32String(dapiName),
           ]);
 
           await expect(
             dapiFallbackV2
-              .connect(dapiFallbackManager)
+              .connect(dapiFallbackAdmin)
               .revertDapiFallback(
-                dapiFallbackManagerId,
+                dapiFallbackAdminId,
                 hre.ethers.utils.formatBytes32String(dapiName),
                 beaconSetId,
                 sponsorWallet,
@@ -1618,7 +1611,7 @@ describe('DapiFallbackV2', function () {
         it('reverts', async function () {
           const { roles, dapiFallbackV2, dapiName, dapiDataRegistry, dataFeeds, dapiTree, dapiTreeValues } =
             await helpers.loadFixture(deploy);
-          const { dapiFallbackManagerId, dapiFallbackManager } = getRandomDapiFallbackManager(roles);
+          const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
           const [dataFeed] = dataFeeds;
           const { airnodes, templateIds } = dataFeed.reduce(
             (acc, { airnode, templateId }) => ({
@@ -1653,9 +1646,9 @@ describe('DapiFallbackV2', function () {
             );
           await expect(
             dapiFallbackV2
-              .connect(dapiFallbackManager)
+              .connect(dapiFallbackAdmin)
               .revertDapiFallback(
-                dapiFallbackManagerId,
+                dapiFallbackAdminId,
                 hre.ethers.utils.formatBytes32String(dapiName),
                 beaconSetId,
                 sponsorWallet,
@@ -1669,16 +1662,16 @@ describe('DapiFallbackV2', function () {
         });
       });
     });
-    context('Sender is not the dAPI fallback manager with the ID', function () {
+    context('Sender is not the dAPI fallback admin with the ID', function () {
       it('reverts', async function () {
         const { roles, dapiFallbackV2, dapiName } = await helpers.loadFixture(deploy);
-        const { dapiFallbackManagerId, dapiFallbackManager } = getRandomDapiFallbackManager(roles);
+        const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
 
         await expect(
           dapiFallbackV2
-            .connect(dapiFallbackManager)
+            .connect(dapiFallbackAdmin)
             .revertDapiFallback(
-              (dapiFallbackManagerId + 1) % 3,
+              (dapiFallbackAdminId + 1) % 3,
               hre.ethers.utils.formatBytes32String(dapiName),
               generateRandomBytes32(),
               generateRandomAddress(),
@@ -1688,12 +1681,12 @@ describe('DapiFallbackV2', function () {
               generateRandomBytes32(),
               []
             )
-        ).to.have.been.revertedWith('Sender not manager with ID');
+        ).to.have.been.revertedWith('Sender not admin with ID');
         await expect(
           dapiFallbackV2
             .connect(roles.randomPerson)
             .revertDapiFallback(
-              dapiFallbackManagerId,
+              dapiFallbackAdminId,
               hre.ethers.utils.formatBytes32String(dapiName),
               generateRandomBytes32(),
               generateRandomAddress(),
@@ -1703,7 +1696,7 @@ describe('DapiFallbackV2', function () {
               generateRandomBytes32(),
               []
             )
-        ).to.have.been.revertedWith('Sender not manager with ID');
+        ).to.have.been.revertedWith('Sender not admin with ID');
       });
     });
   });

@@ -11,10 +11,9 @@ module.exports = async ({ deployments, getUnnamedAccounts, ethers, network }) =>
   let accessControlRegistryAddress;
   let api3ServerV1Address;
   let proxyFactoryAddress;
-  let dapiFallbackManagers;
+  let dapiFallbackAdmins;
   if (network.name === 'localhost' || network.name === 'hardhat') {
-    const [localhostOwnableCallForwarderAddress, dapiFallbackManager1, dapiFallbackManager2, dapiFallbackManager3] =
-      rest;
+    const [localhostOwnableCallForwarderAddress, dapiFallbackAdmin1, dapiFallbackAdmin2, dapiFallbackAdmin3] = rest;
     ownableCallForwarderAddress = localhostOwnableCallForwarderAddress;
 
     const { address: localhostAccessControlRegistryAddress } = await deploy('AccessControlRegistry', {
@@ -45,7 +44,7 @@ module.exports = async ({ deployments, getUnnamedAccounts, ethers, network }) =>
     proxyFactoryAddress = localhostProxyFactoryAddress;
     log(`Deployed ProxyFactory at ${localhostProxyFactoryAddress}`);
 
-    dapiFallbackManagers = [dapiFallbackManager1, dapiFallbackManager2, dapiFallbackManager3];
+    dapiFallbackAdmins = [dapiFallbackAdmin1, dapiFallbackAdmin2, dapiFallbackAdmin3];
   } else {
     ownableCallForwarderAddress = airnodeProtocolV1.references.OwnableCallForwarder[network.config.chainId.toString()];
     accessControlRegistryAddress =
@@ -53,7 +52,7 @@ module.exports = async ({ deployments, getUnnamedAccounts, ethers, network }) =>
     api3ServerV1Address = airnodeProtocolV1.references.Api3ServerV1[network.config.chainId.toString()];
     proxyFactoryAddress = airnodeProtocolV1.references.ProxyFactory[network.config.chainId.toString()];
 
-    dapiFallbackManagers = dapiHashSigners;
+    dapiFallbackAdmins = dapiHashSigners;
   }
 
   const { address: hashRegistryAddress, abi: hashRegistryAbi } = await deploy('HashRegistry', {
@@ -88,7 +87,7 @@ module.exports = async ({ deployments, getUnnamedAccounts, ethers, network }) =>
 
   const { address: dapiFallbackV2Address } = await deploy('DapiFallbackV2', {
     from: deployer,
-    args: [api3ServerV1Address, hashRegistryAddress, dapiDataRegistryAddress, dapiFallbackManagers],
+    args: [api3ServerV1Address, hashRegistryAddress, dapiDataRegistryAddress, dapiFallbackAdmins],
     log: true,
     deterministicDeployment: ethers.constants.HashZero,
   });

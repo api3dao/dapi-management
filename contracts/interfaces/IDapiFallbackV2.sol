@@ -4,11 +4,11 @@ pragma solidity 0.8.18;
 import "@api3/airnode-protocol-v1/contracts/utils/interfaces/ISelfMulticall.sol";
 
 interface IDapiFallbackV2 is ISelfMulticall {
-    event AddedDapiFallbackManager(address dapiFallbackManager);
-    event RemovedDapiFallbackManager(address dapiFallbackManager);
+    event AddedDapiFallbackAdmin(address dapiFallbackAdmin);
+    event RemovedDapiFallbackAdmin(address dapiFallbackAdmin);
 
     struct ExecuteDapiFallbackArgs {
-        uint256 dapiFallbackManagerInd; // dAPI fallback manager index
+        uint256 dapiFallbackAdminInd; // dAPI fallback admin index
         bytes32 dapiName; // Encoded bytes32 dAPI name
         bytes32 dataFeedId; // Identifier for the data feed receiving the update
         bytes32 fallbackRoot; // Root of the Merkle tree representing the dAPI's fallback structure
@@ -52,9 +52,9 @@ interface IDapiFallbackV2 is ISelfMulticall {
 
     function dapiDataRegistry() external view returns (address);
 
-    function addDapiFallbackManager(address dapiFallbackManager) external;
+    function addDapiFallbackAdmin(address dapiFallbackAdmin) external;
 
-    function removeDapiFallbackManager(address dapiFallbackManager) external;
+    function removeDapiFallbackAdmin(address dapiFallbackAdmin) external;
 
     function withdraw(address payable recipient, uint256 amount) external;
 
@@ -65,7 +65,7 @@ interface IDapiFallbackV2 is ISelfMulticall {
     ) external;
 
     function revertDapiFallback(
-        uint256 dapiFallbackManagerInd,
+        uint256 dapiFallbackAdminInd,
         bytes32 dapiName,
         bytes32 dataFeedId,
         address sponsorWallet,
@@ -81,5 +81,5 @@ interface IDapiFallbackV2 is ISelfMulticall {
         view
         returns (bytes32[] memory dapis);
 
-    function getDapiFallbackManagers() external view returns (address[] memory);
+    function getDapiFallbackAdmins() external view returns (address[] memory);
 }

@@ -14,13 +14,13 @@ import "./interfaces/IDapiDataRegistry.sol";
 /// @title Contract that sets dAPI names to fallback data feeds under specific
 /// conditions
 /// @notice The objective of this contract is to enable individual "dAPI
-/// fallback managers" to be able to execute a pre-planned response plan for
+/// fallback admins" to be able to execute a pre-planned response plan for
 /// dAPI emergencies. The plan is to redirect the dAPI from a more
 /// decentralized data feed that will not be able to respond to emergencies
 /// swiftly to a data feed that we can reasonably expect to not be affected by
 /// the factors that cause the emergency or at least quickly address these.
 /// The conditions to be able to execute the plan are as follow:
-/// - The sender must be a dAPI fallback manager
+/// - The sender must be a dAPI fallback admin
 /// - The respective fallback data feed must have been included in a Merkle
 /// tree whose root has been signed by all "root signers" and registered on the
 /// HashRegsitry contract.
@@ -29,11 +29,11 @@ import "./interfaces/IDapiDataRegistry.sol";
 /// - Have enought funds to be able to top-up the data feed sponsor wallet for at
 /// least a day on the current chain according to the prices from the merkle tree
 /// - The fallback data feed must have been updated in the last day
-/// In addition to executing fallbacks, the dAPI fallback managers are allowed
+/// In addition to executing fallbacks, the dAPI fallback admins are allowed
 /// to transfer funds from this contract to the sponsor wallets of the fallback
 /// data feeds (because both the fallback data feeds being operational and
 /// their sponsor wallets being funded are required for fallbacks to be
-/// executed). These manager can also undo the fallback execution by setting the
+/// executed). These admins can also undo the fallback execution by setting the
 /// dAPI back to a decentralized data feed.
 /// @dev This contract needs to be granted the dAPI name setter role by the
 /// manager of the respective Api3ServerV1 contract to be able to execute
@@ -50,18 +50,18 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// @notice DapiDataRegistry contract address
     address public immutable override dapiDataRegistry;
 
-    /// @notice dAPI fallback managers that can individually execute the
+    /// @notice dAPI fallback admins that can individually execute the
     /// response plan
-    EnumerableSet.AddressSet private dapiFallbackManagers;
+    EnumerableSet.AddressSet private dapiFallbackAdmins;
 
-    /// @dev Reverts unless the sender is the dAPI fallback manager with the
+    /// @dev Reverts unless the sender is the dAPI fallback admin with the
     /// specified index
-    /// @param dapiFallbackManagerInd dAPI fallback manager index
-    modifier onlyByDapiFallbackManagerWithInd(uint256 dapiFallbackManagerInd) {
+    /// @param dapiFallbackAdminInd dAPI fallback admin index
+    modifier onlyByDapiFallbackAdminWithInd(uint256 dapiFallbackAdminInd) {
         require(
-            msg.sender == dapiFallbackManagers.at(dapiFallbackManagerInd) ||
+            msg.sender == dapiFallbackAdmins.at(dapiFallbackAdminInd) ||
                 msg.sender == address(0),
-            "Sender not manager with ID"
+            "Sender not admin with ID"
         );
         _;
     }
@@ -78,12 +78,12 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// @param _api3ServerV1 Api3ServerV1 contract address
     /// @param _hashRegistry HashRegistry contract address
     /// @param _dapiDataRegistry DapiDataRegistry contract address
-    /// @param _dapiFallbackManagers dAPI fallback managers
+    /// @param _dapiFallbackAdmins dAPI fallback admins
     constructor(
         address _api3ServerV1,
         address _hashRegistry,
         address _dapiDataRegistry,
-        address[] memory _dapiFallbackManagers
+        address[] memory _dapiFallbackAdmins
     ) {
         require(_api3ServerV1 != address(0), "Api3ServerV1 address is zero");
         require(_hashRegistry != address(0), "HashRegistry address is zero");
@@ -94,50 +94,44 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         api3ServerV1 = _api3ServerV1;
         hashRegistry = _hashRegistry;
         dapiDataRegistry = _dapiDataRegistry;
-        _initializeDapiFallbackManagers(_dapiFallbackManagers);
+        _initializeDapiFallbackAdmins(_dapiFallbackAdmins);
     }
 
     /// @notice Allows the contract to receive funds. These funds can then be
     /// transferred to the sponsor wallets of the fallback data feeds by a dAPI
-    /// fallback manager or withdrawn by the owner
+    /// fallback admin or withdrawn by the owner
     /// @dev The receive function is executed on a call to the contract with
     /// empty calldata
     receive() external payable {}
 
-    /// @notice Called by the owner to add a dAPI fallback manager
-    /// @param dapiFallbackManager dAPI fallback manager address
-    function addDapiFallbackManager(
-        address dapiFallbackManager
+    /// @notice Called by the owner to add a dAPI fallback admin
+    /// @param dapiFallbackAdmin dAPI fallback admin address
+    function addDapiFallbackAdmin(
+        address dapiFallbackAdmin
     ) public override onlyOwner {
+        require(dapiFallbackAdmin != address(0), "dAPI fallback admin is zero");
         require(
-            dapiFallbackManager != address(0),
-            "dAPI fallback manager is zero"
+            dapiFallbackAdmins.add(dapiFallbackAdmin),
+            "dAPI fallback admin already exists"
         );
-        require(
-            dapiFallbackManagers.add(dapiFallbackManager),
-            "dAPI fallback manager already exists"
-        );
-        emit AddedDapiFallbackManager(dapiFallbackManager);
+        emit AddedDapiFallbackAdmin(dapiFallbackAdmin);
     }
 
-    /// @notice Called by the owner to remove a dAPI fallback manager
+    /// @notice Called by the owner to remove a dAPI fallback admin
     /// @dev This operation might change the order in the AddressSet and this
     /// must be considered when calling functions that require an index to be
     /// passed as argument (i.e. executeDapiFallback() or any other function
-    /// using the onlyByDapiFallbackManagerWithInd modifier)
-    /// @param dapiFallbackManager dAPI fallback manager address
-    function removeDapiFallbackManager(
-        address dapiFallbackManager
+    /// using the onlyByDapiFallbackAdminWithInd modifier)
+    /// @param dapiFallbackAdmin dAPI fallback admin address
+    function removeDapiFallbackAdmin(
+        address dapiFallbackAdmin
     ) external override onlyOwner {
+        require(dapiFallbackAdmin != address(0), "dAPI fallback admin is zero");
         require(
-            dapiFallbackManager != address(0),
-            "dAPI fallback manager is zero"
+            dapiFallbackAdmins.remove(dapiFallbackAdmin),
+            "dAPI fallback admin does not exist"
         );
-        require(
-            dapiFallbackManagers.remove(dapiFallbackManager),
-            "dAPI fallback manager does not exist"
-        );
-        emit RemovedDapiFallbackManager(dapiFallbackManager);
+        emit RemovedDapiFallbackAdmin(dapiFallbackAdmin);
     }
 
     /// @notice Called by the owner to withdraw funds
@@ -166,7 +160,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// After validations, it triggers the data feed update on the Api3Server.
     /// @param args A structured parameter of type `ExecuteDapiFallbackArgs`
     /// containing the necessary parameters for the dAPI fallback execution, including:
-    ///   - `dapiFallbackManagerInd`: Index of the manager in the dapiFallbackManagers array
+    ///   - `dapiFallbackAdminInd`: Index of the manager in the dapiFallbackAdmins array
     ///   - `dapiName`: Identifier of the dAPI.
     ///   - `dataFeedId`: New data feed ID for the dAPI.
     ///   - `fallbackRoot`: Root of the Merkle tree for the dAPI fallback mechanism.
@@ -183,7 +177,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     )
         external
         override
-        onlyByDapiFallbackManagerWithInd(args.dapiFallbackManagerInd)
+        onlyByDapiFallbackAdminWithInd(args.dapiFallbackAdminInd)
     {
         require(args.dapiName != bytes32(0), "Dapi name is zero");
         require(args.dataFeedId != bytes32(0), "Data feed ID is zero");
@@ -288,7 +282,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// managed data feed. It uses Merkle tree root and proof for verification
     /// and it also requires that the executeDapiFallback function was previously
     /// called
-    /// @dev Only the fallback reverter or manager can execute this function to switch back to
+    /// @dev Only the fallback admin with ID can execute this function to switch back to
     /// managed data feed
     /// @param dapiName dAPI name
     /// @param dataFeedId Data feed ID the dAPI will point to
@@ -302,7 +296,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// @param root dAPI Management Merkle tree root hash
     /// @param proof Array of hashes to verify a Merkle tree leaf
     function revertDapiFallback(
-        uint256 dapiFallbackManagerInd,
+        uint256 dapiFallbackAdminInd,
         bytes32 dapiName,
         bytes32 dataFeedId,
         address sponsorWallet,
@@ -311,11 +305,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         uint32 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
-    )
-        external
-        override
-        onlyByDapiFallbackManagerWithInd(dapiFallbackManagerInd)
-    {
+    ) external override onlyByDapiFallbackAdminWithInd(dapiFallbackAdminInd) {
         require(
             fallbackedDapis.remove(dapiName),
             "dAPI fallback has not been executed"
@@ -333,15 +323,15 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         emit RevertedDapiFallback(dapiName, dataFeedId, sponsorWallet);
     }
 
-    /// @notice Returns the dAPI fallback managers
-    /// @return dapiFallbackManagers_ dAPI fallback managers
-    function getDapiFallbackManagers()
+    /// @notice Returns the dAPI fallback admins
+    /// @return dapiFallbackAdmins_ dAPI fallback admins
+    function getDapiFallbackAdmins()
         external
         view
         override
-        returns (address[] memory dapiFallbackManagers_)
+        returns (address[] memory dapiFallbackAdmins_)
     {
-        dapiFallbackManagers_ = dapiFallbackManagers.values();
+        dapiFallbackAdmins_ = dapiFallbackAdmins.values();
     }
 
     /// @notice Returns the dAPIs for which fallback has been executed
@@ -361,18 +351,18 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         fallbackedDapis_ = fallbackedDapis.values();
     }
 
-    /// @notice Called privately to initialize the dAPI fallback managers
-    /// @param dapiFallbackManagers_ dAPI fallback managers
-    function _initializeDapiFallbackManagers(
-        address[] memory dapiFallbackManagers_
+    /// @notice Called privately to initialize the dAPI fallback admins
+    /// @param dapiFallbackAdmins_ dAPI fallback admins
+    function _initializeDapiFallbackAdmins(
+        address[] memory dapiFallbackAdmins_
     ) private {
         require(
-            dapiFallbackManagers_.length != 0,
-            "dAPI fallback managers is empty"
+            dapiFallbackAdmins_.length != 0,
+            "dAPI fallback admins is empty"
         );
-        require(dapiFallbackManagers.length() == 0, "Already initialized");
-        for (uint256 ind = 0; ind < dapiFallbackManagers_.length; ind++) {
-            addDapiFallbackManager(dapiFallbackManagers_[ind]);
+        require(dapiFallbackAdmins.length() == 0, "Already initialized");
+        for (uint256 ind = 0; ind < dapiFallbackAdmins_.length; ind++) {
+            addDapiFallbackAdmin(dapiFallbackAdmins_[ind]);
         }
     }
 

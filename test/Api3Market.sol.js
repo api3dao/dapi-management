@@ -22,8 +22,8 @@ describe('Api3Market', function () {
       'deployer',
       'manager',
       'hashRegistryOwner',
-      'dapiFallbackManager1',
-      'dapiFallbackManager2',
+      'dapiFallbackAdmin1',
+      'dapiFallbackAdmin2',
       'apiRootSigner1',
       'apiRootSigner2',
       'apiRootSigner3',
@@ -74,7 +74,7 @@ describe('Api3Market', function () {
       api3ServerV1.address,
       hashRegistry.address,
       dapiDataRegistry.address,
-      [roles.dapiFallbackManager1.address, roles.dapiFallbackManager2.address]
+      [roles.dapiFallbackAdmin1.address, roles.dapiFallbackAdmin2.address]
     );
 
     const proxyFactoryFactory = await hre.ethers.getContractFactory('ProxyFactory', roles.deployer);
