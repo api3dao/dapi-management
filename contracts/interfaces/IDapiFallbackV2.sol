@@ -7,6 +7,7 @@ interface IDapiFallbackV2 is ISelfMulticall {
     event SetUpDapiFallbackAdmins(address[] dapiFallbackAdmins);
 
     event AddedDapiFallbackAdmin(address dapiFallbackAdmin);
+
     event RemovedDapiFallbackAdmin(address dapiFallbackAdmin);
 
     struct ExecuteDapiFallbackArgs {
@@ -52,12 +53,6 @@ interface IDapiFallbackV2 is ISelfMulticall {
         address[] calldata dapiFallbackAdmins
     ) external;
 
-    function api3ServerV1() external view returns (address);
-
-    function hashRegistry() external view returns (address);
-
-    function dapiDataRegistry() external view returns (address);
-
     function addDapiFallbackAdmin(
         address dapiFallbackAdmin
     ) external returns (address[] memory dapiFallbackAdmins);
@@ -92,4 +87,10 @@ interface IDapiFallbackV2 is ISelfMulticall {
         returns (bytes32[] memory dapis);
 
     function getDapiFallbackAdmins() external view returns (address[] memory);
+
+    function api3ServerV1() external view returns (address);
+
+    function hashRegistry() external view returns (address);
+
+    function dapiDataRegistry() external view returns (address);
 }
