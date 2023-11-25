@@ -44,7 +44,6 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         address[] calldata signers
     ) external override onlyOwner {
         require(signers.length != 0, "Signers is empty");
-        require(signers.length <= 10, "Too many signers");
         require(
             _hashTypeToSigners[hashType].length() == 0,
             "Hash type signers is not empty"
