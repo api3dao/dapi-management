@@ -31,9 +31,9 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
 
     mapping(bytes32 => EnumerableSet.AddressSet) private hashTypeToSigners;
 
-    /// @param _owner Owner address
-    constructor(address _owner) {
-        transferOwnership(_owner);
+    /// @param owner_ Owner address
+    constructor(address owner_) {
+        transferOwnership(owner_);
     }
 
     /// @notice Called by the owner to set the hash signers
