@@ -50,6 +50,15 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// @notice DapiDataRegistry contract address
     address public immutable override dapiDataRegistry;
 
+    bytes32 private constant DAPI_FALLBACK_MERKLE_TREE_ROOT_HASH_TYPE =
+        keccak256(abi.encodePacked("dAPI fallback Merkle tree root"));
+    bytes32 private constant DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE =
+        keccak256(abi.encodePacked("dAPI pricing Merkle tree root"));
+    bytes32 private constant HASHED_PARAMS =
+        keccak256(abi.encode(uint256(1e6), int224(0), uint32(1 days)));
+
+    EnumerableSet.Bytes32Set private fallbackedDapis;
+
     /// @notice dAPI fallback admins that can individually execute the
     /// response plan
     EnumerableSet.AddressSet private _dapiFallbackAdmins;
@@ -65,15 +74,6 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         );
         _;
     }
-
-    bytes32 private constant DAPI_FALLBACK_MERKLE_TREE_ROOT_HASH_TYPE =
-        keccak256(abi.encodePacked("dAPI fallback Merkle tree root"));
-    bytes32 private constant DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE =
-        keccak256(abi.encodePacked("dAPI pricing Merkle tree root"));
-    bytes32 private constant HASHED_PARAMS =
-        keccak256(abi.encode(uint256(1e6), int224(0), uint32(1 days)));
-
-    EnumerableSet.Bytes32Set private fallbackedDapis;
 
     /// @param _api3ServerV1 Api3ServerV1 contract address
     /// @param _hashRegistry HashRegistry contract address
