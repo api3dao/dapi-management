@@ -101,9 +101,13 @@ describe('DapiFallbackV2', function () {
     const dapiFallbackV2 = await DapiFallbackV2.deploy(
       api3ServerV1.address,
       hashRegistry.address,
-      dapiDataRegistry.address,
-      [roles.dapiFallbackAdmin1.address, roles.dapiFallbackAdmin2.address, roles.dapiFallbackAdmin3.address]
+      dapiDataRegistry.address
     );
+    await dapiFallbackV2.setUpDapiFallbackAdmins([
+      roles.dapiFallbackAdmin1.address,
+      roles.dapiFallbackAdmin2.address,
+      roles.dapiFallbackAdmin3.address,
+    ]);
 
     await dapiFallbackV2.connect(roles.deployer).transferOwnership(roles.owner.address);
 
@@ -342,45 +346,23 @@ describe('DapiFallbackV2', function () {
     context('Api3ServerV1 address is not zero', function () {
       context('HashRegistry address is not zero', function () {
         context('DapiDataRegistry address is not zero', function () {
-          context('dAPI fallback admins is not empty', function () {
-            it('constructs', async function () {
-              const { roles, api3ServerV1, hashRegistry, dapiDataRegistry, dapiFallbackV2 } = await helpers.loadFixture(
-                deploy
-              );
-              const expectedDapiFallbackAdmins = [
-                roles.dapiFallbackAdmin1.address,
-                roles.dapiFallbackAdmin2.address,
-                roles.dapiFallbackAdmin3.address,
-              ];
-              expect(await dapiFallbackV2.api3ServerV1()).to.equal(api3ServerV1.address);
-              expect(await dapiFallbackV2.hashRegistry()).to.equal(hashRegistry.address);
-              expect(await dapiFallbackV2.dapiDataRegistry()).to.equal(dapiDataRegistry.address);
-              expect(await dapiFallbackV2.getDapiFallbackAdmins()).to.deep.equal(expectedDapiFallbackAdmins);
-              const dapiFallbackAdmins = await dapiFallbackV2.getDapiFallbackAdmins();
-              expect(dapiFallbackAdmins[0]).to.equal(roles.dapiFallbackAdmin1.address);
-              expect(dapiFallbackAdmins[1]).to.equal(roles.dapiFallbackAdmin2.address);
-              expect(dapiFallbackAdmins[2]).to.equal(roles.dapiFallbackAdmin3.address);
-              const deploymentTransactionReceipt = await hre.ethers.provider.getTransactionReceipt(
-                dapiFallbackV2.deployTransaction.hash
-              );
-              const parsedLogs = deploymentTransactionReceipt.logs.map((log) => dapiFallbackV2.interface.parseLog(log));
-              const addedDapiFallbackAdminLogs = parsedLogs.filter(
-                (parsedLog) => parsedLog.name === 'AddedDapiFallbackAdmin'
-              );
-              expect(addedDapiFallbackAdminLogs.length).to.equal(3);
-              addedDapiFallbackAdminLogs.forEach((log, i) =>
-                expect(log.args[0]).to.equal(expectedDapiFallbackAdmins[i])
-              );
-            });
-          });
-          context('dAPI fallback admins is empty', function () {
-            it('reverts', async function () {
-              const { roles, api3ServerV1, hashRegistry, dapiDataRegistry } = await helpers.loadFixture(deploy);
-              const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
-              await expect(
-                DapiFallbackV2.deploy(api3ServerV1.address, hashRegistry.address, dapiDataRegistry.address, [])
-              ).to.have.been.revertedWith('dAPI fallback admins is empty');
-            });
+          it('constructs', async function () {
+            const { roles, api3ServerV1, hashRegistry, dapiDataRegistry, dapiFallbackV2 } = await helpers.loadFixture(
+              deploy
+            );
+            const expectedDapiFallbackAdmins = [
+              roles.dapiFallbackAdmin1.address,
+              roles.dapiFallbackAdmin2.address,
+              roles.dapiFallbackAdmin3.address,
+            ];
+            expect(await dapiFallbackV2.api3ServerV1()).to.equal(api3ServerV1.address);
+            expect(await dapiFallbackV2.hashRegistry()).to.equal(hashRegistry.address);
+            expect(await dapiFallbackV2.dapiDataRegistry()).to.equal(dapiDataRegistry.address);
+            expect(await dapiFallbackV2.getDapiFallbackAdmins()).to.deep.equal(expectedDapiFallbackAdmins);
+            const dapiFallbackAdmins = await dapiFallbackV2.getDapiFallbackAdmins();
+            expect(dapiFallbackAdmins[0]).to.equal(roles.dapiFallbackAdmin1.address);
+            expect(dapiFallbackAdmins[1]).to.equal(roles.dapiFallbackAdmin2.address);
+            expect(dapiFallbackAdmins[2]).to.equal(roles.dapiFallbackAdmin3.address);
           });
         });
         context('DapiDataRegistry address is zero', function () {
@@ -388,11 +370,7 @@ describe('DapiFallbackV2', function () {
             const { roles, api3ServerV1, hashRegistry } = await helpers.loadFixture(deploy);
             const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
             await expect(
-              DapiFallbackV2.deploy(api3ServerV1.address, hashRegistry.address, hre.ethers.constants.AddressZero, [
-                roles.dapiFallbackAdmin1.address,
-                roles.dapiFallbackAdmin2.address,
-                roles.dapiFallbackAdmin3.address,
-              ])
+              DapiFallbackV2.deploy(api3ServerV1.address, hashRegistry.address, hre.ethers.constants.AddressZero)
             ).to.have.been.revertedWith('DapiDataRegistry address is zero');
           });
         });
@@ -402,11 +380,7 @@ describe('DapiFallbackV2', function () {
           const { roles, api3ServerV1, dapiDataRegistry } = await helpers.loadFixture(deploy);
           const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
           await expect(
-            DapiFallbackV2.deploy(api3ServerV1.address, hre.ethers.constants.AddressZero, dapiDataRegistry.address, [
-              roles.dapiFallbackAdmin1.address,
-              roles.dapiFallbackAdmin2.address,
-              roles.dapiFallbackAdmin3.address,
-            ])
+            DapiFallbackV2.deploy(api3ServerV1.address, hre.ethers.constants.AddressZero, dapiDataRegistry.address)
           ).to.have.been.revertedWith('HashRegistry address is zero');
         });
       });
@@ -416,11 +390,7 @@ describe('DapiFallbackV2', function () {
         const { roles, hashRegistry, dapiDataRegistry } = await helpers.loadFixture(deploy);
         const DapiFallbackV2 = await hre.ethers.getContractFactory('DapiFallbackV2', roles.deployer);
         await expect(
-          DapiFallbackV2.deploy(hre.ethers.constants.AddressZero, hashRegistry.address, dapiDataRegistry.address, [
-            roles.dapiFallbackAdmin1.address,
-            roles.dapiFallbackAdmin2.address,
-            roles.dapiFallbackAdmin3.address,
-          ])
+          DapiFallbackV2.deploy(hre.ethers.constants.AddressZero, hashRegistry.address, dapiDataRegistry.address)
         ).to.have.been.revertedWith('Api3ServerV1 address is zero');
       });
     });

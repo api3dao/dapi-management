@@ -73,9 +73,9 @@ describe('Api3Market', function () {
     const dapiFallbackV2 = await DapiFallbackV2.deploy(
       api3ServerV1.address,
       hashRegistry.address,
-      dapiDataRegistry.address,
-      [roles.dapiFallbackAdmin1.address, roles.dapiFallbackAdmin2.address]
+      dapiDataRegistry.address
     );
+    await dapiFallbackV2.setUpDapiFallbackAdmins([roles.dapiFallbackAdmin1.address, roles.dapiFallbackAdmin2.address]);
 
     const proxyFactoryFactory = await hre.ethers.getContractFactory('ProxyFactory', roles.deployer);
     const proxyFactory = await proxyFactoryFactory.deploy(api3ServerV1.address);

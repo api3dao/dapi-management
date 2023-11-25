@@ -4,6 +4,8 @@ pragma solidity 0.8.18;
 import "@api3/airnode-protocol-v1/contracts/utils/interfaces/ISelfMulticall.sol";
 
 interface IDapiFallbackV2 is ISelfMulticall {
+    event SetUpDapiFallbackAdmins(address[] dapiFallbackAdmins);
+
     event AddedDapiFallbackAdmin(address dapiFallbackAdmin);
     event RemovedDapiFallbackAdmin(address dapiFallbackAdmin);
 
@@ -45,6 +47,10 @@ interface IDapiFallbackV2 is ISelfMulticall {
         bytes32 indexed dataFeedId,
         address sponsorWallet
     );
+
+    function setUpDapiFallbackAdmins(
+        address[] calldata dapiFallbackAdmins
+    ) external;
 
     function api3ServerV1() external view returns (address);
 
