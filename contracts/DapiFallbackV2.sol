@@ -394,6 +394,12 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         revertableDapiFallbacks = _revertableDapiFallbacks.values();
     }
 
+    function revertableDapiFallback(
+        uint256 index
+    ) external view override returns (bytes32) {
+        return _revertableDapiFallbacks.at(index);
+    }
+
     /// @notice Called privately to withdraw funds
     /// @param recipient Recipient address
     /// @param amount Amount
