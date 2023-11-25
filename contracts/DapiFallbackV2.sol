@@ -213,7 +213,6 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     {
         require(args.dapiName != bytes32(0), "dAPI name zero");
         require(args.dataFeedId != bytes32(0), "Data feed ID zero");
-        require(args.updateParams.length != 0, "Update parameters empty");
         require(args.duration != 0, "Duration zero");
         require(args.price != 0, "Price zero");
         require(
