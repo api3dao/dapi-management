@@ -61,7 +61,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// response plan
     EnumerableSet.AddressSet private _dapiFallbackAdmins;
 
-    EnumerableSet.Bytes32Set private fallbackedDapis;
+    EnumerableSet.Bytes32Set private _revertableDapiFallbacks;
 
     /// @dev Reverts unless the sender is the dAPI fallback admin with the
     /// specified index
@@ -255,7 +255,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.dataFeedId);
 
         require(
-            fallbackedDapis.add(args.dapiName),
+            _revertableDapiFallbacks.add(args.dapiName),
             "dAPI fallback already executed"
         );
 
@@ -307,7 +307,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         bytes32[] calldata proof
     ) external override onlyByDapiFallbackAdminWithInd(dapiFallbackAdminInd) {
         require(
-            fallbackedDapis.remove(dapiName),
+            _revertableDapiFallbacks.remove(dapiName),
             "dAPI fallback has not been executed"
         );
         IDapiDataRegistry(dapiDataRegistry).addDapi(
@@ -341,14 +341,14 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// information like beaconId or sponsor wallet can be read by off-chain apps
     /// straigth from the website/API or use the Merkle tree JSON file exported
     /// by the api3/dapi-management repo
-    /// @return fallbackedDapis_ Fallbacked dAPIs
-    function getFallbackedDapis()
+    /// @return revertableDapiFallbacks Revertable dAPI fallbacks
+    function getRevertableDapiFallbacks()
         external
         view
         override
-        returns (bytes32[] memory fallbackedDapis_)
+        returns (bytes32[] memory revertableDapiFallbacks)
     {
-        fallbackedDapis_ = fallbackedDapis.values();
+        revertableDapiFallbacks = _revertableDapiFallbacks.values();
     }
 
     /// @notice Called privately to initialize the dAPI fallback admins

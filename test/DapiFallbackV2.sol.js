@@ -1583,7 +1583,7 @@ describe('DapiFallbackV2', function () {
           await dapiFallbackV2
             .connect(dapiFallbackAdmin)
             .executeDapiFallback({ ...executeDapiFallbackArgs, dapiFallbackAdminInd: dapiFallbackAdminId });
-          expect(await dapiFallbackV2.getFallbackedDapis()).to.deep.equal([
+          expect(await dapiFallbackV2.getRevertableDapiFallbacks()).to.deep.equal([
             hre.ethers.utils.formatBytes32String(dapiName),
           ]);
 
@@ -1604,7 +1604,7 @@ describe('DapiFallbackV2', function () {
           )
             .to.emit(dapiFallbackV2, 'RevertedDapiFallback')
             .withArgs(hre.ethers.utils.formatBytes32String(dapiName), beaconSetId, sponsorWallet);
-          expect(await dapiFallbackV2.getFallbackedDapis()).to.deep.equal([]);
+          expect(await dapiFallbackV2.getRevertableDapiFallbacks()).to.deep.equal([]);
         });
       });
       context('dAPI fallback has been executed', function () {

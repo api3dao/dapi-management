@@ -202,7 +202,7 @@ contract Api3Market is IApi3Market {
         bytes32 dapiNameHash
     ) private view returns (bool isFallbacked) {
         bytes32[] memory fallbackedDapis = IDapiFallbackV2(dapiFallbackV2)
-            .getFallbackedDapis();
+            .getRevertableDapiFallbacks();
         for (uint256 i = 0; i < fallbackedDapis.length; i++) {
             if (
                 keccak256(abi.encodePacked(fallbackedDapis[i])) == dapiNameHash

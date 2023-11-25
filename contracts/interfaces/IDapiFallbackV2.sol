@@ -76,7 +76,7 @@ interface IDapiFallbackV2 is ISelfMulticall {
         bytes32[] calldata proof
     ) external;
 
-    function getFallbackedDapis()
+    function getRevertableDapiFallbacks()
         external
         view
         returns (bytes32[] memory dapis);
