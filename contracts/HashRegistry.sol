@@ -43,7 +43,6 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         bytes32 hashType,
         address[] calldata signers
     ) external override onlyOwner {
-        require(hashType != bytes32(0), "Hash type zero");
         require(signers.length != 0, "Signers is empty");
         require(signers.length <= 10, "Too many signers");
         require(
