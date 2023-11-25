@@ -358,6 +358,8 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
             "Reverted feed stale"
         );
 
+        // TODO: Check if the sponsor wallet being reverted to has enough funds
+
         require(
             _revertableDapiFallbacks.remove(dapiName),
             "Fallback not revertable"
