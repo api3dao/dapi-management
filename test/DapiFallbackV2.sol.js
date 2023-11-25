@@ -19,30 +19,30 @@ describe('DapiFallbackV2', function () {
     return { dapiFallbackAdminId, dapiFallbackAdmin };
   }
 
-  async function updateFallbackBeacon(
-    caller,
-    airnode,
-    api3ServerV1,
-    fallbackBeaconTemplateId,
-    fallbackBeaconTimestamp
-  ) {
-    const fallbackBeaconData = hre.ethers.utils.defaultAbiCoder.encode(['int256'], [123]);
-    await api3ServerV1
-      .connect(caller)
-      .updateBeaconWithSignedData(
-        airnode.address,
-        fallbackBeaconTemplateId,
-        fallbackBeaconTimestamp,
-        fallbackBeaconData,
-        await airnode.signMessage(
-          hre.ethers.utils.arrayify(
-            hre.ethers.utils.solidityKeccak256(
-              ['bytes32', 'uint256', 'bytes'],
-              [fallbackBeaconTemplateId, fallbackBeaconTimestamp, fallbackBeaconData]
-            )
-          )
+  async function updateBeacon(airnode, api3ServerV1, templateId, timestamp) {
+    const data = hre.ethers.utils.defaultAbiCoder.encode(['int256'], [123]);
+    await api3ServerV1.updateBeaconWithSignedData(
+      airnode.address,
+      templateId,
+      timestamp,
+      data,
+      await airnode.signMessage(
+        hre.ethers.utils.arrayify(
+          hre.ethers.utils.solidityKeccak256(['bytes32', 'uint256', 'bytes'], [templateId, timestamp, data])
         )
+      )
+    );
+  }
+
+  async function updateBeaconSet(airnodes, api3ServerV1, templateIds, timestamp) {
+    let beaconIds = [];
+    for (let ind = 0; ind < airnodes.length; ind++) {
+      await updateBeacon(airnodes[ind], api3ServerV1, templateIds[ind], timestamp);
+      beaconIds.push(
+        hre.ethers.utils.solidityKeccak256(['address', 'bytes32'], [airnodes[ind].address, templateIds[ind]])
       );
+    }
+    await api3ServerV1.updateBeaconSetWithBeacons(beaconIds);
   }
 
   const deploy = async () => {
@@ -699,8 +699,7 @@ describe('DapiFallbackV2', function () {
                                       dapiTree.getProof(dapiTreeValue)
                                     );
 
-                                  await updateFallbackBeacon(
-                                    roles.randomPerson,
+                                  await updateBeacon(
                                     roles.airnode1,
                                     api3ServerV1,
                                     fallbackBeaconTemplateId,
@@ -786,8 +785,7 @@ describe('DapiFallbackV2', function () {
                                       dapiTree.getProof(dapiTreeValue)
                                     );
 
-                                  await updateFallbackBeacon(
-                                    roles.randomPerson,
+                                  await updateBeacon(
                                     roles.airnode1,
                                     api3ServerV1,
                                     fallbackBeaconTemplateId,
@@ -860,15 +858,13 @@ describe('DapiFallbackV2', function () {
                                     dapiTree.getProof(dapiTreeValue)
                                   );
 
-                                await updateFallbackBeacon(
-                                  roles.randomPerson,
+                                await updateBeacon(
                                   roles.airnode1,
                                   api3ServerV1,
                                   fallbackBeaconTemplateId,
                                   await helpers.time.latest()
                                 );
-                                await updateFallbackBeacon(
-                                  roles.randomPerson,
+                                await updateBeacon(
                                   roles.airnode2,
                                   api3ServerV1,
                                   fallbackBeaconTemplateId2,
@@ -901,8 +897,7 @@ describe('DapiFallbackV2', function () {
                                 executeDapiFallbackArgs,
                                 fallbackBeaconTemplateId,
                               } = await helpers.loadFixture(deploy);
-                              await updateFallbackBeacon(
-                                roles.randomPerson,
+                              await updateBeacon(
                                 roles.airnode1,
                                 api3ServerV1,
                                 fallbackBeaconTemplateId,
@@ -1423,11 +1418,11 @@ describe('DapiFallbackV2', function () {
               dapiTree.getProof(dapiTreeValue)
             );
 
-          await updateFallbackBeacon(
-            roles.randomPerson,
-            roles.airnode1,
+          await updateBeacon(roles.airnode1, api3ServerV1, fallbackBeaconTemplateId, await helpers.time.latest());
+          await updateBeaconSet(
+            [roles.airnode1, roles.airnode2, roles.airnode3, roles.airnode4, roles.airnode5],
             api3ServerV1,
-            fallbackBeaconTemplateId,
+            templateIds,
             await helpers.time.latest()
           );
 

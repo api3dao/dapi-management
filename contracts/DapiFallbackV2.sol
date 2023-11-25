@@ -364,6 +364,15 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
             "Invalid update parameters"
         );
         _dapiNameToUpdateParametersHash[dapiName] = bytes32(0);
+        // Data feed must have been updated in the last day, assuming that the
+        // largest heartbeat interval is 1 day
+        (, uint32 timestamp) = IApi3ServerV1(api3ServerV1).readDataFeedWithId(
+            dataFeedId
+        );
+        require(
+            timestamp + MAXIMUM_DATA_FEED_UPDATE_AGE >= block.timestamp,
+            "Reverted feed stale"
+        );
         IDapiDataRegistry(dapiDataRegistry).addDapi(
             dapiName,
             dataFeedId,
