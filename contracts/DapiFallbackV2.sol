@@ -133,12 +133,13 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// @param dapiFallbackAdmin dAPI fallback admin address
     function addDapiFallbackAdmin(
         address dapiFallbackAdmin
-    ) public override onlyOwner {
+    ) public override onlyOwner returns (address[] memory dapiFallbackAdmins) {
         require(dapiFallbackAdmin != address(0), "Admin address zero");
         require(
             _dapiFallbackAdmins.add(dapiFallbackAdmin),
             "Duplicate admin address"
         );
+        dapiFallbackAdmins = _dapiFallbackAdmins.values();
         emit AddedDapiFallbackAdmin(dapiFallbackAdmin);
     }
 
@@ -150,12 +151,18 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// @param dapiFallbackAdmin dAPI fallback admin address
     function removeDapiFallbackAdmin(
         address dapiFallbackAdmin
-    ) external override onlyOwner {
+    )
+        external
+        override
+        onlyOwner
+        returns (address[] memory dapiFallbackAdmins)
+    {
         require(dapiFallbackAdmin != address(0), "Admin address zero");
         require(
             _dapiFallbackAdmins.remove(dapiFallbackAdmin),
             "Admin does not exist"
         );
+        dapiFallbackAdmins = _dapiFallbackAdmins.values();
         emit RemovedDapiFallbackAdmin(dapiFallbackAdmin);
     }
 

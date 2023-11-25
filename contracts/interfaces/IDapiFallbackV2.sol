@@ -58,9 +58,13 @@ interface IDapiFallbackV2 is ISelfMulticall {
 
     function dapiDataRegistry() external view returns (address);
 
-    function addDapiFallbackAdmin(address dapiFallbackAdmin) external;
+    function addDapiFallbackAdmin(
+        address dapiFallbackAdmin
+    ) external returns (address[] memory dapiFallbackAdmins);
 
-    function removeDapiFallbackAdmin(address dapiFallbackAdmin) external;
+    function removeDapiFallbackAdmin(
+        address dapiFallbackAdmin
+    ) external returns (address[] memory dapiFallbackAdmins);
 
     function withdraw(address payable recipient, uint256 amount) external;
 
