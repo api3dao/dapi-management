@@ -1465,7 +1465,6 @@ describe('DapiFallbackV2', function () {
             dapiTree,
             dapiTreeValues,
           } = await helpers.loadFixture(deploy);
-          const { dapiFallbackAdminId, dapiFallbackAdmin } = getRandomDapiFallbackAdmin(roles);
           const [dataFeed] = dataFeeds;
           const { airnodes, templateIds } = dataFeed.reduce(
             (acc, { airnode, templateId }) => ({
