@@ -219,11 +219,8 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
             args.sponsorWallet != address(0),
             "Sponsor wallet address zero"
         );
-
-        bytes32 hashedUpdateParams = keccak256(args.updateParams);
-
         require(
-            hashedUpdateParams == HASHED_FALLBACK_UPDATE_PARAMS,
+            keccak256(args.updateParams) == HASHED_FALLBACK_UPDATE_PARAMS,
             "Invalid update parameters"
         );
 
