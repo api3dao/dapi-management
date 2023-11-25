@@ -69,6 +69,8 @@ interface IDapiFallbackV2 is ISelfMulticall {
         ExecuteDapiFallbackArgs calldata args
     ) external;
 
+    function fundSponsorWallet(ExecuteDapiFallbackArgs calldata args) external;
+
     function revertDapiFallback(
         uint256 dapiFallbackAdminInd,
         bytes32 dapiName,

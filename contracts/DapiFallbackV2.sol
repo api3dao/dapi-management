@@ -217,52 +217,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         override
         onlyDapiFallbackAdminWithInd(args.dapiFallbackAdminInd)
     {
-        require(args.dapiName != bytes32(0), "dAPI name zero");
-        require(args.dataFeedId != bytes32(0), "Data feed ID zero");
-        require(args.duration != 0, "Duration zero");
-        require(args.price != 0, "Price zero");
-        require(
-            args.sponsorWallet != address(0),
-            "Sponsor wallet address zero"
-        );
-        require(
-            keccak256(args.updateParams) == HASHED_FALLBACK_UPDATE_PARAMS,
-            "Invalid update parameters"
-        );
-        _verifyMerkleProof(
-            DAPI_FALLBACK_MERKLE_TREE_ROOT_HASH_TYPE,
-            args.fallbackProof,
-            args.fallbackRoot,
-            keccak256(
-                bytes.concat(
-                    keccak256(
-                        abi.encode(
-                            args.dapiName,
-                            args.dataFeedId,
-                            args.sponsorWallet
-                        )
-                    )
-                )
-            )
-        );
-        _verifyMerkleProof(
-            DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE,
-            args.priceProof,
-            args.priceRoot,
-            keccak256(
-                bytes.concat(
-                    keccak256(
-                        abi.encode(
-                            args.dapiName,
-                            block.chainid,
-                            args.updateParams,
-                            args.duration,
-                            args.price
-                        )
-                    )
-                )
-            )
-        );
+        _verifyExecuteDapiFallbackArgs(args);
 
         require(
             IApi3ServerV1(api3ServerV1).dapiNameToDataFeedId(args.dapiName) !=
@@ -303,21 +258,25 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         );
         IDapiDataRegistry(dapiDataRegistry).removeDapi(args.dapiName);
 
-        uint256 minSponsorWalletBalance = (args.price *
-            MINIMUM_DAPI_SUBSCRIPTION_PERIOD_THAT_SPONSOR_WALLET_MUST_AFFORD) /
-            args.duration;
-        uint256 sponsorWalletBalance = args.sponsorWallet.balance;
-        if (sponsorWalletBalance < minSponsorWalletBalance) {
-            uint256 amount = minSponsorWalletBalance - sponsorWalletBalance;
-            Address.sendValue(args.sponsorWallet, amount);
-            emit FundedSponsorWallet(
-                args.sponsorWallet,
-                amount,
-                address(this).balance,
-                msg.sender
-            );
-        }
+        _fundSponsorWallet(args.price, args.duration, args.sponsorWallet);
         emit ExecutedDapiFallback(args.dapiName, args.dataFeedId, msg.sender);
+    }
+
+    function fundSponsorWallet(
+        ExecuteDapiFallbackArgs calldata args
+    )
+        external
+        override
+        onlyDapiFallbackAdminWithInd(args.dapiFallbackAdminInd)
+    {
+        _verifyExecuteDapiFallbackArgs(args);
+
+        require(
+            _revertableDapiFallbacks.contains(args.dapiName),
+            "Fallback not executed"
+        );
+
+        _fundSponsorWallet(args.price, args.duration, args.sponsorWallet);
     }
 
     /// @notice Reverts the dAPI fallback execution by setting the dAPI back to a
@@ -427,6 +386,78 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         require(amount != 0, "Amount zero");
         Address.sendValue(recipient, amount);
         emit Withdrawn(recipient, amount, address(this).balance);
+    }
+
+    function _verifyExecuteDapiFallbackArgs(
+        ExecuteDapiFallbackArgs calldata args
+    ) private view {
+        require(args.dapiName != bytes32(0), "dAPI name zero");
+        require(args.dataFeedId != bytes32(0), "Data feed ID zero");
+        require(args.duration != 0, "Duration zero");
+        require(args.price != 0, "Price zero");
+        require(
+            args.sponsorWallet != address(0),
+            "Sponsor wallet address zero"
+        );
+        require(
+            keccak256(args.updateParams) == HASHED_FALLBACK_UPDATE_PARAMS,
+            "Invalid update parameters"
+        );
+        _verifyMerkleProof(
+            DAPI_FALLBACK_MERKLE_TREE_ROOT_HASH_TYPE,
+            args.fallbackProof,
+            args.fallbackRoot,
+            keccak256(
+                bytes.concat(
+                    keccak256(
+                        abi.encode(
+                            args.dapiName,
+                            args.dataFeedId,
+                            args.sponsorWallet
+                        )
+                    )
+                )
+            )
+        );
+        _verifyMerkleProof(
+            DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE,
+            args.priceProof,
+            args.priceRoot,
+            keccak256(
+                bytes.concat(
+                    keccak256(
+                        abi.encode(
+                            args.dapiName,
+                            block.chainid,
+                            args.updateParams,
+                            args.duration,
+                            args.price
+                        )
+                    )
+                )
+            )
+        );
+    }
+
+    function _fundSponsorWallet(
+        uint256 price,
+        uint256 duration,
+        address payable sponsorWallet
+    ) private {
+        uint256 minSponsorWalletBalance = (price *
+            MINIMUM_DAPI_SUBSCRIPTION_PERIOD_THAT_SPONSOR_WALLET_MUST_AFFORD) /
+            duration;
+        uint256 sponsorWalletBalance = sponsorWallet.balance;
+        if (sponsorWalletBalance < minSponsorWalletBalance) {
+            uint256 amount = minSponsorWalletBalance - sponsorWalletBalance;
+            Address.sendValue(sponsorWallet, amount);
+            emit FundedSponsorWallet(
+                sponsorWallet,
+                amount,
+                address(this).balance,
+                msg.sender
+            );
+        }
     }
 
     /// @notice Verifies the Merkle proof associated with the leaf
