@@ -49,6 +49,8 @@ interface IDapiFallbackV2 is ISelfMulticall {
         address sponsorWallet
     );
 
+    event RemovedDapiFallback(bytes32 indexed dapiName);
+
     function setUpDapiFallbackExecutors(
         address[] calldata dapiFallbackExecutors
     ) external;
@@ -81,6 +83,8 @@ interface IDapiFallbackV2 is ISelfMulticall {
         bytes32 root,
         bytes32[] calldata proof
     ) external;
+
+    function removeDapiFallback(bytes32 dapiName) external;
 
     function getRevertableDapiFallbacks()
         external

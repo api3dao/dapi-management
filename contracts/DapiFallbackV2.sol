@@ -357,6 +357,15 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         emit RevertedDapiFallback(dapiName, dataFeedId, sponsorWallet);
     }
 
+    function removeDapiFallback(bytes32 dapiName) external onlyOwner {
+        require(
+            _revertableDapiFallbacks.remove(dapiName),
+            "Fallback not removable"
+        );
+        _dapiNameToUpdateParametersHash[dapiName] = bytes32(0);
+        emit RemovedDapiFallback(dapiName);
+    }
+
     /// @notice Returns the dAPI fallback executors
     /// @return dapiFallbackExecutors dAPI fallback executors
     function getDapiFallbackExecutors()
