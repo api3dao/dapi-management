@@ -74,6 +74,8 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
 
     EnumerableSet.Bytes32Set private _revertableDapiFallbacks;
 
+    mapping(bytes32 => bytes32) private _dapiNameToUpdateParametersHash;
+
     /// @dev Reverts unless the sender is the dAPI fallback admin with the
     /// specified index
     /// @param dapiFallbackAdminInd dAPI fallback admin index
@@ -285,6 +287,20 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
 
         IApi3ServerV1(api3ServerV1).setDapiName(args.dapiName, args.dataFeedId);
 
+        (
+            uint256 deviationThresholdInPercentage,
+            int224 deviationReference,
+            uint256 heartbeatInterval
+        ) = IDapiDataRegistry(dapiDataRegistry).dapiNameToUpdateParameters(
+                args.dapiName
+            );
+        _dapiNameToUpdateParametersHash[args.dapiName] = keccak256(
+            abi.encode(
+                deviationThresholdInPercentage,
+                deviationReference,
+                heartbeatInterval
+            )
+        );
         IDapiDataRegistry(dapiDataRegistry).removeDapi(args.dapiName);
 
         uint256 minSponsorWalletBalance = (args.price *
@@ -328,7 +344,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         address sponsorWallet,
         uint256 deviationThresholdInPercentage,
         int224 deviationReference,
-        uint32 heartbeatInterval,
+        uint256 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
     ) external override onlyDapiFallbackAdminWithInd(dapiFallbackAdminInd) {
@@ -336,6 +352,18 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
             _revertableDapiFallbacks.remove(dapiName),
             "Fallback not revertable"
         );
+        require(
+            _dapiNameToUpdateParametersHash[dapiName] ==
+                keccak256(
+                    abi.encode(
+                        deviationThresholdInPercentage,
+                        deviationReference,
+                        heartbeatInterval
+                    )
+                ),
+            "Invalid update parameters"
+        );
+        _dapiNameToUpdateParametersHash[dapiName] = bytes32(0);
         IDapiDataRegistry(dapiDataRegistry).addDapi(
             dapiName,
             dataFeedId,

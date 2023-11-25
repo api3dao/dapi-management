@@ -188,19 +188,19 @@ describe('Api3Market', function () {
     const deviationReference = 0;
     const heartbeatInterval = 86400; // 1 day in seconds
     const updateParamsOne = hre.ethers.utils.defaultAbiCoder.encode(
-      ['uint256', 'int224', 'uint32'],
+      ['uint256', 'int224', 'uint256'],
       [deviationThresholdInPercentage, deviationReference, heartbeatInterval]
     );
     const updateParamsTwo = hre.ethers.utils.defaultAbiCoder.encode(
-      ['uint256', 'int224', 'uint32'],
+      ['uint256', 'int224', 'uint256'],
       [deviationThresholdInPercentage * 2, deviationReference, heartbeatInterval]
     );
     const updateParamsFour = hre.ethers.utils.defaultAbiCoder.encode(
-      ['uint256', 'int224', 'uint32'],
+      ['uint256', 'int224', 'uint256'],
       [deviationThresholdInPercentage * 4, deviationReference, heartbeatInterval]
     );
     const updateParamsEight = hre.ethers.utils.defaultAbiCoder.encode(
-      ['uint256', 'int224', 'uint32'],
+      ['uint256', 'int224', 'uint256'],
       [deviationThresholdInPercentage * 8, deviationReference, heartbeatInterval]
     );
     const priceTreeValues = dapiNamesWithSponsorWallets
@@ -462,7 +462,7 @@ describe('Api3Market', function () {
                   const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
                     await dapiDataRegistry.readDapiWithName(dapiName);
                   expect(updateParameters).to.deep.equal(
-                    hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], updateParams)
+                    hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint256'], updateParams)
                   );
                   expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
                   expect(dataFeed).to.equal(encodedBeaconSetData);
@@ -604,7 +604,7 @@ describe('Api3Market', function () {
                         const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
                           await dapiDataRegistry.readDapiWithName(dapiName);
                         expect(updateParameters).to.deep.equal(
-                          hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], updateParams)
+                          hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint256'], updateParams)
                         );
                         expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
                         expect(dataFeed).to.equal(encodedBeaconSetData);
@@ -769,7 +769,7 @@ describe('Api3Market', function () {
                         const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
                           await dapiDataRegistry.readDapiWithName(dapiName);
                         expect(updateParameters).to.deep.equal(
-                          hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], updateParams)
+                          hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint256'], updateParams)
                         );
                         expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
                         expect(dataFeed).to.equal(encodedBeaconSetData);
@@ -1137,7 +1137,7 @@ describe('Api3Market', function () {
                     const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
                       await dapiDataRegistry.readDapiWithName(dapiName);
                     expect(updateParameters).to.deep.equal(
-                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], upgradeUpdateParams)
+                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint256'], upgradeUpdateParams)
                     );
                     expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
                     expect(dataFeed).to.equal(encodedBeaconSetData);
@@ -1329,7 +1329,7 @@ describe('Api3Market', function () {
                     const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
                       await dapiDataRegistry.readDapiWithName(dapiName);
                     expect(updateParameters).to.deep.equal(
-                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], upgradeUpdateParams)
+                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint256'], upgradeUpdateParams)
                     );
                     expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
                     expect(dataFeed).to.equal(encodedBeaconSetData);
@@ -1530,7 +1530,7 @@ describe('Api3Market', function () {
                     const { updateParameters, dataFeedValue, dataFeed, signedApiUrls } =
                       await dapiDataRegistry.readDapiWithName(dapiName);
                     expect(updateParameters).to.deep.equal(
-                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], upgradeUpdateParams)
+                      hre.ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint256'], upgradeUpdateParams)
                     );
                     expect(dataFeedValue[0]).to.equal(onChainBeaconSetValue);
                     expect(dataFeed).to.equal(encodedBeaconSetData);

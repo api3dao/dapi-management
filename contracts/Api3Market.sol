@@ -223,8 +223,8 @@ contract Api3Market is IApi3Market {
         (
             uint256 deviationThresholdInPercentage,
             int224 deviationReference,
-            uint32 heartbeatInterval
-        ) = abi.decode(updateParams_, (uint256, int224, uint32));
+            uint256 heartbeatInterval
+        ) = abi.decode(updateParams_, (uint256, int224, uint256));
         updateParams = UpdateParams(
             deviationThresholdInPercentage,
             deviationReference,

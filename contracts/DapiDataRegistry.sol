@@ -205,7 +205,7 @@ contract DapiDataRegistry is
         address sponsorWallet,
         uint256 deviationThresholdInPercentage,
         int224 deviationReference,
-        uint32 heartbeatInterval,
+        uint256 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
     ) external override {
@@ -238,8 +238,7 @@ contract DapiDataRegistry is
         require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
 
         dapis.add(dapiName);
-        bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
-        dapiNameToUpdateParameters[dapiNameHash] = UpdateParameters(
+        dapiNameToUpdateParameters[dapiName] = UpdateParameters(
             deviationThresholdInPercentage,
             deviationReference,
             heartbeatInterval
@@ -271,8 +270,7 @@ contract DapiDataRegistry is
             "Sender is not manager or has dAPI remover role"
         );
         require(dapis.remove(dapiName), "dAPI name has not been added");
-        bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
-        delete dapiNameToUpdateParameters[dapiNameHash];
+        delete dapiNameToUpdateParameters[dapiName];
         emit RemovedDapi(dapiName, msg.sender);
     }
 
@@ -349,14 +347,13 @@ contract DapiDataRegistry is
             string[] memory signedApiUrls
         )
     {
-        bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
         bytes32 dataFeedId = IApi3ServerV1(api3ServerV1)
-            .dapiNameHashToDataFeedId(dapiNameHash);
+            .dapiNameHashToDataFeedId(keccak256(abi.encodePacked(dapiName)));
         if (dataFeedId != bytes32(0)) {
             (int224 value, uint32 timestamp) = IApi3ServerV1(api3ServerV1)
                 .dataFeeds(dataFeedId);
             dataFeedValue = DataFeedValue(value, timestamp);
-            updateParameters = dapiNameToUpdateParameters[dapiNameHash];
+            updateParameters = dapiNameToUpdateParameters[dapiName];
             dataFeed = dataFeeds[dataFeedId];
             if (dataFeed.length == 64) {
                 (address airnode, ) = abi.decode(dataFeed, (address, bytes32));

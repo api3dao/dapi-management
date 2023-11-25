@@ -219,7 +219,7 @@ describe('DapiFallbackV2', function () {
     const deviationReference = 0;
 
     const updateParams = hre.ethers.utils.defaultAbiCoder.encode(
-      ['uint256', 'int224', 'uint32'],
+      ['uint256', 'int224', 'uint256'],
       [deviationThresholdInPercentage, deviationReference, heartbeatInterval]
     );
 
@@ -1136,7 +1136,7 @@ describe('DapiFallbackV2', function () {
                     const deviationReference = 0;
 
                     const unmatchedUpdateParams = hre.ethers.utils.defaultAbiCoder.encode(
-                      ['uint256', 'int224', 'uint32'],
+                      ['uint256', 'int224', 'uint256'],
                       [deviationThresholdInPercentage, deviationReference, heartbeatInterval]
                     );
                     const executeDapiFallbackArgs = {

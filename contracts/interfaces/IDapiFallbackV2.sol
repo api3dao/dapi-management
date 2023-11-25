@@ -76,7 +76,7 @@ interface IDapiFallbackV2 is ISelfMulticall {
         address sponsorWallet,
         uint256 deviationThresholdInPercentage,
         int224 deviationReference,
-        uint32 heartbeatInterval,
+        uint256 heartbeatInterval,
         bytes32 root,
         bytes32[] calldata proof
     ) external;
