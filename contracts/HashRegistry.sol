@@ -87,8 +87,6 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         bytes32 hashType,
         address signer
     ) external override onlyOwner {
-        require(hashType != bytes32(0), "Hash type is zero");
-        require(signer != address(0), "Signer is zero");
         require(
             _hashTypeToSigners[hashType].remove(signer),
             "Signer does not exist"

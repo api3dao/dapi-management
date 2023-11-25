@@ -196,87 +196,51 @@ describe('HashRegistry', function () {
 
   describe('removeSigner', function () {
     context('Sender is the owner', function () {
-      context('Hash type is not zero', function () {
-        context('Signer is not zero', function () {
-          context('Signer exists', function () {
-            it('removes signer', async function () {
-              const { roles, hashRegistry, dapiFallbackHashType } = await helpers.loadFixture(deploy);
-              const signers = [
-                roles.dapiFallbackRootSigner1,
-                roles.dapiFallbackRootSigner2,
-                roles.dapiFallbackRootSigner3,
-              ];
-              expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([]);
-              for (const signer of signers) {
-                await expect(hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, signer.address))
-                  .to.emit(hashRegistry, 'AddedSigner')
-                  .withArgs(dapiFallbackHashType, signer.address);
-              }
-              // remove from the middle
-              await expect(
-                hashRegistry
-                  .connect(roles.owner)
-                  .removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address)
-              )
-                .to.emit(hashRegistry, 'RemovedSigner')
-                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address);
-              // remove at the end
-              await expect(
-                hashRegistry
-                  .connect(roles.owner)
-                  .removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner3.address)
-              )
-                .to.emit(hashRegistry, 'RemovedSigner')
-                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner3.address);
-              // remove remaining signer
-              await expect(
-                hashRegistry
-                  .connect(roles.owner)
-                  .removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
-              )
-                .to.emit(hashRegistry, 'RemovedSigner')
-                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
-            });
-          });
-          context('Signer does not exist', function () {
-            it('reverts', async function () {
-              const { roles, hashRegistry, dapiFallbackHashType } = await helpers.loadFixture(deploy);
-              expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([]);
-              await expect(
-                hashRegistry
-                  .connect(roles.owner)
-                  .removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
-              ).to.be.revertedWith('Signer does not exist');
-              await expect(
-                hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
-              )
-                .to.emit(hashRegistry, 'AddedSigner')
-                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
-              await expect(
-                hashRegistry
-                  .connect(roles.owner)
-                  .removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address)
-              ).to.be.revertedWith('Signer does not exist');
-            });
-          });
-        });
-        context('Signer is zero', function () {
-          it('reverts', async function () {
-            const { roles, hashRegistry } = await helpers.loadFixture(deploy);
-            await expect(
-              hashRegistry.connect(roles.owner).removeSigner(generateRandomBytes32(), hre.ethers.constants.AddressZero)
-            ).to.be.revertedWith('Signer is zero');
-          });
+      context('Signer exists', function () {
+        it('removes signer', async function () {
+          const { roles, hashRegistry, dapiFallbackHashType } = await helpers.loadFixture(deploy);
+          const signers = [roles.dapiFallbackRootSigner1, roles.dapiFallbackRootSigner2, roles.dapiFallbackRootSigner3];
+          expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([]);
+          for (const signer of signers) {
+            await expect(hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, signer.address))
+              .to.emit(hashRegistry, 'AddedSigner')
+              .withArgs(dapiFallbackHashType, signer.address);
+          }
+          // remove from the middle
+          await expect(
+            hashRegistry.connect(roles.owner).removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address)
+          )
+            .to.emit(hashRegistry, 'RemovedSigner')
+            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address);
+          // remove at the end
+          await expect(
+            hashRegistry.connect(roles.owner).removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner3.address)
+          )
+            .to.emit(hashRegistry, 'RemovedSigner')
+            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner3.address);
+          // remove remaining signer
+          await expect(
+            hashRegistry.connect(roles.owner).removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
+          )
+            .to.emit(hashRegistry, 'RemovedSigner')
+            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
         });
       });
-      context('Hash type is zero', function () {
+      context('Signer does not exist', function () {
         it('reverts', async function () {
-          const { roles, hashRegistry } = await helpers.loadFixture(deploy);
+          const { roles, hashRegistry, dapiFallbackHashType } = await helpers.loadFixture(deploy);
+          expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([]);
           await expect(
-            hashRegistry
-              .connect(roles.owner)
-              .removeSigner(hre.ethers.constants.HashZero, roles.dapiFallbackRootSigner1.address)
-          ).to.be.revertedWith('Hash type is zero');
+            hashRegistry.connect(roles.owner).removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
+          ).to.be.revertedWith('Signer does not exist');
+          await expect(
+            hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
+          )
+            .to.emit(hashRegistry, 'AddedSigner')
+            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
+          await expect(
+            hashRegistry.connect(roles.owner).removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address)
+          ).to.be.revertedWith('Signer does not exist');
         });
       });
     });
