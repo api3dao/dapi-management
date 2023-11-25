@@ -392,8 +392,6 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
         bytes32 root,
         bytes32 leaf
     ) private view {
-        require(proof.length != 0, "Proof empty");
-        require(root != bytes32(0), "Root zero");
         require(
             IHashRegistry(hashRegistry).hashTypeToHash(treeType) == root,
             "Tree root not registered"
