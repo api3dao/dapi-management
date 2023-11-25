@@ -4,12 +4,6 @@ pragma solidity 0.8.18;
 import "@api3/airnode-protocol-v1/contracts/utils/interfaces/ISelfMulticall.sol";
 
 interface IDapiFallbackV2 is ISelfMulticall {
-    event SetUpDapiFallbackAdmins(address[] dapiFallbackAdmins);
-
-    event AddedDapiFallbackAdmin(address dapiFallbackAdmin);
-
-    event RemovedDapiFallbackAdmin(address dapiFallbackAdmin);
-
     struct ExecuteDapiFallbackArgs {
         uint256 dapiFallbackAdminInd; // dAPI fallback admin index
         bytes32 dapiName; // Encoded bytes32 dAPI name
@@ -23,6 +17,12 @@ interface IDapiFallbackV2 is ISelfMulticall {
         uint256 price; // Cost of the data feed for a given duration
         address payable sponsorWallet; // Address of the sponsor wallet for funding
     }
+
+    event SetUpDapiFallbackAdmins(address[] dapiFallbackAdmins);
+
+    event AddedDapiFallbackAdmin(address dapiFallbackAdmin);
+
+    event RemovedDapiFallbackAdmin(address dapiFallbackAdmin);
 
     event Withdrawn(
         address indexed recipient,
