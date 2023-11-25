@@ -75,10 +75,10 @@ describe('HashRegistry', function () {
     });
   });
 
-  describe('setupSigners', function () {
+  describe('setUpSigners', function () {
     context('Signers is not emtpy', function () {
       context('Hash type signers is empty', function () {
-        it('setup signers', async function () {
+        it('set up signers', async function () {
           const { roles, hashRegistry, dapiFallbackHashType } = await helpers.loadFixture(deploy);
           expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([]);
           const signers = [
@@ -86,8 +86,8 @@ describe('HashRegistry', function () {
             roles.dapiFallbackRootSigner2.address,
             roles.dapiFallbackRootSigner3.address,
           ];
-          await expect(hashRegistry.connect(roles.owner).setupSigners(dapiFallbackHashType, signers))
-            .to.emit(hashRegistry, 'SetupSigners')
+          await expect(hashRegistry.connect(roles.owner).setUpSigners(dapiFallbackHashType, signers))
+            .to.emit(hashRegistry, 'SetUpSigners')
             .withArgs(dapiFallbackHashType, signers);
           expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal(signers);
         });
@@ -104,7 +104,7 @@ describe('HashRegistry', function () {
           await expect(
             hashRegistry
               .connect(roles.owner)
-              .setupSigners(dapiFallbackHashType, [
+              .setUpSigners(dapiFallbackHashType, [
                 roles.dapiFallbackRootSigner2.address,
                 roles.dapiFallbackRootSigner3.address,
               ])
@@ -115,7 +115,7 @@ describe('HashRegistry', function () {
     context('Signers is emtpy', function () {
       it('reverts', async function () {
         const { roles, hashRegistry } = await helpers.loadFixture(deploy);
-        await expect(hashRegistry.connect(roles.owner).setupSigners(generateRandomBytes32(), [])).to.be.revertedWith(
+        await expect(hashRegistry.connect(roles.owner).setUpSigners(generateRandomBytes32(), [])).to.be.revertedWith(
           'Signers is empty'
         );
       });

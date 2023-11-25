@@ -4,7 +4,7 @@ pragma solidity 0.8.18;
 import "@api3/airnode-protocol-v1/contracts/utils/interfaces/ISelfMulticall.sol";
 
 interface IHashRegistry is ISelfMulticall {
-    event SetupSigners(bytes32 indexed hashType, address[] signers);
+    event SetUpSigners(bytes32 indexed hashType, address[] signers);
 
     event AddedSigner(bytes32 indexed hashType, address signer);
 
@@ -16,7 +16,7 @@ interface IHashRegistry is ISelfMulticall {
         uint256 timestamp
     );
 
-    function setupSigners(
+    function setUpSigners(
         bytes32 hashType,
         address[] calldata signers
     ) external;

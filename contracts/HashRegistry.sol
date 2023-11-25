@@ -39,7 +39,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     /// @notice Called by the owner to set the hash signers
     /// @param hashType Hash representing a hash type
     /// @param signers Hash signers
-    function setupSigners(
+    function setUpSigners(
         bytes32 hashType,
         address[] calldata signers
     ) external override onlyOwner {
@@ -51,7 +51,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         for (uint256 ind = 0; ind < signers.length; ind++) {
             _addSigner(hashType, signers[ind]);
         }
-        emit SetupSigners(hashType, signers);
+        emit SetUpSigners(hashType, signers);
     }
 
     /// @notice Called privately to add a new signer to the set of addresses
