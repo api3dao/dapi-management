@@ -56,11 +56,11 @@ async function signMerkleTree(merkleTreeName) {
 
   const updatedHashData = {
     ...currentHashData,
-    hash: merkleRoot,
-    signatures: {
-      ...currentHashData.signatures,
-      [signerAddress]: signature,
-    },
+    signatures: validateSignatures(
+      treeHash,
+      { ...currentHashData.signatures, [signerAddress]: signature },
+      signerData.hashSigners
+    ),
   };
 
   fs.writeFileSync(currentHashPath, JSON.stringify(updatedHashData, null, 2));
@@ -68,18 +68,29 @@ async function signMerkleTree(merkleTreeName) {
 }
 
 function deriveTreeHash(treeName, treeRoot, timestamp) {
-  const encodedHash = ethers.utils.toUtf8Bytes(`${treeName} root`);
-  const hashType = ethers.utils.keccak256(encodedHash);
+  const hashType = ethers.utils.solidityKeccak256(['string'], [`${treeName} root`]);
 
-  const encodedValues = ethers.utils.defaultAbiCoder.encode(
-    ['string', 'bytes32', 'uint256'],
-    [hashType, treeRoot, timestamp]
+  return ethers.utils.arrayify(
+    ethers.utils.solidityKeccak256(['bytes32', 'bytes32', 'uint256'], [hashType, treeRoot, timestamp])
   );
+}
 
-  // Hash the encoded parameters
-  const hash = ethers.utils.keccak256(encodedValues);
+function validateSignatures(treeHash, signatures, signers) {
+  return signers.reduce((acc, signer) => {
+    const signature = signatures[signer];
 
-  return ethers.utils.arrayify(hash);
+    try {
+      if (signer === ethers.utils.verifyMessage(treeHash, signature)) {
+        acc[signer] = signature;
+        return acc;
+      }
+    } catch {
+      // Do nothing
+    }
+
+    acc[signer] = '0x';
+    return acc;
+  }, {});
 }
 
 signMerkleTree(merkleTreeName).catch((error) => {

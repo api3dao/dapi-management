@@ -71,7 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     hashSigners
   );
 
-  const validatedCurrentHash = { ...currentHash, hash: merkleTree.root, signatures: validatedRootSignatures };
+  const validatedCurrentHash = { ...currentHash, signatures: validatedRootSignatures };
 
   // Write updated signatures to the file
   writeMerkleTreeData(currentHashPath, validatedCurrentHash);

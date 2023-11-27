@@ -54,18 +54,14 @@ function NavLink(props: NavLinkProps) {
   const [showLoader, setShowLoader] = useState(false);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
     const handleStart = (path: string) => {
       if (path === href) {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => setShowLoader(true), 50);
+        setShowLoader(true);
       }
     };
 
     const handleComplete = (path: string) => {
       if (path === href) {
-        clearTimeout(timeoutId);
         setShowLoader(false);
       }
     };
@@ -84,15 +80,15 @@ function NavLink(props: NavLinkProps) {
   return (
     <Link
       href={href}
-      className={
-        isActive ? 'relative -mx-2 -my-1 rounded bg-gray-200 px-2 py-1 text-gray-800' : 'relative hover:text-gray-800'
-      }
+      className={cn(
+        'relative -mx-2 -my-1 rounded px-2 py-1 transition-colors',
+        isActive ? 'bg-gray-200 text-gray-800' : 'hover:text-gray-800'
+      )}
     >
       {props.children}
       <LoaderIcon
         className={cn(
-          'absolute h-4 w-4 animate-spin text-gray-400 transition-opacity duration-300',
-          isActive ? 'right-[5px] top-[6px]' : 'right-[-3px] top-[2px]',
+          'absolute right-[5px] top-[6px] h-4 w-4 animate-spin text-gray-400 transition-opacity duration-300',
           showLoader ? 'opacity-100' : 'opacity-0'
         )}
       />

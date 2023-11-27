@@ -23,7 +23,7 @@ async function syncDapiFallbackValues() {
     fs.writeFileSync(previousHashPath, JSON.stringify(currentHashData, null, 4));
 
     const merkleTeeData = {
-      timestamp: new Date().getTime(),
+      timestamp: Math.floor(new Date().getTime() / 1000),
       hash: tree.root,
       signatures: {},
       merkleTreeValues: { values },

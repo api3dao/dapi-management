@@ -16,3 +16,4 @@ deployments/localhost
 
 # Misc
 .DS_Store
+tmp
