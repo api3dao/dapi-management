@@ -79,3 +79,5 @@ Then deploy the contracts by running this command on a new terminal:
 HARDHAT_NETWORK=localhost yarn run deploy
 
 ```
+
+Keep in mind that both `localhost` and `hardhat` chains, will not be added to references.json file.
