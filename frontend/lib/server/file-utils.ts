@@ -1,9 +1,10 @@
 import { join } from 'path';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { z } from 'zod';
 import isObject from 'lodash/isObject';
+import isEqual from 'lodash/isEqual';
 
 export const execute = promisify(exec);
 
@@ -66,6 +67,59 @@ export function readSignerDataFrom(subfolder: TreeSubFolder) {
 
 export function writeMerkleTreeData(path: string, data: MerkleTreeData) {
   writeFileSync(path, JSON.stringify(data, null, 2));
+}
+
+export async function createTreeDiff<T extends MerkleTreeData>(options: {
+  subfolder: TreeSubFolder;
+  currentData: T;
+  previousData: T;
+  preProcessor: (values: T['merkleTreeValues']['values'][number]) => Readonly<T['merkleTreeValues']['values'][number]>;
+}) {
+  const { subfolder, currentData, previousData, preProcessor } = options;
+  const dirPath = join(process.cwd(), '../data/.processed', subfolder);
+  const processedCurrentHashPath = join(dirPath, 'current-hash.json');
+  const processedPreviousHashPath = join(dirPath, 'previous-hash.json');
+  if (!existsSync(dirPath)) {
+    mkdirSync(dirPath, { recursive: true });
+  }
+
+  let hasProcessed = false;
+  const processAndWriteData = (path: string, treeData: T) => {
+    const processedData: T = {
+      ...treeData,
+      merkleTreeValues: {
+        values: treeData.merkleTreeValues.values.map(preProcessor),
+      },
+    };
+    writeMerkleTreeData(path, processedData);
+    hasProcessed = true;
+    console.info('Processed ' + path);
+  };
+
+  const syncProcessedData = (processedDataPath: string, treeData: T) => {
+    if (!existsSync(processedDataPath)) {
+      processAndWriteData(processedDataPath, treeData);
+      return;
+    }
+
+    const processedData: T = JSON.parse(readFileSync(processedDataPath, 'utf8'));
+    if (
+      processedData.hash !== treeData.hash ||
+      processedData.timestamp !== treeData.timestamp ||
+      !isEqual(processedData.signatures, treeData.signatures)
+    ) {
+      processAndWriteData(processedDataPath, treeData);
+    }
+  };
+
+  syncProcessedData(processedCurrentHashPath, currentData);
+  syncProcessedData(processedPreviousHashPath, previousData);
+
+  if (hasProcessed) {
+    await execute(`yarn prettier --write ${dirPath}`);
+  }
+
+  return await createFileDiff(processedPreviousHashPath, processedCurrentHashPath);
 }
 
 export async function createFileDiff(pathA: string, pathB: string) {
