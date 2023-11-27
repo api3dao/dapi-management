@@ -3,7 +3,7 @@ const references = require('../deployments/references.json');
 
 async function main() {
   for (const [, network] of Object.entries(references.chainNames)) {
-    const childProcess = spawn('node', ['./scripts/verify-hash-signers.js'], {
+    const childProcess = spawn('node', ['./scripts/verify-hash-registry.js'], {
       stdio: 'inherit',
       env: {
         ...process.env,
