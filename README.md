@@ -59,16 +59,23 @@ In the same transaction while making a purchase, the contract will also try to [
 
 ## Local development
 
-In order to deploy all the contracts to a local running ETH node, you must run the following command:
+Local ETH node can be started and get all deployment scripts to be executed by running this command:
+
+```sh
+yarn run node-deploy
+
+```
+
+Alternatively you could do this in separate steps. First start a local running ETH node by running the following command:
 
 ```sh
 yarn run node
 
 ```
 
-If you want to re-deploy the contracts then you can run this command on a new terminal:
+Then deploy the contracts by running this command on a new terminal:
 
 ```sh
-NETWORK=localhost yarn run deploy
+HARDHAT_NETWORK=localhost yarn run deploy
 
 ```

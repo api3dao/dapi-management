@@ -109,4 +109,4 @@ module.exports = async ({ deployments, getUnnamedAccounts, ethers, network }) =>
   log(`Deployed Api3Market at ${api3MarketAddress}`);
 };
 
-module.exports.tags = ['deploy'];
+module.exports.tags = ['deploy-all'];
