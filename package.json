@@ -76,6 +76,7 @@
     "typescript": ">=4.5.0"
   },
   "dependencies": {
+    "api-integrations": "./api-integrations-v1.0.0.tgz",
     "@api3/airnode-protocol-v1": "^2.10.0",
     "@api3/promise-utils": "^0.4.0",
     "@nodary/utilities": "^0.7.1",
