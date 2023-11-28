@@ -28,7 +28,7 @@ jobs:
         node-version: '14'
 
     - name: Install dependencies
-      run: npm install
+      run: yarn install
 
     - name: Check if there are changes in gh-pages branch
       id: check_changes
