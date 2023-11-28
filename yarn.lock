@@ -1790,10 +1790,10 @@
   resolved "https://registry.yarnpkg.com/@noble/secp256k1/-/secp256k1-1.7.1.tgz#b251c70f824ce3ca7f8dc3df08d58f005cc0507c"
   integrity sha512-hOUk6AyBFmqVrv7k5WAw/LpszxVbj9gGN4JRkIX52fdFAj1UA61KXmZDvqVEm+pOyec3+fIeZB02LYa/pWOArw==
 
-"@nodary/utilities@^0.7.1":
-  version "0.7.1"
-  resolved "https://registry.yarnpkg.com/@nodary/utilities/-/utilities-0.7.1.tgz#535abee240b117e2d5a71d2f3b8f42eaeb963e46"
-  integrity sha512-o7X57MlHReTiXQ8ER+SNcg1e99USgw9QR9PU3JyifrXCInYaquFFhgDeQPtN0Is+tSIH6EC1UmhV74oi1TZHCg==
+"@nodary/utilities@^0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@nodary/utilities/-/utilities-0.11.0.tgz#d854ef24ebc9cc82730377543dd5a440eb44c46a"
+  integrity sha512-HNNv/uTH76bmQLu5fQXvtC+xwSBU9yDYJE1SOxJVGiFz/8FFCreKR2vhEwjbj6WQ0lqhyZFkHFmo2bCl1btamw==
   dependencies:
     "@api3/airnode-abi" "^0.10.0"
     ethers "^6.1.0"
