@@ -76,6 +76,7 @@
     "typescript": ">=4.5.0"
   },
   "dependencies": {
+    "@api3/airnode-node": "^0.13.0",
     "@api3/airnode-protocol-v1": "^2.10.0",
     "@api3/promise-utils": "^0.4.0",
     "@nodary/utilities": "^0.7.1",
@@ -88,6 +89,7 @@
     "@radix-ui/react-toast": "^1.1.5",
     "@radix-ui/react-toggle": "^1.0.3",
     "@radix-ui/react-tooltip": "^1.0.7",
+    "api-integrations": "./api-integrations-v1.0.0.tgz",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "diff2html": "^3.4.45",
