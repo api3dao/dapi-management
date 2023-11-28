@@ -2,7 +2,9 @@ const { spawn } = require('child_process');
 const references = require('../deployments/references.json');
 
 async function main() {
-  for (const [, network] of Object.entries(references.chainNames)) {
+  for (const [chainId, exports] of Object.entries(references)) {
+    const network = exports.find((e) => e.chainId === chainId).name;
+
     const childProcess = spawn('node', ['./scripts/verify-hash-registry.js'], {
       stdio: 'inherit',
       env: {
