@@ -1,6 +1,6 @@
 const { ethers } = require('ethers');
 const { StandardMerkleTree } = require('@openzeppelin/merkle-tree');
-const { getAirnodeAddressByAlias, deriveDataFeedId } = require("api-integrations");
+const { getAirnodeAddressByAlias, deriveDataFeedId } = require('api-integrations');
 
 function createDapiFallbackMerkleTree(values) {
   const formattedValues = values.map((value) => [ethers.utils.formatBytes32String(value[0]), value[1], value[2]]);
