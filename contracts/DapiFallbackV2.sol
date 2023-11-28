@@ -81,8 +81,7 @@ contract DapiFallbackV2 is Ownable, SelfMulticall, IDapiFallbackV2 {
     /// @param dapiFallbackExecutorInd dAPI fallback executor index
     modifier onlyDapiFallbackExecutorWithInd(uint256 dapiFallbackExecutorInd) {
         require(
-            msg.sender == _dapiFallbackExecutors.at(dapiFallbackExecutorInd) ||
-                msg.sender == address(0),
+            msg.sender == _dapiFallbackExecutors.at(dapiFallbackExecutorInd),
             "Sender not executor with ID"
         );
         _;
