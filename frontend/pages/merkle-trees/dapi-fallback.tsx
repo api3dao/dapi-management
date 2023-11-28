@@ -1,7 +1,10 @@
 import { z } from 'zod';
+import { CheckSquareIcon } from 'lucide-react';
 import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
+import { Button } from '~/components/ui/button';
 import {
   TreeStatusBadge,
   TreeRootBadge,
@@ -86,7 +89,17 @@ export default function DapiFallbackTree(props: Props) {
               <TableRow>
                 <TableHead>dAPI Name</TableHead>
                 <TableHead>Data Feed ID</TableHead>
-                <TableHead>Sponsor Wallet Address</TableHead>
+                <TableHead>
+                  <Tooltip delayDuration={0} preventCloseOnClick>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" className="group flex h-4 cursor-auto items-center gap-1.5 p-0">
+                        <CheckSquareIcon className="h-4 w-4 text-slate-400 group-hover:text-slate-500" />
+                        Sponsor Wallet Address
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>The Sponsor Wallet Addresses get verified by the CI for you</TooltipContent>
+                  </Tooltip>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
