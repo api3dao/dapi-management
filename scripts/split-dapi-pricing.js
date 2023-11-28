@@ -12,7 +12,7 @@ async function splitDapiPricing() {
   const values = currentHashData.merkleTreeValues.values;
 
   const tree = createDapiPricingMerkleTree(currentHashData.merkleTreeValues.values);
-  const dict = values.reduce((accumulator, item, idx) => {
+  const valuesByChainAndDapiName = values.reduce((accumulator, item, idx) => {
     const [dapiName, chainId] = item;
     const name = dapiName.replace('/', '-');
   
@@ -34,9 +34,9 @@ async function splitDapiPricing() {
     return accumulator;
   }, {});
 
-  for (const chainId in dict) {
-    for (const dapiName in dict[chainId]) {
-      const valueCollection = dict[chainId][dapiName];
+  for (const chainId in valuesByChainAndDapiName) {
+    for (const dapiName in valuesByChainAndDapiName[chainId]) {
+      const valueCollection = valuesByChainAndDapiName[chainId][dapiName];
       let content = { merkleTreeRoot: tree.root, leaves: valueCollection };
 
       const dirPath = path.join(__dirname, '..', 'data', 'dapi-pricing-merkle-tree-root', chainId);

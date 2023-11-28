@@ -12,9 +12,5 @@
   "devDependencies": {
     "@openzeppelin/merkle-tree": "^1.0.5",
     "ethers": "^5.7.2"
-  },
-  "dependencies": {
-    "@openzeppelin/merkle-tree": "^1.0.5",
-    "ethers": "^5.7.2"
   }
 }
