@@ -27,13 +27,15 @@ describe('dAPI fallback Merkle tree current-hash.json', () => {
 
   it('has correct data feed IDs', () => {
     dapiFallbackTree.merkleTreeValues.values.forEach((values) => {
-      expect(values[1]).toEqual(nodaryUtils.computeFeedId(values[0]));
+      expect(values[1]).toEqual(nodaryUtils.computeFeedId(ethers.utils.parseBytes32String(values[0])));
     });
   });
 
   it('has correct sponsor wallet addresses', () => {
     dapiFallbackTree.merkleTreeValues.values.forEach((values) => {
-      expect(values[2]).toEqual(nodaryUtils.computeSponsorWalletAddress(values[0], 1 * 1e6, 0, 24 * 60 * 60));
+      expect(values[2]).toEqual(
+        nodaryUtils.computeSponsorWalletAddress(ethers.utils.parseBytes32String(values[0]), 1 * 1e6, 0, 24 * 60 * 60)
+      );
     });
   });
 
