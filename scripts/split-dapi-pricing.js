@@ -9,28 +9,28 @@ async function splitDapiPricing() {
 
   const currentHashData = JSON.parse(fs.readFileSync(currentHashPath, 'utf8'));
   const values = currentHashData.merkleTreeValues.values;
-  const { merkleTreeValues, ...metdata} = currentHashData
+  const { merkleTreeValues, ...metdata } = currentHashData;
 
   const tree = createDapiPricingMerkleTree(merkleTreeValues.values);
   const valuesByChainAndDapiName = values.reduce((accumulator, item, idx) => {
     const [dapiName, chainId] = item;
     const name = dapiName.replace('/', '-');
-  
+
     const treeValues = [ethers.utils.formatBytes32String(dapiName), chainId, item[2], item[3], item[4]];
     const proof = tree.getProof(idx);
     const leaf = { value: treeValues, proof };
-  
+
     if (!accumulator[chainId]) {
       accumulator[chainId] = {};
     }
-  
+
     if (!accumulator[chainId][name]) {
       accumulator[chainId][name] = [leaf];
     } else {
       // Clone the existing array and append the new leaf
       accumulator[chainId][name] = [...accumulator[chainId][name], leaf];
     }
-  
+
     return accumulator;
   }, {});
 
@@ -47,7 +47,6 @@ async function splitDapiPricing() {
 
   const metadatPath = path.join(__dirname, '..', 'data', 'dapi-pricing-merkle-tree-root', 'metadata.json');
   fs.writeFileSync(metadatPath, JSON.stringify(metdata, null, 4));
-
 
   exec('yarn format');
 }
