@@ -27,13 +27,11 @@ export function validateTreeRootSignatures(
 }
 
 export function createDapiFallbackMerkleTree(values: string[][]) {
-  const formattedValues = values.map((value) => [ethers.utils.formatBytes32String(value[0]), value[1], value[2]]);
-  return StandardMerkleTree.of(formattedValues, ['bytes32', 'bytes32', 'address']);
+  return StandardMerkleTree.of(values, ['bytes32', 'bytes32', 'address']);
 }
 
 export function createDapiManagementMerkleTree(values: string[][]) {
-  const formattedValues = values.map((value) => [ethers.utils.formatBytes32String(value[0]), value[1], value[2]]);
-  return StandardMerkleTree.of(formattedValues, ['bytes32', 'bytes32', 'address']);
+  return StandardMerkleTree.of(values, ['bytes32', 'bytes32', 'address']);
 }
 
 export function createDapiPricingMerkleTree(values: string[][]) {

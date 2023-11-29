@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ethers } from 'ethers';
 import { CheckSquareIcon } from 'lucide-react';
 import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
@@ -103,11 +104,11 @@ export default function DapiFallbackTree(props: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentTree.merkleTreeValues.values.map((fallback, i) => (
+              {currentTree.merkleTreeValues.values.map((rowValues, i) => (
                 <TableRow key={i}>
-                  <TableCell>{fallback[0]}</TableCell>
-                  <TableCell>{fallback[1]}</TableCell>
-                  <TableCell>{fallback[2]}</TableCell>
+                  <TableCell>{ethers.utils.parseBytes32String(rowValues[0])}</TableCell>
+                  <TableCell>{rowValues[1]}</TableCell>
+                  <TableCell>{rowValues[2]}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
