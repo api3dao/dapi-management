@@ -6,11 +6,14 @@ const { getAirnodeAddressByAlias, deriveDataFeedId } = require('api-integrations
 const { deriveWalletPathFromSponsorAddress } = require('@api3/airnode-node/dist/src/evm');
 
 const MT_OUTPUT_PATH = './data/dapi-management-merkle-tree-root/current-hash.json';
-const PROTOCOL_ID_AIRSEEKER = '1';
+const PROTOCOL_ID_AIRSEEKER = '5';
 
 function generateDapiManagementMT() {
   const dapis = JSON.parse(fs.readFileSync('./data/dapis.json').toString());
-  const { airseekerXPub, sponsor } = JSON.parse(fs.readFileSync('./data/airseeker-metadata.json').toString());
+  const { airseekerXPub } = JSON.parse(fs.readFileSync('./data/airseeker.json').toString());
+  // save the previous hash
+  const previousDapiManagementMT = JSON.parse(fs.readFileSync(MT_OUTPUT_PATH).toString());
+  fs.writeFileSync(MT_OUTPUT_PATH.replace("current-hash", "previous-hash"), JSON.stringify(previousDapiManagementMT, null, 2));
 
   const merkleTreeValues = dapis.map(({ name, providers }) => {
     // derive data feed ID
@@ -26,12 +29,14 @@ function generateDapiManagementMT() {
     }
 
     // derive sponsor wallet address
+    const dapiNameInBytes32 = ethers.utils.formatBytes32String(name);
+    const sponsorAddress = ethers.utils.getAddress(dapiNameInBytes32.slice(0, 42));
     const airnodeHdNode = ethers.utils.HDNode.fromExtendedKey(airseekerXPub);
     const sponsorWalletAddress = airnodeHdNode.derivePath(
-      deriveWalletPathFromSponsorAddress(sponsor, PROTOCOL_ID_AIRSEEKER)
+      deriveWalletPathFromSponsorAddress(sponsorAddress, PROTOCOL_ID_AIRSEEKER)
     ).address;
 
-    return [ethers.utils.formatBytes32String(name), dataFeedId, sponsorWalletAddress];
+    return [dapiNameInBytes32, dataFeedId, sponsorWalletAddress];
   });
 
   const tree = StandardMerkleTree.of(merkleTreeValues, ['bytes32', 'bytes32', 'address']);
