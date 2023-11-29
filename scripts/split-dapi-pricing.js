@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
-const { ethers } = require('ethers');
 const { createDapiPricingMerkleTree } = require('./utils');
 
 async function splitDapiPricing() {
@@ -16,9 +15,8 @@ async function splitDapiPricing() {
     const [dapiName, chainId] = item;
     const name = dapiName.replace('/', '-');
 
-    const treeValues = [ethers.utils.formatBytes32String(dapiName), chainId, item[2], item[3], item[4]];
     const proof = tree.getProof(idx);
-    const leaf = { value: treeValues, proof };
+    const leaf = { value: item, proof };
 
     if (!accumulator[chainId]) {
       accumulator[chainId] = {};
@@ -37,11 +35,12 @@ async function splitDapiPricing() {
   for (const chainId in valuesByChainAndDapiName) {
     for (const dapiName in valuesByChainAndDapiName[chainId]) {
       const valueCollection = valuesByChainAndDapiName[chainId][dapiName];
+      const content = { merkleTreeRoot: tree.root, leaves: valueCollection };
 
       const dirPath = path.join(__dirname, '..', 'data', 'dapi-pricing-merkle-tree-root', chainId);
       const filePath = path.join(dirPath, `${dapiName}.json`);
       await fs.promises.mkdir(dirPath, { recursive: true });
-      fs.writeFileSync(filePath, JSON.stringify(valueCollection, null, 4));
+      fs.writeFileSync(filePath, JSON.stringify(content, null, 4));
     }
   }
 
