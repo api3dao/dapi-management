@@ -1,3 +1,5 @@
+const { ethers } = require('ethers');
+
 const { StandardMerkleTree } = require('@openzeppelin/merkle-tree');
 
 function createDapiFallbackMerkleTree(values) {
