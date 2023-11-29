@@ -16,30 +16,29 @@ jobs:
         fetch-depth: 0
 
     - name: Checkout gh-pages branch
-      run: git checkout gh-pages
+      run: git checkout gh-pages-test
 
-    - name: Copy new files to data folder
+    - name: Copy required files
       run: |
-        git checkout main -- data
+        git checkout main -- data scripts package.json yarn.lock
+        echo "Unstage all files"
+        git reset
 
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '14'
 
-    - name: Install dependencies
-      run: yarn install
-
     - name: Check if there are changes in gh-pages branch
-      id: check_changes
       run: |
         if [ -n "$(git status --porcelain)" ]; then
           echo "Changes detected in gh-pages branch."
+          npm install
           git config user.name github-actions
           git config user.email github-actions@github.com
           echo "Running dapi pricing split script"
           node scripts/split-dapi-pricing.js
-          git add .
+          git add data
           git commit -m "Update data file(s)"
           git push
         else
