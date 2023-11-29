@@ -114,7 +114,7 @@ export default function DapiPricingTree(props: Props) {
             <TableBody>
               {currentTree.merkleTreeValues.values.map((pricing, i) => (
                 <TableRow key={i}>
-                  <TableCell>{pricing[0]}</TableCell>
+                  <TableCell>{ethers.utils.parseBytes32String(pricing[0])}</TableCell>
                   <TableCell>{pricing[1]}</TableCell>
                   <TableCell>{pricing[2]}</TableCell>
                   <TableCell>{pricing[3]}</TableCell>

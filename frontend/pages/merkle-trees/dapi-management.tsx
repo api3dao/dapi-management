@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ethers } from 'ethers';
 import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
@@ -91,7 +92,7 @@ export default function DapiManagementTree(props: Props) {
             <TableBody>
               {currentTree.merkleTreeValues.values.map((management, i) => (
                 <TableRow key={i}>
-                  <TableCell>{management[0]}</TableCell>
+                  <TableCell>{ethers.utils.parseBytes32String(management[0])}</TableCell>
                   <TableCell>{management[1]}</TableCell>
                   <TableCell>{management[2]}</TableCell>
                 </TableRow>

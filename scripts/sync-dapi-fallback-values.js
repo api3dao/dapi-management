@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const nodaryUtilities = require('@nodary/utilities');
 const { exec } = require('child_process');
+const { ethers } = require('ethers');
+const nodaryUtilities = require('@nodary/utilities');
 const { createDapiFallbackMerkleTree } = require('./utils');
 
 async function syncDapiFallbackValues() {
@@ -42,7 +43,7 @@ const ONE_DAY_IN_SECONDS = 24 * 60 * 60;
 function getNodaryFallbackTree() {
   const values = nodaryUtilities.nodaryFeeds.map((nodaryFeed) => {
     return [
-      nodaryFeed.name,
+      ethers.utils.formatBytes32String(nodaryFeed.name),
       nodaryUtilities.computeFeedId(nodaryFeed.name),
       nodaryUtilities.computeSponsorWalletAddress(nodaryFeed.name, ONE_PERCENT_NORMALIZED, 0, ONE_DAY_IN_SECONDS),
     ];
