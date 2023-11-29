@@ -31,9 +31,9 @@ jobs:
 
     - name: Install dependencies
       run: |
-      if [ -n "$(git status data scripts/split-dapi-pricing.js)" ]; then
-        yarn install --frozen-lockfile
-      fi
+        if [ -n "$(git status data scripts/split-dapi-pricing.js)" ]; then
+          yarn install --frozen-lockfile
+        fi
 
     - name: Check if there are changes in gh-pages branch
       run: |
