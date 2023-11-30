@@ -2,7 +2,7 @@ const fs = require('fs');
 const { ethers } = require('ethers');
 const { deriveBeaconSetId } = require('./utils');
 const { StandardMerkleTree } = require('@openzeppelin/merkle-tree');
-const { getAirnodeAddressByAlias, deriveDataFeedId } = require('api-integrations');
+const { getAirnodeAddressByAlias, deriveDataFeedId } = require('@api3/api-integrations');
 const { deriveWalletPathFromSponsorAddress } = require('@api3/airnode-node/dist/src/evm');
 
 const MT_OUTPUT_PATH = './data/dapi-management-merkle-tree-root/current-hash.json';
