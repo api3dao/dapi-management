@@ -49,7 +49,7 @@ function generateDapiManagementMT() {
     hash: tree.root,
     signatures: {},
     merkleTreeValues: {
-      values: merkleTreeValues
+      values: merkleTreeValues,
     },
   };
 
