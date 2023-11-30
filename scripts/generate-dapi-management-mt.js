@@ -13,7 +13,10 @@ function generateDapiManagementMT() {
   const { airseekerXPub } = JSON.parse(fs.readFileSync('./data/airseeker.json').toString());
   // save the previous hash
   const previousDapiManagementMT = JSON.parse(fs.readFileSync(MT_OUTPUT_PATH).toString());
-  fs.writeFileSync(MT_OUTPUT_PATH.replace("current-hash", "previous-hash"), JSON.stringify(previousDapiManagementMT, null, 2));
+  fs.writeFileSync(
+    MT_OUTPUT_PATH.replace('current-hash', 'previous-hash'),
+    JSON.stringify(previousDapiManagementMT, null, 2)
+  );
 
   const merkleTreeValues = dapis.map(({ name, providers }) => {
     // derive data feed ID
