@@ -341,7 +341,7 @@ describe('HashRegistry', function () {
               expect(hashAfter.timestamp).to.equal(timestamp);
             });
           });
-          context('Timestamp not larger', function () {
+          context('Timestamp not more recent', function () {
             it('reverts', async function () {
               const { roles, hashRegistry, dapiManagementMerkleTreeRootHashType, root, timestamp, signatures } =
                 await helpers.loadFixture(deploy);
@@ -366,7 +366,7 @@ describe('HashRegistry', function () {
                 .withArgs(dapiManagementMerkleTreeRootHashType, root, timestamp);
               await expect(
                 hashRegistry.registerHash(dapiManagementMerkleTreeRootHashType, root, timestamp, signatures)
-              ).to.be.revertedWith('Timestamp not larger');
+              ).to.be.revertedWith('Timestamp not more recent');
             });
           });
         });

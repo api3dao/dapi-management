@@ -112,7 +112,10 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         bytes[] calldata signatures
     ) external override {
         require(timestamp <= block.timestamp, "Timestamp from future");
-        require(timestamp > hashes[hashType].timestamp, "Timestamp not larger");
+        require(
+            timestamp > hashes[hashType].timestamp,
+            "Timestamp not more recent"
+        );
         EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
             hashType
         ];
