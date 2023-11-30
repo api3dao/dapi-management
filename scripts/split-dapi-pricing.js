@@ -12,7 +12,7 @@ async function splitDapiPricing() {
   const currentHashData = JSON.parse(fs.readFileSync(currentHashPath, 'utf8'));
   const { merkleTreeValues, ...metadata } = currentHashData;
 
-  const tree = createDapiPricingMerkleTree(merkleTreeValues);
+  const tree = createDapiPricingMerkleTree(merkleTreeValues.values);
   let valuesByChainAndDapiName = {};
   for (const [idx, item] of tree.entries()) {
     const [hashedDapiName, chainId] = item;
