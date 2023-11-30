@@ -114,7 +114,7 @@ contract DapiDataRegistry is
     ) external override {
         require(airnode != address(0), "Airnode is zero");
         require(
-            IHashRegistry(hashRegistry).hashTypeToHash(
+            IHashRegistry(hashRegistry).getHashValue(
                 SIGNED_API_URL_MERKLE_TREE_ROOT_HASH_TYPE
             ) == root,
             "Root has not been registered"
@@ -221,7 +221,7 @@ contract DapiDataRegistry is
         require(dataFeedId != bytes32(0), "Data feed ID zero");
         require(sponsorWallet != address(0), "Sponsor wallet is zero");
         require(
-            IHashRegistry(hashRegistry).hashTypeToHash(
+            IHashRegistry(hashRegistry).getHashValue(
                 DAPI_MANAGEMENT_MERKLE_TREE_ROOT_HASH_TYPE
             ) == root,
             "Root has not been registered"
@@ -293,7 +293,7 @@ contract DapiDataRegistry is
         require(sponsorWallet != address(0), "Sponsor wallet is zero");
         require(dapis.contains(dapiName), "dAPI name has not been added");
         require(
-            IHashRegistry(hashRegistry).hashTypeToHash(
+            IHashRegistry(hashRegistry).getHashValue(
                 DAPI_MANAGEMENT_MERKLE_TREE_ROOT_HASH_TYPE
             ) == root,
             "Root has not been registered"

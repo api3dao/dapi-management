@@ -24,10 +24,12 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     using ECDSA for bytes32;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    /// @notice Hashes by type (i.e. a merkle tree root, etc)
-    mapping(bytes32 => bytes32) public override hashTypeToHash;
-    /// @notice Timestamps representing when each hash was signed
-    mapping(bytes32 => uint256) public override hashTypeToTimestamp;
+    struct Hash {
+        bytes32 value;
+        uint256 timestamp;
+    }
+
+    mapping(bytes32 => Hash) public override hashes;
 
     mapping(bytes32 => EnumerableSet.AddressSet) private _hashTypeToSigners;
 
@@ -110,10 +112,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         bytes[] calldata signatures
     ) external override {
         require(timestamp <= block.timestamp, "Timestamp from future");
-        require(
-            timestamp > hashTypeToTimestamp[hashType],
-            "Timestamp not larger"
-        );
+        require(timestamp > hashes[hashType].timestamp, "Timestamp not larger");
         EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
             hashType
         ];
@@ -128,8 +127,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
                 "Signature mismatch"
             );
         }
-        hashTypeToHash[hashType] = hash;
-        hashTypeToTimestamp[hashType] = timestamp;
+        hashes[hashType] = Hash({value: hash, timestamp: timestamp});
         emit RegisteredHash(hashType, hash, timestamp);
     }
 
@@ -139,5 +137,11 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         bytes32 hashType
     ) external view override returns (address[] memory signers) {
         signers = _hashTypeToSigners[hashType].values();
+    }
+
+    function getHashValue(
+        bytes32 hashType
+    ) external view override returns (bytes32 value) {
+        value = hashes[hashType].value;
     }
 }

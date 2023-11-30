@@ -80,7 +80,7 @@ contract Api3Market is IApi3Market {
             "Beacons and signed API URL proofs length mismatch"
         );
         require(
-            IHashRegistry(hashRegistry).hashTypeToHash(
+            IHashRegistry(hashRegistry).getHashValue(
                 DAPI_PRICING_MERKLE_TREE_ROOT_HASH_TYPE
             ) == args.priceRoot,
             "Root has not been registered"

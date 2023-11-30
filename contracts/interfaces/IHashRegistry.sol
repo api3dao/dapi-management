@@ -47,11 +47,11 @@ interface IHashRegistry is ISelfMulticall {
         bytes32 hashType
     ) external view returns (address[] memory signers);
 
-    function hashTypeToHash(
+    function getHashValue(
         bytes32 hashType
-    ) external view returns (bytes32 hash);
+    ) external view returns (bytes32 value);
 
-    function hashTypeToTimestamp(
+    function hashes(
         bytes32 hashType
-    ) external view returns (uint256 timestamp);
+    ) external view returns (bytes32 value, uint256 timestamp);
 }

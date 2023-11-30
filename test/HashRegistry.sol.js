@@ -308,8 +308,9 @@ describe('HashRegistry', function () {
                 roles.dapiManagementRootSigner2.address,
                 roles.dapiManagementRootSigner3.address,
               ];
-              expect(await hashRegistry.hashTypeToHash(dapiFallbackHashType)).to.equal(hre.ethers.constants.HashZero);
-              expect(await hashRegistry.hashTypeToTimestamp(dapiFallbackHashType)).to.equal(0);
+              const hashBefore = await hashRegistry.hashes(dapiFallbackHashType);
+              expect(hashBefore.value).to.equal(hre.ethers.constants.HashZero);
+              expect(hashBefore.timestamp).to.equal(0);
               await hashRegistry
                 .connect(roles.owner)
                 .multicall(
@@ -320,8 +321,9 @@ describe('HashRegistry', function () {
               await expect(hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, signatures))
                 .to.emit(hashRegistry, 'RegisteredHash')
                 .withArgs(dapiFallbackHashType, root, timestamp);
-              expect(await hashRegistry.hashTypeToHash(dapiFallbackHashType)).to.equal(root);
-              expect(await hashRegistry.hashTypeToTimestamp(dapiFallbackHashType)).to.equal(timestamp);
+              const hashAfter = await hashRegistry.hashes(dapiFallbackHashType);
+              expect(hashAfter.value).to.equal(root);
+              expect(hashAfter.timestamp).to.equal(timestamp);
             });
           });
           context('Timestamp not larger', function () {
