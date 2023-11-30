@@ -109,6 +109,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         uint256 timestamp,
         bytes[] calldata signatures
     ) external override {
+        require(timestamp <= block.timestamp, "Timestamp from future");
         require(
             timestamp > hashTypeToTimestamp[hashType],
             "Timestamp not larger"
