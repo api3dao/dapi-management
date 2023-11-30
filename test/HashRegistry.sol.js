@@ -402,7 +402,7 @@ describe('HashRegistry', function () {
       it('reverts', async function () {
         const { hashRegistry, dapiFallbackHashType, root, timestamp } = await helpers.loadFixture(deploy);
         await expect(hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, [])).to.be.revertedWith(
-          'Signers not initialized'
+          'Signers not defined'
         );
       });
     });

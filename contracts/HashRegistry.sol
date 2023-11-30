@@ -117,7 +117,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
             hashType
         ];
         uint256 signersCount = _signers.length();
-        require(signersCount != 0, "Signers not initialized");
+        require(signersCount != 0, "Signers not defined");
         for (uint256 ind = 0; ind < signersCount; ind++) {
             require(
                 (
