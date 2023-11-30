@@ -48,7 +48,9 @@ function generateDapiManagementMT() {
     timestamp: Math.floor(Date.now() / 1000),
     hash: tree.root,
     signatures: {},
-    merkleTreeValues: merkleTreeValues,
+    merkleTreeValues: {
+      values: merkleTreeValues
+    },
   };
 
   fs.writeFileSync(MT_OUTPUT_PATH, JSON.stringify(dapiManagementMT, null, 2));
