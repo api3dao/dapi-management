@@ -82,6 +82,8 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     /// must be considered when trying to register a new hash since signatures
     /// are expected to be received in the same order of the signers stored in
     /// the contract
+    /// In the case that all signers are removed, subsequent registerHash() calls
+    /// will fail until new signers are added
     /// @param hashType Hash representing a hash type
     /// @param signer // Signer address
     function removeSigner(
