@@ -74,7 +74,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         ];
         require(_signers.add(signer), "Duplicate signer address");
         signers = _signers.values();
-        emit AddedSigner(hashType, signer);
+        emit AddedSigner(hashType, signer, signers);
     }
 
     /// @notice Called by the owner to remove a signer from the address set
@@ -95,7 +95,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         ];
         require(_signers.remove(signer), "Signer does not exist");
         signers = _signers.values();
-        emit RemovedSigner(hashType, signer);
+        emit RemovedSigner(hashType, signer, signers);
     }
 
     /// @notice Called to register a new hash for a type

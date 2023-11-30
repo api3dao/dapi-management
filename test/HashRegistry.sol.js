@@ -100,7 +100,9 @@ describe('HashRegistry', function () {
             hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
           )
             .to.emit(hashRegistry, 'AddedSigner')
-            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
+            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address, [
+              roles.dapiFallbackRootSigner1.address,
+            ]);
           await expect(
             hashRegistry
               .connect(roles.owner)
@@ -134,7 +136,9 @@ describe('HashRegistry', function () {
                 hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
               )
                 .to.emit(hashRegistry, 'AddedSigner')
-                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
+                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address, [
+                  roles.dapiFallbackRootSigner1.address,
+                ]);
               expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([
                 roles.dapiFallbackRootSigner1.address,
               ]);
@@ -142,7 +146,10 @@ describe('HashRegistry', function () {
                 hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address)
               )
                 .to.emit(hashRegistry, 'AddedSigner')
-                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address);
+                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address, [
+                  roles.dapiFallbackRootSigner1.address,
+                  roles.dapiFallbackRootSigner2.address,
+                ]);
               expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([
                 roles.dapiFallbackRootSigner1.address,
                 roles.dapiFallbackRootSigner2.address,
@@ -157,7 +164,9 @@ describe('HashRegistry', function () {
                 hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
               )
                 .to.emit(hashRegistry, 'AddedSigner')
-                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
+                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address, [
+                  roles.dapiFallbackRootSigner1.address,
+                ]);
               await expect(
                 hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
               ).to.be.revertedWith('Duplicate signer address');
@@ -201,29 +210,37 @@ describe('HashRegistry', function () {
           const { roles, hashRegistry, dapiFallbackHashType } = await helpers.loadFixture(deploy);
           const signers = [roles.dapiFallbackRootSigner1, roles.dapiFallbackRootSigner2, roles.dapiFallbackRootSigner3];
           expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([]);
+          const expectedSigners = [];
           for (const signer of signers) {
+            expectedSigners.push(signer.address);
             await expect(hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, signer.address))
               .to.emit(hashRegistry, 'AddedSigner')
-              .withArgs(dapiFallbackHashType, signer.address);
+              .withArgs(dapiFallbackHashType, signer.address, expectedSigners);
           }
           // remove from the middle
           await expect(
             hashRegistry.connect(roles.owner).removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address)
           )
             .to.emit(hashRegistry, 'RemovedSigner')
-            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address);
+            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address, [
+              roles.dapiFallbackRootSigner1.address,
+              roles.dapiFallbackRootSigner3.address,
+            ]);
+
           // remove at the end
           await expect(
             hashRegistry.connect(roles.owner).removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner3.address)
           )
             .to.emit(hashRegistry, 'RemovedSigner')
-            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner3.address);
+            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner3.address, [
+              roles.dapiFallbackRootSigner1.address,
+            ]);
           // remove remaining signer
           await expect(
             hashRegistry.connect(roles.owner).removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
           )
             .to.emit(hashRegistry, 'RemovedSigner')
-            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
+            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address, []);
         });
       });
       context('Signer does not exist', function () {
@@ -237,7 +254,9 @@ describe('HashRegistry', function () {
             hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
           )
             .to.emit(hashRegistry, 'AddedSigner')
-            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
+            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address, [
+              roles.dapiFallbackRootSigner1.address,
+            ]);
           await expect(
             hashRegistry.connect(roles.owner).removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address)
           ).to.be.revertedWith('Signer does not exist');
