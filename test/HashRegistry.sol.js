@@ -394,7 +394,7 @@ describe('HashRegistry', function () {
             );
           await expect(
             hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, signatures.slice(1))
-          ).to.be.revertedWith('Invalid number of signatures');
+          ).to.be.revertedWith('Signature mismatch');
         });
       });
     });

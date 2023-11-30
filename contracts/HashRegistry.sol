@@ -118,10 +118,6 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         ];
         uint256 signersCount = _signers.length();
         require(signersCount != 0, "Signers not initialized");
-        require(
-            signatures.length == signersCount,
-            "Invalid number of signatures"
-        );
         for (uint256 ind = 0; ind < signersCount; ind++) {
             require(
                 (
