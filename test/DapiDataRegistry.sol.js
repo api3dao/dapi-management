@@ -61,8 +61,8 @@ describe('DapiDataRegistry', function () {
       'deployer',
       'manager',
       'owner',
-      'dapiFallbackV2',
       'api3MarketContract',
+      'dapiRemover',
       'rootSigner1',
       'rootSigner2',
       'rootSigner3',
@@ -120,8 +120,7 @@ describe('DapiDataRegistry', function () {
       .initializeRoleAndGrantToSender(dapiDataRegistryAdminRole, dapiRemoverRoleDescription);
 
     await accessControlRegistry.connect(roles.manager).grantRole(dapiAdderRole, roles.api3MarketContract.address);
-    await accessControlRegistry.connect(roles.manager).grantRole(dapiAdderRole, roles.dapiFallbackV2.address);
-    await accessControlRegistry.connect(roles.manager).grantRole(dapiRemoverRole, roles.dapiFallbackV2.address);
+    await accessControlRegistry.connect(roles.manager).grantRole(dapiRemoverRole, roles.dapiRemover.address);
 
     await accessControlRegistry
       .connect(roles.manager)
@@ -545,31 +544,6 @@ describe('DapiDataRegistry', function () {
                       hre.ethers.utils.keccak256(hre.ethers.utils.defaultAbiCoder.encode(['bytes32[]'], [beaconIds]))
                     ).to.deep.equal(beaconSetId);
                     expect(signedApiUrls).to.deep.equal(apiTreeValues.map(([, url]) => url));
-
-                    // dapiFallbackV2 was also granted the dAPI adder role
-                    await expect(
-                      dapiDataRegistry
-                        .connect(roles.dapiFallbackV2)
-                        .addDapi(
-                          dapiName,
-                          beaconSetId,
-                          sponsorWallet,
-                          deviationThresholdInPercentage,
-                          deviationReference,
-                          heartbeatInterval,
-                          dapiTree.root,
-                          dapiTree.getProof(dapiTreeValue)
-                        )
-                    )
-                      .to.emit(dapiDataRegistry, 'AddedDapi')
-                      .withArgs(
-                        dapiName,
-                        beaconSetId,
-                        sponsorWallet,
-                        deviationThresholdInPercentage,
-                        deviationReference,
-                        heartbeatInterval
-                      );
                   });
                 });
                 context('Proof is not valid', function () {
@@ -1191,9 +1165,9 @@ describe('DapiDataRegistry', function () {
                 dapiTree.getProof(dapiTreeValue)
               );
 
-            await expect(dapiDataRegistry.connect(roles.dapiFallbackV2).removeDapi(dapiName))
+            await expect(dapiDataRegistry.connect(roles.dapiRemover).removeDapi(dapiName))
               .to.emit(dapiDataRegistry, 'RemovedDapi')
-              .withArgs(dapiName, roles.dapiFallbackV2.address);
+              .withArgs(dapiName, roles.dapiRemover.address);
           });
         });
         context('dAPI name has not been added', function () {
@@ -1201,7 +1175,7 @@ describe('DapiDataRegistry', function () {
             const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
             await expect(
-              dapiDataRegistry.connect(roles.dapiFallbackV2).removeDapi(generateRandomBytes32())
+              dapiDataRegistry.connect(roles.dapiRemover).removeDapi(generateRandomBytes32())
             ).to.be.revertedWith('dAPI name has not been added');
           });
         });
@@ -1221,7 +1195,7 @@ describe('DapiDataRegistry', function () {
         const { roles, dapiDataRegistry } = await helpers.loadFixture(deploy);
 
         await expect(
-          dapiDataRegistry.connect(roles.dapiFallbackV2).removeDapi(hre.ethers.constants.HashZero)
+          dapiDataRegistry.connect(roles.dapiRemover).removeDapi(hre.ethers.constants.HashZero)
         ).to.be.revertedWith('dAPI name has not been added');
       });
     });
