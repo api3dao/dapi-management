@@ -17,9 +17,7 @@ import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
   signatures: z.record(z.string()),
-  merkleTreeValues: z.object({
-    values: z.array(z.tuple([z.string(), z.string()])),
-  }),
+  merkleTreeValues: z.array(z.tuple([z.string(), z.string()])),
 });
 
 export async function getServerSideProps() {
@@ -46,7 +44,7 @@ type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 export default function SignedApiUrlTree(props: Props) {
   const { currentTree, signers } = props;
 
-  const merkleTree = createSignedApiUrlMerkleTree(currentTree.merkleTreeValues.values);
+  const merkleTree = createSignedApiUrlMerkleTree(currentTree.merkleTreeValues);
 
   const { signRoot, isSigning } = useTreeSigner('Signed API URL Merkle tree', merkleTree.root, currentTree.timestamp);
 
@@ -88,7 +86,7 @@ export default function SignedApiUrlTree(props: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentTree.merkleTreeValues.values.map((rowValues, i) => (
+              {currentTree.merkleTreeValues.map((rowValues, i) => (
                 <TableRow key={i}>
                   <TableCell>{rowValues[0]}</TableCell>
                   <TableCell>{rowValues[1]}</TableCell>

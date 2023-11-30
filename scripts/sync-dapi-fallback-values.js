@@ -27,7 +27,7 @@ async function syncDapiFallbackValues() {
       timestamp: Math.floor(new Date().getTime() / 1000),
       hash: tree.root,
       signatures: {},
-      merkleTreeValues: { values },
+      merkleTreeValues: values,
     };
     fs.writeFileSync(currentHashPath, JSON.stringify(merkleTeeData, null, 4));
 
