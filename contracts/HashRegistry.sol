@@ -39,7 +39,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     /// @notice Called by the owner to set the hash signers
     /// @param hashType Hash representing a hash type
     /// @param signers Hash signers
-    function setUpSigners(
+    function setSigners(
         bytes32 hashType,
         address[] calldata signers
     ) external override onlyOwner {
@@ -47,7 +47,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         require(signers.length != 0, "Signers empty");
         require(
             _hashTypeToSigners[hashType].length() == 0,
-            "Signers already initialized"
+            "Signers already set"
         );
         EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
             hashType
@@ -57,7 +57,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
             require(signer != address(0), "Signer address zero");
             require(_signers.add(signer), "Duplicate signer address");
         }
-        emit SetUpSigners(hashType, signers);
+        emit SetSigners(hashType, signers);
     }
 
     /// @notice Called by the owner to add a new signer to the address set
@@ -117,7 +117,7 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
             hashType
         ];
         uint256 signersCount = _signers.length();
-        require(signersCount != 0, "Signers not defined");
+        require(signersCount != 0, "Signers not set");
         for (uint256 ind = 0; ind < signersCount; ind++) {
             require(
                 (

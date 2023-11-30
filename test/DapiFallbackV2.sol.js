@@ -206,7 +206,7 @@ describe('DapiFallbackV2', function () {
       dapiFallbackRootSigners.map(async (rootSigner) => await rootSigner.signMessage(fallbackMessages))
     );
 
-    await hashRegistry.connect(roles.hashRegistryOwner).setUpSigners(
+    await hashRegistry.connect(roles.hashRegistryOwner).setSigners(
       dapiFallbackHashType,
       dapiFallbackRootSigners.map((rootSigner) => rootSigner.address)
     );
@@ -243,7 +243,7 @@ describe('DapiFallbackV2', function () {
     const priceSignatures = await Promise.all(
       priceRootSigners.map(async (rootSigner) => await rootSigner.signMessage(priceMessages))
     );
-    await hashRegistry.connect(roles.hashRegistryOwner).setUpSigners(
+    await hashRegistry.connect(roles.hashRegistryOwner).setSigners(
       priceHashType,
       priceRootSigners.map((rootSigner) => rootSigner.address)
     );
@@ -284,7 +284,7 @@ describe('DapiFallbackV2', function () {
       dapiFallbackRootSigners.map(async (rootSigner) => await rootSigner.signMessage(dapiMessages))
     );
 
-    await hashRegistry.connect(roles.hashRegistryOwner).setUpSigners(
+    await hashRegistry.connect(roles.hashRegistryOwner).setSigners(
       dapiHashType,
       dapiFallbackRootSigners.map((rootSigner) => rootSigner.address)
     );

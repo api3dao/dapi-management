@@ -139,7 +139,7 @@ describe('Api3Market', function () {
     const apiTreeRootSignatures = await Promise.all(
       apiTreeRootSigners.map(async (rootSigner) => await rootSigner.signMessage(apiMessage))
     );
-    await hashRegistry.connect(roles.hashRegistryOwner).setUpSigners(
+    await hashRegistry.connect(roles.hashRegistryOwner).setSigners(
       apiHashType,
       apiTreeRootSigners.map((rootSigner) => rootSigner.address)
     );
@@ -178,7 +178,7 @@ describe('Api3Market', function () {
     const dapiTreeRootSignatures = await Promise.all(
       dapiTreeRootSigners.map(async (rootSigner) => await rootSigner.signMessage(dapiMessages))
     );
-    await hashRegistry.connect(roles.hashRegistryOwner).setUpSigners(
+    await hashRegistry.connect(roles.hashRegistryOwner).setSigners(
       dapiHashType,
       dapiTreeRootSigners.map((rootSigner) => rootSigner.address)
     );
@@ -223,7 +223,7 @@ describe('Api3Market', function () {
     const priceSignatures = await Promise.all(
       priceRootSigners.map(async (rootSigner) => await rootSigner.signMessage(priceMessage))
     );
-    await hashRegistry.connect(roles.hashRegistryOwner).setUpSigners(
+    await hashRegistry.connect(roles.hashRegistryOwner).setSigners(
       priceHashType,
       priceRootSigners.map((rootSigner) => rootSigner.address)
     );

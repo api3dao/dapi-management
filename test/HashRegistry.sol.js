@@ -75,7 +75,7 @@ describe('HashRegistry', function () {
     });
   });
 
-  describe('setUpSigners', function () {
+  describe('setSigners', function () {
     context('Signers is not emtpy', function () {
       context('Hash type signers is empty', function () {
         it('set up signers', async function () {
@@ -86,13 +86,13 @@ describe('HashRegistry', function () {
             roles.dapiFallbackRootSigner2.address,
             roles.dapiFallbackRootSigner3.address,
           ];
-          await expect(hashRegistry.connect(roles.owner).setUpSigners(dapiFallbackHashType, signers))
-            .to.emit(hashRegistry, 'SetUpSigners')
+          await expect(hashRegistry.connect(roles.owner).setSigners(dapiFallbackHashType, signers))
+            .to.emit(hashRegistry, 'SetSigners')
             .withArgs(dapiFallbackHashType, signers);
           expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal(signers);
         });
       });
-      context('Signers already initialized', function () {
+      context('Signers already set', function () {
         it('reverts', async function () {
           const { roles, hashRegistry, dapiFallbackHashType } = await helpers.loadFixture(deploy);
           expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([]);
@@ -106,18 +106,18 @@ describe('HashRegistry', function () {
           await expect(
             hashRegistry
               .connect(roles.owner)
-              .setUpSigners(dapiFallbackHashType, [
+              .setSigners(dapiFallbackHashType, [
                 roles.dapiFallbackRootSigner2.address,
                 roles.dapiFallbackRootSigner3.address,
               ])
-          ).to.be.revertedWith('Signers already initialized');
+          ).to.be.revertedWith('Signers already set');
         });
       });
     });
     context('Signers is emtpy', function () {
       it('reverts', async function () {
         const { roles, hashRegistry } = await helpers.loadFixture(deploy);
-        await expect(hashRegistry.connect(roles.owner).setUpSigners(generateRandomBytes32(), [])).to.be.revertedWith(
+        await expect(hashRegistry.connect(roles.owner).setSigners(generateRandomBytes32(), [])).to.be.revertedWith(
           'Signers empty'
         );
       });
@@ -402,7 +402,7 @@ describe('HashRegistry', function () {
       it('reverts', async function () {
         const { hashRegistry, dapiFallbackHashType, root, timestamp } = await helpers.loadFixture(deploy);
         await expect(hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, [])).to.be.revertedWith(
-          'Signers not defined'
+          'Signers not set'
         );
       });
     });
