@@ -33,6 +33,14 @@
     ethers "^5.7.2"
     lodash "^4.17.21"
 
+"@api3/airnode-abi@^0.12.0":
+  version "0.12.0"
+  resolved "https://registry.yarnpkg.com/@api3/airnode-abi/-/airnode-abi-0.12.0.tgz#5f0eba1e39a9a70f31560d6a60a9d620f9eedf77"
+  integrity sha512-UCFYZMxSZU/12fEK8SFdn+C6Vh+SBuB08PpD8QEEvOe8Rfzof541GphES46XHDpwQRd673OfgJRO9iySOSpB+Q==
+  dependencies:
+    ethers "^5.7.2"
+    lodash "^4.17.21"
+
 "@api3/airnode-protocol-v1@^2.10.0":
   version "2.10.0"
   resolved "https://registry.yarnpkg.com/@api3/airnode-protocol-v1/-/airnode-protocol-v1-2.10.0.tgz#b03cf02c7b65eed5b57cd37e24d91dbcbff62da6"
@@ -40,12 +48,30 @@
   dependencies:
     "@openzeppelin/contracts" "4.8.2"
 
+"@api3/api-integrations@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@api3/api-integrations/-/api-integrations-0.0.1.tgz#026ae7eb30c84dcda058a5e6ee4126fc26262856"
+  integrity sha512-Q/BvP3W38ItmlH5xSdwXYd64bUhSlbOEnnLjPkhXc2w/33Ync099Hba38x5r8bjrVooRDL1J7BYUAbp4h/hDBg==
+  dependencies:
+    "@api3/airnode-abi" "^0.12.0"
+    "@api3/ois" "^2.2.1"
+    ethers "^5.4.2"
+    zod "^3.22.4"
+
 "@api3/chains@^3.5.1":
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/@api3/chains/-/chains-3.5.1.tgz#daf14bffb4fcae1916c197ca66b7942dcf86d13b"
   integrity sha512-AI1/FbLsqJlSiGIEKMMRLCKaV6r6B7uXHBfzVJPY95rIdiHbmwUEGmlD4ikFTsV3nKDO0YDGm7NDnlmPW0aVJQ==
   dependencies:
     zod "^3.22.2"
+
+"@api3/ois@^2.2.1":
+  version "2.3.1"
+  resolved "https://registry.yarnpkg.com/@api3/ois/-/ois-2.3.1.tgz#de80dc1b404f094be9049d2a8fdc0362cdfd7dce"
+  integrity sha512-7TmgEiJn3TrqV2BZGh4fKTF4qX7Q/dyGdQh9L6gj4dHBmoKzfK0eDbwjWR+RokYrd9k4E4whGNxEnzdZr3ubSA==
+  dependencies:
+    lodash "^4.17.21"
+    zod "^3.22.4"
 
 "@api3/promise-utils@^0.4.0":
   version "0.4.0"
@@ -4076,7 +4102,7 @@ ethereumjs-util@^7.1.4:
     ethereum-cryptography "^0.1.3"
     rlp "^2.2.4"
 
-ethers@^5.7.0, ethers@^5.7.1, ethers@^5.7.2:
+ethers@^5.4.2, ethers@^5.7.0, ethers@^5.7.1, ethers@^5.7.2:
   version "5.7.2"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.7.2.tgz#3a7deeabbb8c030d4126b24f84e525466145872e"
   integrity sha512-wswUsmWo1aOK8rR7DIKiWSw9DbLWe6x98Jrn8wcTflTVvaXhAMaB5zGAXy0GYQEQp9iO1iSHWVyARQm11zUtyg==

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { z } from 'zod';
 import { ethers } from 'ethers';
+import { apisData } from '@api3/api-integrations';
 import { CheckIcon } from 'lucide-react';
 import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
@@ -104,7 +105,7 @@ export default function DapiManagementTree(props: Props) {
           <Table className="mt-4">
             <TableHeader sticky>
               <TableRow>
-                <TableHead>dAPI Name</TableHead>
+                <TableHead className="whitespace-nowrap">dAPI Name</TableHead>
                 <TableHead className="min-w-[30ch]">API Providers</TableHead>
                 <TableHead>
                   <Tooltip delayDuration={0} preventCloseOnClick>
@@ -155,7 +156,13 @@ export default function DapiManagementTree(props: Props) {
 
 function getProviders(dapiName: string) {
   const dapiEntry = dapis.find((dapi) => dapi.name === dapiName);
-  return dapiEntry?.providers.join(', ') || 'unknown';
+  return (
+    dapiEntry?.providers
+      .map((alias) => {
+        return apisData[alias as keyof typeof apisData]?.name || alias;
+      })
+      .join(', ') || 'unknown'
+  );
 }
 
 function useCIVerificationToast() {

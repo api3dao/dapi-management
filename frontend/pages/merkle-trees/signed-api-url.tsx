@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getOisTitlesWithAirnodeAddress } from '@api3/api-integrations';
 import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
@@ -9,13 +10,14 @@ import {
   SignatureTable,
   TreeDiff,
 } from '~/components/merkle-tree-elements';
-import { readTreeDataFrom, readSignerDataFrom, createFileDiff } from '~/lib/server/file-utils';
+import { readTreeDataFrom, readSignerDataFrom, createTreeDiff } from '~/lib/server/file-utils';
 import { createSignedApiUrlMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
 
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
+  hash: z.string(),
   signatures: z.record(z.string()),
   merkleTreeValues: z.object({
     values: z.array(z.tuple([z.string(), z.string()])),
@@ -23,19 +25,29 @@ const merkleTreeSchema = z.object({
 });
 
 export async function getServerSideProps() {
-  const { path: currentTreePath, data: currentTree } = readTreeDataFrom({
+  const { data: currentTree } = readTreeDataFrom({
     subfolder: 'signed-api-url-merkle-tree-root',
     file: 'current-hash.json',
     schema: merkleTreeSchema,
   });
-  const { path: previousTreePath, data: previousTree } = readTreeDataFrom({
+  const { data: previousTree } = readTreeDataFrom({
     subfolder: 'signed-api-url-merkle-tree-root',
     file: 'previous-hash.json',
     schema: merkleTreeSchema,
   });
   const { data: signers } = readSignerDataFrom('signed-api-url-merkle-tree-root');
 
-  const diffResult = previousTree ? await createFileDiff(previousTreePath, currentTreePath) : null;
+  const diffResult = previousTree
+    ? await createTreeDiff({
+        subfolder: 'signed-api-url-merkle-tree-root',
+        previousData: previousTree,
+        currentData: currentTree,
+        preProcessor: (values) => {
+          return [getProviders(values[0]), values[0], values[1]];
+        },
+      })
+    : null;
+
   return {
     props: { currentTree, signers, diffResult },
   };
@@ -83,6 +95,7 @@ export default function SignedApiUrlTree(props: Props) {
           <Table className="mt-4">
             <TableHeader sticky>
               <TableRow>
+                <TableHead>API Providers</TableHead>
                 <TableHead>Airnode Address</TableHead>
                 <TableHead>Signed API URL</TableHead>
               </TableRow>
@@ -90,6 +103,7 @@ export default function SignedApiUrlTree(props: Props) {
             <TableBody>
               {currentTree.merkleTreeValues.values.map((rowValues, i) => (
                 <TableRow key={i}>
+                  <TableCell>{getProviders(rowValues[0])}</TableCell>
                   <TableCell>{rowValues[0]}</TableCell>
                   <TableCell>{rowValues[1]}</TableCell>
                 </TableRow>
@@ -103,4 +117,8 @@ export default function SignedApiUrlTree(props: Props) {
       </Tabs>
     </RootLayout>
   );
+}
+
+function getProviders(airnodeAddress: string) {
+  return getOisTitlesWithAirnodeAddress(airnodeAddress)?.join(', ') || 'unknown';
 }

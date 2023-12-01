@@ -77,14 +77,16 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
 }) {
   const { subfolder, currentData, previousData, preProcessor } = options;
 
-  const treeDirPath = join(process.cwd(), '../data/.processed', subfolder);
+  const processedDirPath = join(process.cwd(), '../data/.processed');
+  const metadataPath = join(processedDirPath, 'metadata.json');
+  const treeDirPath = join(processedDirPath, subfolder);
   const processedCurrentHashPath = join(treeDirPath, 'current-hash.json');
   const processedPreviousHashPath = join(treeDirPath, 'previous-hash.json');
+
   if (!existsSync(treeDirPath)) {
     mkdirSync(treeDirPath, { recursive: true });
   }
 
-  const metadataPath = join(process.cwd(), '../data/.processed/metadata.json');
   let metadata: { processedAt: string };
   if (!existsSync(metadataPath)) {
     metadata = { processedAt: '' };
@@ -130,7 +132,8 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
 
   if (hasProcessed) {
     writeFileSync(metadataPath, JSON.stringify({ processedAt: latestCommitHash } as typeof metadata, null, 2));
-    await execute(`yarn prettier --write ${treeDirPath}`);
+    exec(`yarn prettier --write ${metadataPath}`); // No need to wait for this
+    await execute(`yarn prettier --write ${treeDirPath}`); // We wait so that the diff is created with formatted files
   }
 
   return await createFileDiff(processedPreviousHashPath, processedCurrentHashPath);
