@@ -3,8 +3,8 @@ pragma solidity 0.8.18;
 
 import "@api3/airnode-protocol-v1/contracts/utils/SelfMulticall.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./interfaces/IHashRegistry.sol";
 
 /// @title Contract that allows users to manage hashes by type which have been
@@ -21,8 +21,8 @@ import "./interfaces/IHashRegistry.sol";
 /// signed following the ERC-191: Signed Data Standard (version 0x45 (E)).
 /// https://eips.ethereum.org/EIPS/eip-191
 contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
-    using ECDSA for bytes32;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using ECDSA for bytes32;
 
     struct Hash {
         bytes32 value;
