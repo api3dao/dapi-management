@@ -103,6 +103,10 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
         string calldata signedApiUrl
     ) external onlyOwner {
         require(airnode != address(0), "Airnode address zero");
+        require(
+            abi.encodePacked(signedApiUrl).length <= 256,
+            "Signed API URL too long"
+        );
         airnodeToSignedApiUrl[airnode] = signedApiUrl;
         emit SetSignedApiUrl(airnode, signedApiUrl);
     }
@@ -124,6 +128,8 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
                 dataFeedId = deriveBeaconId(airnode, templateId);
             } else if (dataFeedDetailsLength >= 256) {
                 // dataFeedId maps to a Beacon set with at least two Beacons
+                // Do not allow more than 21 Beacons
+                require(dataFeedDetailsLength < 2816, "Details data too long");
                 (address[] memory airnodes, bytes32[] memory templateIds) = abi
                     .decode(dataFeedDetails, (address[], bytes32[]));
                 require(
@@ -145,7 +151,7 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
                 }
                 dataFeedId = deriveBeaconSetId(beaconIds);
             } else {
-                revert("Data too short");
+                revert("Details data too short");
             }
             dataFeedIdToDetails[dataFeedId] = dataFeedDetails;
             emit RegisteredDataFeed(dataFeedId, dataFeedDetails);
