@@ -5,6 +5,8 @@ import { exec } from 'child_process';
 import { z } from 'zod';
 import isObject from 'lodash/isObject';
 import isEqual from 'lodash/isEqual';
+import isBefore from 'date-fns/isBefore';
+import addDays from 'date-fns/addDays';
 
 export const execute = promisify(exec);
 
@@ -82,10 +84,10 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
   const processedCurrentHashPath = join(treeDirPath, 'current-hash.json');
   const processedPreviousHashPath = join(treeDirPath, 'previous-hash.json');
 
-  let metadata: { processedAt: string };
+  let metadata: { processedAt: string; commit: string };
   if (!existsSync(treeDirPath)) {
     mkdirSync(treeDirPath, { recursive: true });
-    metadata = { processedAt: '' };
+    metadata = { processedAt: '', commit: '' };
     writeFileSync(metadataPath, JSON.stringify(metadata));
   } else {
     metadata = JSON.parse(readFileSync(metadataPath, 'utf8'));
@@ -109,7 +111,12 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
   };
 
   const syncProcessedData = (processedDataPath: string, treeData: T) => {
-    if (!existsSync(processedDataPath) || metadata.processedAt !== latestCommitHash) {
+    if (
+      !existsSync(processedDataPath) ||
+      metadata.commit !== latestCommitHash ||
+      // We use the cached processed data for a maximum of 1 day
+      (metadata.processedAt && isBefore(new Date(metadata.processedAt), addDays(new Date(), -1)))
+    ) {
       return processAndWriteData(processedDataPath, treeData);
     }
 
@@ -127,7 +134,8 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
   syncProcessedData(processedPreviousHashPath, previousData);
 
   if (hasProcessed) {
-    writeFileSync(metadataPath, JSON.stringify({ processedAt: latestCommitHash } as typeof metadata, null, 2));
+    const newMetadata = { processedAt: new Date().toISOString(), commit: latestCommitHash } satisfies typeof metadata;
+    writeFileSync(metadataPath, JSON.stringify(newMetadata, null, 2));
     await execute(`yarn prettier --write ${treeDirPath}`); // We wait so that the diff is created with formatted files
   }
 
