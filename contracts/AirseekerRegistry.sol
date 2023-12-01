@@ -114,45 +114,45 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
     function registerDataFeed(
         bytes calldata dataFeedDetails
     ) external returns (bytes32 dataFeedId) {
+        uint256 dataFeedDetailsLength = dataFeedDetails.length;
+        if (dataFeedDetailsLength == 64) {
+            // dataFeedId maps to a Beacon
+            (address airnode, bytes32 templateId) = abi.decode(
+                dataFeedDetails,
+                (address, bytes32)
+            );
+            dataFeedId = deriveBeaconId(airnode, templateId);
+        } else if (dataFeedDetailsLength >= 256) {
+            // dataFeedId maps to a Beacon set with at least two Beacons
+            // Do not allow more than 21 Beacons
+            require(dataFeedDetailsLength < 2816, "Details data too long");
+            (address[] memory airnodes, bytes32[] memory templateIds) = abi
+                .decode(dataFeedDetails, (address[], bytes32[]));
+            require(
+                abi.encode(airnodes, templateIds).length ==
+                    dataFeedDetailsLength,
+                "Trailing data"
+            );
+            require(
+                airnodes.length == templateIds.length,
+                "Parameter length mismatch"
+            );
+            uint256 beaconCount = airnodes.length;
+            bytes32[] memory beaconIds = new bytes32[](beaconCount);
+            for (uint256 ind = 0; ind < beaconCount; ind++) {
+                beaconIds[ind] = deriveBeaconId(
+                    airnodes[ind],
+                    templateIds[ind]
+                );
+            }
+            dataFeedId = deriveBeaconSetId(beaconIds);
+        } else {
+            revert("Details data too short");
+        }
         if (
             keccak256(dataFeedIdToDetails[dataFeedId]) !=
             keccak256(dataFeedDetails)
         ) {
-            uint256 dataFeedDetailsLength = dataFeedDetails.length;
-            if (dataFeedDetailsLength == 64) {
-                // dataFeedId maps to a Beacon
-                (address airnode, bytes32 templateId) = abi.decode(
-                    dataFeedDetails,
-                    (address, bytes32)
-                );
-                dataFeedId = deriveBeaconId(airnode, templateId);
-            } else if (dataFeedDetailsLength >= 256) {
-                // dataFeedId maps to a Beacon set with at least two Beacons
-                // Do not allow more than 21 Beacons
-                require(dataFeedDetailsLength < 2816, "Details data too long");
-                (address[] memory airnodes, bytes32[] memory templateIds) = abi
-                    .decode(dataFeedDetails, (address[], bytes32[]));
-                require(
-                    abi.encode(airnodes, templateIds).length ==
-                        dataFeedDetailsLength,
-                    "Trailing data"
-                );
-                require(
-                    airnodes.length == templateIds.length,
-                    "Parameter length mismatch"
-                );
-                uint256 beaconCount = airnodes.length;
-                bytes32[] memory beaconIds = new bytes32[](beaconCount);
-                for (uint256 ind = 0; ind < beaconCount; ind++) {
-                    beaconIds[ind] = deriveBeaconId(
-                        airnodes[ind],
-                        templateIds[ind]
-                    );
-                }
-                dataFeedId = deriveBeaconSetId(beaconIds);
-            } else {
-                revert("Details data too short");
-            }
             dataFeedIdToDetails[dataFeedId] = dataFeedDetails;
             emit RegisteredDataFeed(dataFeedId, dataFeedDetails);
         }
