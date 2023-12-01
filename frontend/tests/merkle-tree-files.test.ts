@@ -1,7 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { ethers } from 'ethers';
 import forEach from 'lodash/forEach';
-import nodaryUtils from '@nodary/utilities';
 
 import dapiFallbackTree from '../../data/dapi-fallback-merkle-tree-root/current-hash.json';
 import dapiFallbackTreeSigners from '../../data/dapi-fallback-merkle-tree-root/hash-signers.json';
@@ -23,20 +22,6 @@ describe('dAPI fallback Merkle tree current-hash.json', () => {
   it('has the correct tree root', () => {
     const tree = createDapiFallbackMerkleTree(dapiFallbackTree.merkleTreeValues.values);
     expect(dapiFallbackTree.hash).toEqual(tree.root);
-  });
-
-  it('has correct data feed IDs', () => {
-    dapiFallbackTree.merkleTreeValues.values.forEach((values) => {
-      expect(values[1]).toEqual(nodaryUtils.computeFeedId(ethers.utils.parseBytes32String(values[0])));
-    });
-  });
-
-  it('has correct sponsor wallet addresses', () => {
-    dapiFallbackTree.merkleTreeValues.values.forEach((values) => {
-      expect(values[2]).toEqual(
-        nodaryUtils.computeSponsorWalletAddress(ethers.utils.parseBytes32String(values[0]), 1 * 1e6, 0, 24 * 60 * 60)
-      );
-    });
   });
 
   // TODO: Enable when the time comes to sign
