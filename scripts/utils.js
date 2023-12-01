@@ -1,3 +1,5 @@
+const { ethers } = require('ethers');
+
 const { StandardMerkleTree } = require('@openzeppelin/merkle-tree');
 
 function createDapiFallbackMerkleTree(values) {
@@ -13,7 +15,20 @@ function createDapiPricingMerkleTree(values) {
 }
 
 function createSignedApiUrlMerkleTree(values) {
-  return StandardMerkleTree.of(values, ['address', 'bytes32']);
+  return StandardMerkleTree.of(values, ['address', 'string']);
+}
+
+function getDapiFallbackHashType() {
+  return ethers.utils.solidityKeccak256(['string'], ['dAPI fallback Merkle tree root']);
+}
+function getDapiManagementHashType() {
+  return ethers.utils.solidityKeccak256(['string'], ['dAPI management Merkle tree root']);
+}
+function getDapiPricingHashType() {
+  return ethers.utils.solidityKeccak256(['string'], ['dAPI pricing Merkle tree root']);
+}
+function getSignedApiUrlHashType() {
+  return ethers.utils.solidityKeccak256(['string'], ['Signed API URL Merkle tree root']);
 }
 
 module.exports = {
@@ -21,4 +36,8 @@ module.exports = {
   createDapiManagementMerkleTree,
   createDapiPricingMerkleTree,
   createSignedApiUrlMerkleTree,
+  getDapiFallbackHashType,
+  getDapiManagementHashType,
+  getDapiPricingHashType,
+  getSignedApiUrlHashType,
 };
