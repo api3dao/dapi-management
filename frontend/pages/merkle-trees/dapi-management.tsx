@@ -1,22 +1,29 @@
+import { useEffect } from 'react';
 import { z } from 'zod';
 import { ethers } from 'ethers';
+import { CheckIcon } from 'lucide-react';
 import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
+import { Button } from '~/components/ui/button';
 import {
   TreeStatusBadge,
   TreeRootBadge,
   SignatureTable,
-  TreeDiff,
   SignRootButton,
+  TreeDiff,
 } from '~/components/merkle-tree-elements';
-import { readTreeDataFrom, readSignerDataFrom, createFileDiff } from '~/lib/server/file-utils';
+import { readTreeDataFrom, readSignerDataFrom, createTreeDiff } from '~/lib/server/file-utils';
 import { createDapiManagementMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { InferGetServerSidePropsType } from 'next';
+import { useToast } from '~/components/ui/toast/use-toast';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
+import dapis from '../../../data/dapis.json';
 
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
+  hash: z.string(),
   signatures: z.record(z.string()),
   merkleTreeValues: z.object({
     values: z.array(z.tuple([z.string(), z.string(), z.string()])),
@@ -24,19 +31,30 @@ const merkleTreeSchema = z.object({
 });
 
 export async function getServerSideProps() {
-  const { path: currentTreePath, data: currentTree } = readTreeDataFrom({
+  const { data: currentTree } = readTreeDataFrom({
     subfolder: 'dapi-management-merkle-tree-root',
     file: 'current-hash.json',
     schema: merkleTreeSchema,
   });
-  const { path: previousTreePath, data: previousTree } = readTreeDataFrom({
+  const { data: previousTree } = readTreeDataFrom({
     subfolder: 'dapi-management-merkle-tree-root',
     file: 'previous-hash.json',
     schema: merkleTreeSchema,
   });
   const { data: signers } = readSignerDataFrom('dapi-management-merkle-tree-root');
 
-  const diffResult = previousTree ? await createFileDiff(previousTreePath, currentTreePath) : null;
+  const diffResult = previousTree
+    ? await createTreeDiff({
+        subfolder: 'dapi-management-merkle-tree-root',
+        previousData: previousTree,
+        currentData: currentTree,
+        preProcessor: (values) => {
+          const dapiName = ethers.utils.parseBytes32String(values[0]);
+          return [dapiName, getProviders(dapiName), values[1], values[2]];
+        },
+      })
+    : null;
+
   return {
     props: { currentTree, signers, diffResult },
   };
@@ -58,6 +76,8 @@ export default function DapiManagementTree(props: Props) {
     currentTree.signatures,
     signers
   );
+
+  useCIVerificationToast();
 
   return (
     <RootLayout>
@@ -85,18 +105,43 @@ export default function DapiManagementTree(props: Props) {
             <TableHeader sticky>
               <TableRow>
                 <TableHead>dAPI Name</TableHead>
-                <TableHead>Data Feed ID</TableHead>
-                <TableHead>Sponsor Wallet Address</TableHead>
+                <TableHead className="min-w-[30ch]">API Providers</TableHead>
+                <TableHead>
+                  <Tooltip delayDuration={0} preventCloseOnClick>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" className="group flex h-4 cursor-auto items-center gap-1.5 p-0">
+                        <CheckIcon className="h-4 w-4 text-slate-400 group-hover:text-slate-500" />
+                        Data Feed ID
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>The CI verifies the Data Feed IDs for you</TooltipContent>
+                  </Tooltip>
+                </TableHead>
+                <TableHead>
+                  <Tooltip delayDuration={0} preventCloseOnClick>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" className="group flex h-4 cursor-auto items-center gap-1.5 p-0">
+                        <CheckIcon className="h-4 w-4 text-slate-400 group-hover:text-slate-500" />
+                        Sponsor Wallet Address
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>The CI verifies the Sponsor Wallet Addresses for you</TooltipContent>
+                  </Tooltip>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentTree.merkleTreeValues.values.map((management, i) => (
-                <TableRow key={i}>
-                  <TableCell>{ethers.utils.parseBytes32String(management[0])}</TableCell>
-                  <TableCell>{management[1]}</TableCell>
-                  <TableCell>{management[2]}</TableCell>
-                </TableRow>
-              ))}
+              {currentTree.merkleTreeValues.values.map((rowValues, i) => {
+                const dapiName = ethers.utils.parseBytes32String(rowValues[0]);
+                return (
+                  <TableRow key={i}>
+                    <TableCell>{dapiName}</TableCell>
+                    <TableCell>{getProviders(dapiName)}</TableCell>
+                    <TableCell>{rowValues[1]}</TableCell>
+                    <TableCell>{rowValues[2]}</TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TabsContent>
@@ -106,4 +151,56 @@ export default function DapiManagementTree(props: Props) {
       </Tabs>
     </RootLayout>
   );
+}
+
+function getProviders(dapiName: string) {
+  const dapiEntry = dapis.find((dapi) => dapi.name === dapiName);
+  return dapiEntry?.providers.join(', ') || 'unknown';
+}
+
+function useCIVerificationToast() {
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const acked = window.localStorage.getItem('dapi-management-ci-ack');
+    if (acked === 'true') {
+      return;
+    }
+
+    let dismiss: () => void;
+    const timeoutId = setTimeout(() => {
+      const result = toast({
+        title: 'The CI verifies the following for you',
+        description: (
+          <div className="w-full">
+            <ul className="mb-6 mt-2 flex flex-col gap-1.5 pl-3 text-sm marker:text-teal-400">
+              <li className="inline-flex items-center">
+                <CheckIcon className="h-4 text-teal-400" /> Data Feed IDs
+              </li>
+              <li className="inline-flex items-center">
+                <CheckIcon className="h-4 text-teal-400" /> Sponsor Wallet Addresses
+              </li>
+            </ul>
+            <Button
+              className="w-[10ch]"
+              onClick={() => {
+                dismiss();
+                window.localStorage.setItem('dapi-management-ci-ack', 'true');
+              }}
+            >
+              Got it
+            </Button>
+          </div>
+        ),
+        duration: 10000000, // Keep it open
+      });
+
+      dismiss = result.dismiss;
+    }, 1000);
+
+    return () => {
+      dismiss?.();
+      clearTimeout(timeoutId);
+    };
+  }, [toast]);
 }

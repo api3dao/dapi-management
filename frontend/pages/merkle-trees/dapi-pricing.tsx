@@ -55,7 +55,7 @@ export async function getServerSideProps() {
             formatUpdateParams(values[2]),
             formatDuration(values[3]),
             ethers.utils.commify(ethers.utils.formatEther(values[4])),
-          ] as const;
+          ];
         },
       })
     : null;
