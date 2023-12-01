@@ -1,6 +1,5 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import forEach from 'lodash/forEach';
 import { Diff2HtmlUI } from 'diff2html/lib/ui/js/diff2html-ui';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip';
 import { Toggle } from '~/components/ui/toggle';
@@ -37,35 +36,33 @@ export function TreeDiff(props: TreeDiffProps) {
       ui.draw();
       ui.highlightCode();
 
-      const roots: [Root, ReactNode][] = [];
-      forEach(addressBook, (alias, value) => {
-        const xpath = `//span[text()='${value}' or text()='"${value}"']`;
-        const result = document.evaluate(xpath, element, null, XPathResult.ANY_TYPE, null);
-        let matchingElement = result.iterateNext() as HTMLElement | null;
-
-        while (matchingElement) {
-          const root = createRoot(matchingElement);
-          const wrapInQuotes = matchingElement.textContent!.startsWith('"');
-          const reactNode = (
-            <TooltipProvider>
-              <DiffAlias alias={alias} value={value} wrapInQuotes={wrapInQuotes} />
-            </TooltipProvider>
-          );
-          roots.push([root, reactNode]);
-
-          matchingElement = result.iterateNext() as HTMLElement | null;
+      const elements = document.querySelectorAll('.hljs-attr:not(:has(*))');
+      const roots: Root[] = [];
+      elements.forEach((el) => {
+        const textContent = el.textContent!;
+        if (textContent === '"') {
+          return;
         }
-      });
 
-      // We can't mutate the DOM while the xpath result is still iterating through matched elements, so we
-      // render afterward
-      roots.forEach(([root, reactNode]) => {
-        root.render(reactNode);
+        const textToProcess = textContent.replaceAll('"', '');
+        const addressAlias = addressBook[textToProcess as keyof typeof addressBook];
+        if (!addressAlias) {
+          return;
+        }
+
+        const wrapInQuotes = textContent.startsWith('"');
+        const root = createRoot(el);
+        root.render(
+          <DiffTextWithTooltip content={textToProcess} wrapInQuotes={wrapInQuotes}>
+            {addressAlias}
+          </DiffTextWithTooltip>
+        );
+        roots.push(root);
       });
 
       return () => {
         // We run this in a timeout to avoid a false positive warning from React
-        setTimeout(() => roots.forEach(([root]) => root.unmount()), 0);
+        setTimeout(() => roots.forEach((root) => root.unmount()), 0);
       };
     }
   }, [diffResult, mode]);
@@ -115,27 +112,29 @@ export function TreeDiff(props: TreeDiffProps) {
 }
 
 interface DiffAliasProps {
-  alias: string;
-  value: string;
+  children: ReactNode;
+  content: string;
   wrapInQuotes: boolean;
 }
 
-function DiffAlias(props: DiffAliasProps) {
-  const { alias, value, wrapInQuotes } = props;
+function DiffTextWithTooltip(props: DiffAliasProps) {
+  const { children, content, wrapInQuotes } = props;
   return (
-    <Tooltip delayDuration={0} preventCloseOnClick>
-      {wrapInQuotes && '"'}
-      <TooltipTrigger asChild>
-        <span
-          className="cursor-default underline decoration-transparent/40 underline-offset-2 hover:decoration-transparent/70"
-          role="button"
-          tabIndex={0}
-        >
-          {alias}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>{value}</TooltipContent>
-      {wrapInQuotes && '"'}
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip delayDuration={0} preventCloseOnClick>
+        {wrapInQuotes && '"'}
+        <TooltipTrigger asChild>
+          <span
+            className="cursor-default underline decoration-transparent/40 underline-offset-2 hover:decoration-transparent/70"
+            role="button"
+            tabIndex={0}
+          >
+            {children}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{content}</TooltipContent>
+        {wrapInQuotes && '"'}
+      </Tooltip>
+    </TooltipProvider>
   );
 }

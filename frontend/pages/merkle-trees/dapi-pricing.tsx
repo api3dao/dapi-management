@@ -111,7 +111,7 @@ export default function DapiPricingTree(props: Props) {
             <TableHeader sticky>
               <TableRow>
                 <TableHead>dAPI Name</TableHead>
-                <TableHead>Chain ID</TableHead>
+                <TableHead>Chain</TableHead>
                 <TableHead>dAPI Update Parameters</TableHead>
                 <TableHead>Duration (Days)</TableHead>
                 <TableHead>

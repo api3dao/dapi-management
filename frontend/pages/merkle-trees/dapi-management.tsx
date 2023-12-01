@@ -51,7 +51,7 @@ export async function getServerSideProps() {
         currentData: currentTree,
         preProcessor: (values) => {
           const dapiName = ethers.utils.parseBytes32String(values[0]);
-          return [dapiName, getProviders(dapiName), values[1], values[2]];
+          return [dapiName, getProviders(dapiName), values[2]];
         },
       })
     : null;
@@ -112,17 +112,6 @@ export default function DapiManagementTree(props: Props) {
                     <TooltipTrigger asChild>
                       <Button variant="ghost" className="group flex h-4 cursor-auto items-center gap-1.5 p-0">
                         <CheckIcon className="h-4 w-4 text-slate-400 group-hover:text-slate-500" />
-                        Data Feed ID
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>The CI verifies the Data Feed IDs for you</TooltipContent>
-                  </Tooltip>
-                </TableHead>
-                <TableHead>
-                  <Tooltip delayDuration={0} preventCloseOnClick>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" className="group flex h-4 cursor-auto items-center gap-1.5 p-0">
-                        <CheckIcon className="h-4 w-4 text-slate-400 group-hover:text-slate-500" />
                         Sponsor Wallet Address
                       </Button>
                     </TooltipTrigger>
@@ -138,7 +127,6 @@ export default function DapiManagementTree(props: Props) {
                   <TableRow key={i}>
                     <TableCell>{dapiName}</TableCell>
                     <TableCell>{getProviders(dapiName)}</TableCell>
-                    <TableCell>{rowValues[1]}</TableCell>
                     <TableCell>{rowValues[2]}</TableCell>
                   </TableRow>
                 );

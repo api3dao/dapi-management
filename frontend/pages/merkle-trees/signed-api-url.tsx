@@ -43,7 +43,7 @@ export async function getServerSideProps() {
         previousData: previousTree,
         currentData: currentTree,
         preProcessor: (values) => {
-          return [getProviders(values[0]), values[0], values[1]];
+          return [getProviders(values[0]), values[1]];
         },
       })
     : null;
@@ -92,11 +92,10 @@ export default function SignedApiUrlTree(props: Props) {
           <TabsTrigger value="1">Tree Diff</TabsTrigger>
         </TabsList>
         <TabsContent value="0">
-          <Table className="mt-4">
+          <Table className="mt-4 table-fixed">
             <TableHeader sticky>
               <TableRow>
                 <TableHead>API Providers</TableHead>
-                <TableHead>Airnode Address</TableHead>
                 <TableHead>Signed API URL</TableHead>
               </TableRow>
             </TableHeader>
@@ -104,7 +103,6 @@ export default function SignedApiUrlTree(props: Props) {
               {currentTree.merkleTreeValues.values.map((rowValues, i) => (
                 <TableRow key={i}>
                   <TableCell>{getProviders(rowValues[0])}</TableCell>
-                  <TableCell>{rowValues[0]}</TableCell>
                   <TableCell>{rowValues[1]}</TableCell>
                 </TableRow>
               ))}
