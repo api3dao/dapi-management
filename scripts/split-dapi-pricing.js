@@ -29,7 +29,6 @@ async function splitDapiPricing() {
     if (!valuesByChainAndDapiName[chainId][name]) {
       valuesByChainAndDapiName[chainId][name] = [leaf];
     } else {
-      // Clone the existing array and append the new leaf
       valuesByChainAndDapiName[chainId][name].push(leaf);
     }
   }
