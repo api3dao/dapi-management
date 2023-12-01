@@ -73,15 +73,29 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
   subfolder: TreeSubFolder;
   currentData: T;
   previousData: T;
-  preProcessor: (values: T['merkleTreeValues']['values'][number]) => Readonly<T['merkleTreeValues']['values'][number]>;
+  preProcessor: (values: T['merkleTreeValues']['values'][number]) => string[];
 }) {
   const { subfolder, currentData, previousData, preProcessor } = options;
-  const dirPath = join(process.cwd(), '../data/.processed', subfolder);
-  const processedCurrentHashPath = join(dirPath, 'current-hash.json');
-  const processedPreviousHashPath = join(dirPath, 'previous-hash.json');
-  if (!existsSync(dirPath)) {
-    mkdirSync(dirPath, { recursive: true });
+
+  const treeDirPath = join(process.cwd(), '../data/.processed', subfolder);
+  const processedCurrentHashPath = join(treeDirPath, 'current-hash.json');
+  const processedPreviousHashPath = join(treeDirPath, 'previous-hash.json');
+  if (!existsSync(treeDirPath)) {
+    mkdirSync(treeDirPath, { recursive: true });
   }
+
+  const metadataPath = join(process.cwd(), '../data/.processed/metadata.json');
+  let metadata: { processedAt: string };
+  if (!existsSync(metadataPath)) {
+    metadata = { processedAt: '' };
+    writeFileSync(metadataPath, JSON.stringify(metadata));
+  } else {
+    metadata = JSON.parse(readFileSync(metadataPath, 'utf8'));
+  }
+
+  // We keep track of the commit when caching the processed data in order to determine if it's still fresh
+  // in the future (e.g. the code for a preprocessor might have changed). This check is in addition to others.
+  const { stdout: latestCommitHash } = await execute('git log -1 --pretty=oneline -- pages/');
 
   let hasProcessed = false;
   const processAndWriteData = (path: string, treeData: T) => {
@@ -96,10 +110,9 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
     console.info('Processed ' + path);
   };
 
-  const syncProcessedData = (processedDataPath: string, treeData: T) => {
-    if (!existsSync(processedDataPath)) {
-      processAndWriteData(processedDataPath, treeData);
-      return;
+  const syncProcessedData = async (processedDataPath: string, treeData: T) => {
+    if (!existsSync(processedDataPath) || metadata.processedAt !== latestCommitHash) {
+      return processAndWriteData(processedDataPath, treeData);
     }
 
     const processedData: T = JSON.parse(readFileSync(processedDataPath, 'utf8'));
@@ -108,7 +121,7 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
       processedData.timestamp !== treeData.timestamp ||
       !isEqual(processedData.signatures, treeData.signatures)
     ) {
-      processAndWriteData(processedDataPath, treeData);
+      return processAndWriteData(processedDataPath, treeData);
     }
   };
 
@@ -116,7 +129,8 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
   syncProcessedData(processedPreviousHashPath, previousData);
 
   if (hasProcessed) {
-    await execute(`yarn prettier --write ${dirPath}`);
+    writeFileSync(metadataPath, JSON.stringify({ processedAt: latestCommitHash } as typeof metadata, null, 2));
+    await execute(`yarn prettier --write ${treeDirPath}`);
   }
 
   return await createFileDiff(processedPreviousHashPath, processedCurrentHashPath);
