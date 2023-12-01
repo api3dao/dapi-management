@@ -77,18 +77,14 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
 }) {
   const { subfolder, currentData, previousData, preProcessor } = options;
 
-  const processedDirPath = join(process.cwd(), '../data/.processed');
-  const metadataPath = join(processedDirPath, 'metadata.json');
-  const treeDirPath = join(processedDirPath, subfolder);
+  const treeDirPath = join(process.cwd(), '../data/.processed', subfolder);
+  const metadataPath = join(treeDirPath, 'metadata.json');
   const processedCurrentHashPath = join(treeDirPath, 'current-hash.json');
   const processedPreviousHashPath = join(treeDirPath, 'previous-hash.json');
 
+  let metadata: { processedAt: string };
   if (!existsSync(treeDirPath)) {
     mkdirSync(treeDirPath, { recursive: true });
-  }
-
-  let metadata: { processedAt: string };
-  if (!existsSync(metadataPath)) {
     metadata = { processedAt: '' };
     writeFileSync(metadataPath, JSON.stringify(metadata));
   } else {
@@ -97,7 +93,7 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
 
   // We keep track of the commit when caching the processed data in order to determine if it's still fresh
   // in the future (e.g. the code for a preprocessor might have changed). This check is in addition to others.
-  const { stdout: latestCommitHash } = await execute('git log -1 --pretty=oneline -- pages/');
+  const { stdout: latestCommitHash } = await execute('git log -1 --pretty=oneline -- ./');
 
   let hasProcessed = false;
   const processAndWriteData = (path: string, treeData: T) => {
@@ -112,7 +108,7 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
     console.info('Processed ' + path);
   };
 
-  const syncProcessedData = async (processedDataPath: string, treeData: T) => {
+  const syncProcessedData = (processedDataPath: string, treeData: T) => {
     if (!existsSync(processedDataPath) || metadata.processedAt !== latestCommitHash) {
       return processAndWriteData(processedDataPath, treeData);
     }
@@ -132,7 +128,6 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
 
   if (hasProcessed) {
     writeFileSync(metadataPath, JSON.stringify({ processedAt: latestCommitHash } as typeof metadata, null, 2));
-    exec(`yarn prettier --write ${metadataPath}`); // No need to wait for this
     await execute(`yarn prettier --write ${treeDirPath}`); // We wait so that the diff is created with formatted files
   }
 
