@@ -117,9 +117,9 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
             hashType
         ];
-        uint256 signersCount = _signers.length();
-        require(signersCount != 0, "Signers not set");
-        for (uint256 ind = 0; ind < signersCount; ind++) {
+        uint256 signersLength = _signers.length();
+        require(signersLength != 0, "Signers not set");
+        for (uint256 ind = 0; ind < signersLength; ind++) {
             require(
                 (
                     keccak256(abi.encode(hashType, hash, timestamp))
