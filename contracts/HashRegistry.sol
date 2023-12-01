@@ -46,15 +46,13 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         address[] calldata signers
     ) external override onlyOwner {
         require(hashType != bytes32(0), "Hash type zero");
-        require(signers.length != 0, "Signers empty");
-        require(
-            _hashTypeToSigners[hashType].length() == 0,
-            "Signers already set"
-        );
+        uint256 signersLength = signers.length;
+        require(signersLength != 0, "Signers empty");
         EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
             hashType
         ];
-        for (uint256 ind = 0; ind < signers.length; ind++) {
+        require(_signers.length() == 0, "Signers already set");
+        for (uint256 ind = 0; ind < signersLength; ind++) {
             address signer = signers[ind];
             require(signer != address(0), "Signer address zero");
             require(_signers.add(signer), "Duplicate signer address");
