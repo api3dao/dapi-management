@@ -11,12 +11,6 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using ECDSA for bytes32;
 
-    struct UpdateParameters {
-        uint256 deviationThresholdInPercentage;
-        int224 deviationReference;
-        uint256 heartbeatInterval;
-    }
-
     struct SignedApiUrl {
         string value;
         uint256 timestamp;
@@ -33,9 +27,7 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
 
     event SetUpdateParameters(
         bytes32 indexed dataFeedIdOrDapiName,
-        uint256 deviationThresholdInPercentage,
-        int224 deviationReference,
-        uint256 heartbeatInterval
+        bytes updateParameters
     );
 
     event SetSignedApiUrl(
@@ -48,8 +40,7 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
 
     address public immutable api3ServerV1;
 
-    mapping(bytes32 => UpdateParameters)
-        public dataFeedIdOrDapiNameToUpdateParameters;
+    mapping(bytes32 => bytes) public dataFeedIdOrDapiNameToUpdateParameters;
 
     mapping(address => SignedApiUrl) public airnodeToSignedApiUrl;
 
@@ -89,23 +80,12 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
 
     function setUpdateParameters(
         bytes32 dataFeedIdOrDapiName,
-        uint256 deviationThresholdInPercentage,
-        int224 deviationReference,
-        uint256 heartbeatInterval
+        bytes calldata updateParameters
     ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dataFeedIdOrDapiName) {
         dataFeedIdOrDapiNameToUpdateParameters[
             dataFeedIdOrDapiName
-        ] = UpdateParameters({
-            deviationThresholdInPercentage: deviationThresholdInPercentage,
-            deviationReference: deviationReference,
-            heartbeatInterval: heartbeatInterval
-        });
-        emit SetUpdateParameters(
-            dataFeedIdOrDapiName,
-            deviationThresholdInPercentage,
-            deviationReference,
-            heartbeatInterval
-        );
+        ] = updateParameters;
+        emit SetUpdateParameters(dataFeedIdOrDapiName, updateParameters);
     }
 
     function setSignedApiUrl(
@@ -193,7 +173,7 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
             bytes32 dapiName,
             bytes memory dataFeedDetails,
             DataFeedReading memory dataFeedReading,
-            UpdateParameters memory updateParameters,
+            bytes memory updateParameters,
             string[] memory signedApiUrls
         )
     {
