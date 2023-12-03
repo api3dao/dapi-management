@@ -62,19 +62,15 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
     function activateDataFeedIdOrDapiName(
         bytes32 dataFeedIdOrDapiName
     ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dataFeedIdOrDapiName) {
-        if (!activeDataFeedIdsAndDapiNames.contains(dataFeedIdOrDapiName)) {
-            activeDataFeedIdsAndDapiNames.add(dataFeedIdOrDapiName);
-            emit ActivatedDataFeedIdOrDapiName(dataFeedIdOrDapiName);
-        }
+        activeDataFeedIdsAndDapiNames.add(dataFeedIdOrDapiName);
+        emit ActivatedDataFeedIdOrDapiName(dataFeedIdOrDapiName);
     }
 
     function deactivateDataFeedIdOrDapiName(
         bytes32 dataFeedIdOrDapiName
     ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dataFeedIdOrDapiName) {
-        if (activeDataFeedIdsAndDapiNames.contains(dataFeedIdOrDapiName)) {
-            activeDataFeedIdsAndDapiNames.remove(dataFeedIdOrDapiName);
-            emit DeactivatedDataFeedIdOrDapiName(dataFeedIdOrDapiName);
-        }
+        activeDataFeedIdsAndDapiNames.remove(dataFeedIdOrDapiName);
+        emit DeactivatedDataFeedIdOrDapiName(dataFeedIdOrDapiName);
     }
 
     function setUpdateParameters(
