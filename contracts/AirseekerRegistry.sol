@@ -4,15 +4,22 @@ pragma solidity 0.8.18;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@api3/airnode-protocol-v1/contracts/utils/SelfMulticall.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3ServerV1.sol";
 
 contract AirseekerRegistry is Ownable, SelfMulticall {
     using EnumerableSet for EnumerableSet.Bytes32Set;
+    using ECDSA for bytes32;
 
     struct UpdateParameters {
         uint256 deviationThresholdInPercentage;
         int224 deviationReference;
         uint256 heartbeatInterval;
+    }
+
+    struct SignedApiUrl {
+        string value;
+        uint256 timestamp;
     }
 
     struct DataFeedReading {
@@ -31,18 +38,25 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
         uint256 heartbeatInterval
     );
 
-    event SetSignedApiUrl(address indexed airnode, string signedApiUrl);
+    event SetSignedApiUrl(
+        address indexed airnode,
+        string signedApiUrl,
+        uint256 timestamp
+    );
 
     event RegisteredDataFeed(bytes32 indexed dataFeedId, bytes dataFeedDetails);
 
     address public immutable api3ServerV1;
 
-    mapping(address => string) public airnodeToSignedApiUrl;
+    mapping(bytes32 => UpdateParameters)
+        public dataFeedIdOrDapiNameToUpdateParameters;
+
+    mapping(address => SignedApiUrl) public airnodeToSignedApiUrl;
 
     mapping(bytes32 => bytes) public dataFeedIdToDetails;
 
-    mapping(bytes32 => UpdateParameters)
-        public dataFeedIdOrDapiNameToUpdateParameters;
+    bytes32 private constant SIGNED_API_URL_SALT =
+        keccak256(abi.encodePacked("Signed API URL"));
 
     EnumerableSet.Bytes32Set private activeDataFeedIdsAndDapiNames;
 
@@ -96,15 +110,31 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
 
     function setSignedApiUrl(
         address airnode,
-        string calldata signedApiUrl
-    ) external onlyOwner {
-        require(airnode != address(0), "Airnode address zero");
+        string calldata signedApiUrl,
+        uint256 timestamp,
+        bytes calldata signature
+    ) external {
         require(
             abi.encodePacked(signedApiUrl).length <= 256,
             "Signed API URL too long"
         );
-        airnodeToSignedApiUrl[airnode] = signedApiUrl;
-        emit SetSignedApiUrl(airnode, signedApiUrl);
+        require(
+            (
+                keccak256(
+                    abi.encode(SIGNED_API_URL_SALT, signedApiUrl, timestamp)
+                ).toEthSignedMessageHash()
+            ).recover(signature) == airnode,
+            "Signature mismatch"
+        );
+        require(
+            timestamp > airnodeToSignedApiUrl[airnode].timestamp,
+            "Timestamp not more recent"
+        );
+        airnodeToSignedApiUrl[airnode] = SignedApiUrl({
+            value: signedApiUrl,
+            timestamp: timestamp
+        });
+        emit SetSignedApiUrl(airnode, signedApiUrl, timestamp);
     }
 
     function registerDataFeed(
@@ -205,7 +235,7 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
                 if (dataFeedDetails.length == 64) {
                     address airnode = abi.decode(dataFeedDetails, (address));
                     signedApiUrls = new string[](1);
-                    signedApiUrls[0] = airnodeToSignedApiUrl[airnode];
+                    signedApiUrls[0] = airnodeToSignedApiUrl[airnode].value;
                 } else {
                     address[] memory airnodes = abi.decode(
                         dataFeedDetails,
@@ -216,7 +246,7 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
                     for (uint256 ind = 0; ind < beaconCount; ind++) {
                         signedApiUrls[ind] = airnodeToSignedApiUrl[
                             airnodes[ind]
-                        ];
+                        ].value;
                     }
                 }
             }
