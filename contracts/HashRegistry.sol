@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "@api3/airnode-protocol-v1/contracts/utils/SelfMulticall.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@api3/airnode-protocol-v1/contracts/utils/SelfMulticall.sol";
+import "./interfaces/IHashRegistry.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "./interfaces/IHashRegistry.sol";
 
 /// @title Contract that allows users to manage hashes by type which have been
 /// signed by a set of pre-defined signer accounts
