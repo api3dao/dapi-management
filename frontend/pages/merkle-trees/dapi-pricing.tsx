@@ -22,9 +22,7 @@ type Unit = 'wei' | 'ether';
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
   signatures: z.record(z.string()),
-  merkleTreeValues: z.object({
-    values: z.array(z.tuple([z.string(), z.string(), z.string(), z.string(), z.string()])),
-  }),
+  merkleTreeValues: z.array(z.tuple([z.string(), z.string(), z.string(), z.string(), z.string()])),
 });
 
 export async function getServerSideProps() {
@@ -52,7 +50,7 @@ export default function DapiPricingTree(props: Props) {
   const { currentTree, signers } = props;
   const [priceUnit, setPriceUnit] = useState<Unit>('ether');
 
-  const merkleTree = createDapiPricingMerkleTree(currentTree.merkleTreeValues.values);
+  const merkleTree = createDapiPricingMerkleTree(currentTree.merkleTreeValues);
 
   const { signRoot, isSigning } = useTreeSigner('dAPI pricing Merkle tree', merkleTree.root, currentTree.timestamp);
 
@@ -112,7 +110,7 @@ export default function DapiPricingTree(props: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentTree.merkleTreeValues.values.map((pricing, i) => (
+              {currentTree.merkleTreeValues.map((pricing, i) => (
                 <TableRow key={i}>
                   <TableCell>{ethers.utils.parseBytes32String(pricing[0])}</TableCell>
                   <TableCell>{pricing[1]}</TableCell>

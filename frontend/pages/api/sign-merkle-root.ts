@@ -57,7 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(403).send(`Address not part of hash signers for ${treeType}`);
   }
 
-  const merkleTree = createMerkleTree(currentHash.merkleTreeValues.values);
+  const merkleTree = createMerkleTree(currentHash.merkleTreeValues);
 
   // Set a new signature belonging to the signing address
   currentHash.signatures[address] = signature;

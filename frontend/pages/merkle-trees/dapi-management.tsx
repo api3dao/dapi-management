@@ -18,9 +18,7 @@ import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
   signatures: z.record(z.string()),
-  merkleTreeValues: z.object({
-    values: z.array(z.tuple([z.string(), z.string(), z.string()])),
-  }),
+  merkleTreeValues: z.array(z.tuple([z.string(), z.string(), z.string()])),
 });
 
 export async function getServerSideProps() {
@@ -47,7 +45,7 @@ type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 export default function DapiManagementTree(props: Props) {
   const { currentTree, signers } = props;
 
-  const merkleTree = createDapiManagementMerkleTree(currentTree.merkleTreeValues.values);
+  const merkleTree = createDapiManagementMerkleTree(currentTree.merkleTreeValues);
 
   const { signRoot, isSigning } = useTreeSigner('dAPI management Merkle tree', merkleTree.root, currentTree.timestamp);
 
@@ -90,7 +88,7 @@ export default function DapiManagementTree(props: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentTree.merkleTreeValues.values.map((management, i) => (
+              {currentTree.merkleTreeValues.map((management, i) => (
                 <TableRow key={i}>
                   <TableCell>{ethers.utils.parseBytes32String(management[0])}</TableCell>
                   <TableCell>{management[1]}</TableCell>

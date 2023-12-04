@@ -45,7 +45,7 @@ async function signMerkleTree(merkleTreeName) {
     throw new Error(`${signerAddress} is not a root signer`);
   }
 
-  const values = currentHashData.merkleTreeValues ? currentHashData.merkleTreeValues.values : [];
+  const values = currentHashData.merkleTreeValues ? currentHashData.merkleTreeValues : [];
   const timestamp = currentHashData.timestamp ? currentHashData.timestamp : 0;
 
   const tree = createMerkleTree(values);
