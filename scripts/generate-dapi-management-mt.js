@@ -1,7 +1,6 @@
 const fs = require('fs');
 const { ethers } = require('ethers');
 const { deriveBeaconSetId, createDapiManagementMerkleTree } = require('./utils');
-const { StandardMerkleTree } = require('@openzeppelin/merkle-tree');
 const { getAirnodeAddressByAlias, deriveDataFeedId } = require('@api3/api-integrations');
 const { deriveWalletPathFromSponsorAddress } = require('@api3/airnode-node/dist/src/evm');
 const { execSync } = require('child_process');
