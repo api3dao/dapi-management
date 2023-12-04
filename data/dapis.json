@@ -1,0 +1,1794 @@
+[
+  {
+    "name": "AAPL/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Equities"
+    },
+    "providers": ["finage", "finnhub", "iexcloud", "nodary", "twelvedata"]
+  },
+  {
+    "name": "AAVE/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "ADA/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "ALGO/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "AMZN/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Equities"
+    },
+    "providers": ["dxfeed", "finage", "finnhub", "iexcloud", "nodary"]
+  },
+  {
+    "name": "ANKR/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "APE/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "API3/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "APT/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "ARB/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "ARKK/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Equities"
+    },
+    "providers": ["dxfeed", "finnhub", "iexcloud", "nodary", "twelvedata"]
+  },
+  {
+    "name": "ATOM/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "AUD/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": [
+      "dxfeed",
+      "finage",
+      "iexcloud",
+      "ncfx",
+      "nodary",
+      "tradermade",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "AVAX/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "AXS/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "BAL/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "BAND/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "BAT/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "BLUR/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "BNB/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "BRL/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": [
+      "dxfeed",
+      "finage",
+      "finnhub",
+      "ncfx",
+      "nodary",
+      "tradermade",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "BTC/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "BUSD/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Stablecoin"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "CAD/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": [
+      "finage",
+      "finnhub",
+      "iexcloud",
+      "ncfx",
+      "nodary",
+      "tradermade",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "CAKE/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "cbETH/ETH Exchange Rate",
+    "metadata": {
+      "prefix": " ",
+      "category": "LSD Exchange Rates"
+    },
+    "providers": ["nodary"]
+  },
+  {
+    "name": "CELO/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "CHF/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": [
+      "finage",
+      "finnhub",
+      "iexcloud",
+      "ncfx",
+      "nodary",
+      "tradermade",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "CHZ/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "CNY/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": ["finage", "finnhub", "ncfx", "nodary", "twelvedata"]
+  },
+  {
+    "name": "COIN/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Equities"
+    },
+    "providers": ["dxfeed", "finage", "finnhub", "iexcloud", "nodary"]
+  },
+  {
+    "name": "COMP/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "CRO/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "CRV/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "CVX/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "DAI/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Stablecoin"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "DOGE/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "DOT/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "DYDX/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "ENS/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "ETH/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "EUR/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": [
+      "dxfeed",
+      "finage",
+      "iexcloud",
+      "ncfx",
+      "nodary",
+      "tradermade",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "FIL/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "FLOW/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "FTM/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "FXS/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "GBP/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": [
+      "dxfeed",
+      "finage",
+      "iexcloud",
+      "ncfx",
+      "nodary",
+      "tradermade",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "GLMR/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "GME/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Equities"
+    },
+    "providers": ["dxfeed", "finnhub", "iexcloud", "nodary", "twelvedata"]
+  },
+  {
+    "name": "GMX/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "GNO/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "GNS/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["coinpaprika", "finage", "kaiko", "nodary", "twelvedata"]
+  },
+  {
+    "name": "GOOGL/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Equities"
+    },
+    "providers": ["finage", "finnhub", "iexcloud", "nodary", "twelvedata"]
+  },
+  {
+    "name": "GRT/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "HBAR/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["finage", "kaiko", "ncfx", "nodary", "twelvedata"]
+  },
+  {
+    "name": "HNT/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "HT/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["finage", "kaiko", "ncfx", "nodary", "twelvedata"]
+  },
+  {
+    "name": "ICP/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "IMX/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "INR/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": [
+      "dxfeed",
+      "finage",
+      "finnhub",
+      "iexcloud",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "JOE/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "JPM/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Equities"
+    },
+    "providers": ["finage", "finnhub", "iexcloud", "nodary", "twelvedata"]
+  },
+  {
+    "name": "JPY/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": ["finage", "iexcloud", "ncfx", "nodary", "tradermade"]
+  },
+  {
+    "name": "KAVA/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["finage", "kaiko", "ncfx", "nodary", "twelvedata"]
+  },
+  {
+    "name": "KDA/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["coinpaprika", "finage", "ncfx", "nodary", "twelvedata"]
+  },
+  {
+    "name": "KRW/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": ["dxfeed", "finage", "ncfx", "nodary", "tradermade"]
+  },
+  {
+    "name": "KSM/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "LDO/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "LINK/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "LQTY/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["coinpaprika", "finage", "kaiko", "ncfx", "nodary"]
+  },
+  {
+    "name": "LTC/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "MANA/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "MASK/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "MATIC/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "META/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Equities"
+    },
+    "providers": ["finage", "finnhub", "iexcloud", "nodary", "twelvedata"]
+  },
+  {
+    "name": "mETH/ETH Exchange Rate",
+    "metadata": {
+      "prefix": " ",
+      "category": "LSD Exchange Rates"
+    },
+    "providers": ["nodary"]
+  },
+  {
+    "name": "METIS/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["coinpaprika", "kaiko", "ncfx", "nodary", "twelvedata"]
+  },
+  {
+    "name": "MKR/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "MNT/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["coinpaprika", "finage", "kaiko", "ncfx", "nodary"]
+  },
+  {
+    "name": "MOVR/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "MSFT/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Equities"
+    },
+    "providers": ["finage", "finnhub", "iexcloud", "nodary", "twelvedata"]
+  },
+  {
+    "name": "MXN/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": [
+      "dxfeed",
+      "finage",
+      "iexcloud",
+      "ncfx",
+      "nodary",
+      "tradermade",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "NEAR/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "NFLX/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Equities"
+    },
+    "providers": ["finage", "finnhub", "iexcloud", "nodary", "twelvedata"]
+  },
+  {
+    "name": "NVDA/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Equities"
+    },
+    "providers": ["finage", "finnhub", "iexcloud", "nodary", "twelvedata"]
+  },
+  {
+    "name": "NZD/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": [
+      "dxfeed",
+      "finage",
+      "iexcloud",
+      "ncfx",
+      "nodary",
+      "tradermade",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "OKB/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["finage", "kaiko", "ncfx", "nodary", "twelvedata"]
+  },
+  {
+    "name": "OP/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["finage", "kaiko", "ncfx", "nodary", "twelvedata"]
+  },
+  {
+    "name": "OSMO/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["coinpaprika", "finage", "kaiko", "nodary", "twelvedata"]
+  },
+  {
+    "name": "PAXG/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "PHP/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": [
+      "dxfeed",
+      "finage",
+      "finnhub",
+      "ncfx",
+      "nodary",
+      "tradermade",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "RDNT/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["finage", "kaiko", "ncfx", "nodary", "twelvedata"]
+  },
+  {
+    "name": "rETH/ETH Exchange Rate",
+    "metadata": {
+      "prefix": " ",
+      "category": "LSD Exchange Rates"
+    },
+    "providers": ["nodary"]
+  },
+  {
+    "name": "RIF/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["finage", "kaiko", "ncfx", "nodary", "twelvedata"]
+  },
+  {
+    "name": "RNDR/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "ROSE/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["finage", "kaiko", "ncfx", "nodary", "twelvedata"]
+  },
+  {
+    "name": "RPL/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "RSR/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "RUNE/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "SAND/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "SEK/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": [
+      "dxfeed",
+      "finage",
+      "iexcloud",
+      "ncfx",
+      "nodary",
+      "tradermade",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "sfrxETH/frxETH Exchange Rate",
+    "metadata": {
+      "prefix": " ",
+      "category": "LSD Exchange Rates"
+    },
+    "providers": ["nodary"]
+  },
+  {
+    "name": "SGD/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": [
+      "dxfeed",
+      "finage",
+      "finnhub",
+      "ncfx",
+      "nodary",
+      "tradermade",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "SHIB/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "SNX/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "SOL/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "SPY/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Equities"
+    },
+    "providers": ["dxfeed", "finage", "finnhub", "nodary", "twelvedata"]
+  },
+  {
+    "name": "STG/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "STX/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "SUI/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["finage", "kaiko", "ncfx", "nodary", "twelvedata"]
+  },
+  {
+    "name": "SUSHI/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "swETH/ETH Exchange Rate",
+    "metadata": {
+      "prefix": " ",
+      "category": "LSD Exchange Rates"
+    },
+    "providers": ["nodary"]
+  },
+  {
+    "name": "TRY/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": [
+      "dxfeed",
+      "finage",
+      "finnhub",
+      "iexcloud",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "TSLA/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Equities"
+    },
+    "providers": ["finage", "finnhub", "iexcloud", "nodary", "twelvedata"]
+  },
+  {
+    "name": "TSM/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Equities"
+    },
+    "providers": ["dxfeed", "finnhub", "iexcloud", "nodary", "twelvedata"]
+  },
+  {
+    "name": "TUSD/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Stablecoin"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "UMA/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "UNI/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "USDC/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Stablecoin"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "USDP/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Stablecoin"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "USDT/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Stablecoin"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "WBTC/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["coinpaprika", "finage", "ncfx", "nodary", "twelvedata"]
+  },
+  {
+    "name": "wstETH/stETH Exchange Rate",
+    "metadata": {
+      "prefix": " ",
+      "category": "LSD Exchange Rates"
+    },
+    "providers": ["nodary"]
+  },
+  {
+    "name": "WTI/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Commodities"
+    },
+    "providers": ["dxfeed", "finage", "nodary", "tradermade", "twelvedata"]
+  },
+  {
+    "name": "XAG/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Commodities"
+    },
+    "providers": ["dxfeed", "finage", "nodary", "tradermade", "twelvedata"]
+  },
+  {
+    "name": "XAU/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Commodities"
+    },
+    "providers": ["dxfeed", "finage", "nodary", "tradermade", "twelvedata"]
+  },
+  {
+    "name": "XLM/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "XMR/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "XRP/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "XTZ/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "YFI/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": [
+      "coinpaprika",
+      "dxfeed",
+      "finage",
+      "kaiko",
+      "ncfx",
+      "nodary",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "ZAR/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Forex"
+    },
+    "providers": [
+      "dxfeed",
+      "finage",
+      "iexcloud",
+      "ncfx",
+      "nodary",
+      "tradermade",
+      "twelvedata"
+    ]
+  },
+  {
+    "name": "ZIL/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["finage", "kaiko", "ncfx", "nodary", "twelvedata"]
+  },
+  {
+    "name": "ZRX/USD",
+    "metadata": {
+      "prefix": "$",
+      "category": "Cryptocurrency"
+    },
+    "providers": ["finage", "kaiko", "ncfx", "nodary", "twelvedata"]
+  }
+]
