@@ -1,5 +1,5 @@
 import some from 'lodash/some';
-import { AlertTriangleIcon, InfoIcon, ShieldCheckIcon, ShieldEllipsisIcon } from 'lucide-react';
+import { InfoIcon, ShieldCheckIcon, ShieldEllipsisIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
 import { Button } from '~/components/ui/button';
@@ -39,7 +39,7 @@ interface TreeRootBadgeProps {
 export function TreeRootBadge(props: TreeRootBadgeProps) {
   return (
     <span
-      className={cn('inline-block break-all rounded-md bg-blue-50 px-3 py-1 text-sm text-blue-900', props.className)}
+      className={cn('inline-block break-all rounded-md bg-slate-100 px-3 py-1 text-sm text-slate-600', props.className)}
     >
       Root: {props.root}
     </span>
@@ -54,22 +54,35 @@ interface SignRootButtonProps {
 
 export function SignRootButton(props: SignRootButtonProps) {
   const { signatures, signRoot, isSigning } = props;
-  const { address } = useWeb3Data();
+  const { address, connectStatus } = useWeb3Data();
 
   const isSigner = !!signatures[address];
   const canSign = signatures[address] === '0x' && !isSigning;
+
+  const button = (
+    <Button disabled={!canSign} className="min-w-[12ch]" onClick={() => signRoot()}>
+      {isSigning ? 'Signing...' : 'Sign Root'}
+    </Button>
+  );
+
+  if (isSigner || connectStatus !== 'connected') {
+    return button;
+  }
+
   return (
-    <>
-      <Button disabled={!canSign} className="min-w-[15ch]" onClick={() => signRoot()}>
-        {isSigning ? 'Signing...' : 'Sign Root'}
-      </Button>
-      {!!address && !isSigner && (
-        <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
-          <AlertTriangleIcon className="w-4 text-gray-300" />
-          You are not a signer.
-        </p>
-      )}
-    </>
+    <Tooltip preventCloseOnClick delayDuration={200}>
+      <TooltipTrigger asChild>
+        <span
+          className="focus-visible:ring-ring inline-flex rounded-md focus-visible:ring-2 focus-visible:ring-offset-2"
+          tabIndex={0}
+        >
+          {button}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent className="">
+        <p className="flex items-center">You are not a signer</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
