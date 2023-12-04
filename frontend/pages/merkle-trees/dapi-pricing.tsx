@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { z } from 'zod';
 import round from 'lodash/round';
 import { CHAINS } from '@api3/chains';
@@ -180,9 +180,17 @@ function RawValuesTable(props: RawValuesTableProps) {
 }
 
 function formatUpdateParams(text: string) {
-  const decodedResults = ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], text);
-  const joinedResults = decodedResults.map((e) => e.toString()).join(', ');
-  return `(${joinedResults})`;
+  const decodedResults = ethers.utils.defaultAbiCoder.decode(['uint256', 'int224', 'uint32'], text) as [
+    BigNumber,
+    BigNumber,
+    number
+  ];
+
+  const deviation = round(decodedResults[0].toNumber() / 1e8, 3) + '%';
+  const devReference = decodedResults[1].eq(0) ? null : decodedResults[1].toString();
+  const heartbeat = round(decodedResults[2] / 60 / 60, 2) + 'hrs';
+
+  return devReference ? `${deviation}, ${devReference}, ${heartbeat}` : `${deviation}, ${heartbeat}`;
 }
 
 function formatDuration(seconds: string) {
