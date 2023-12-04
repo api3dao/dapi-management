@@ -29,7 +29,7 @@ const signersSchema = z.object({
   hashSigners: z.array(z.string()),
 });
 
-type MerkleTreeData = z.infer<typeof merkleTreeSchema>;
+export type MerkleTreeData = z.infer<typeof merkleTreeSchema>;
 type TreeFile = 'current-hash.json' | 'previous-hash.json';
 
 export function readTreeDataFrom(options: { subfolder: TreeSubFolder; file: TreeFile }): {

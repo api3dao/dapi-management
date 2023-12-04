@@ -15,7 +15,7 @@ import {
   SignRootButton,
   ViewOptionsMenu,
 } from '~/components/merkle-tree-elements';
-import { readTreeDataFrom, readSignerDataFrom, createTreeDiff } from '~/lib/server/file-utils';
+import { getMerkleTreeServerSideProps } from '~/lib/server/page-props';
 import { validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
@@ -33,34 +33,22 @@ const merkleTreeSchema = z.object({
 });
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
-  const { path: currentTreePath, data: currentTree } = readTreeDataFrom({
-    subfolder: 'dapi-pricing-merkle-tree-root',
-    file: 'current-hash.json',
-    schema: merkleTreeSchema,
-  });
-  const { path: previousTreePath, data: previousTree } = readTreeDataFrom({
-    subfolder: 'dapi-pricing-merkle-tree-root',
-    file: 'previous-hash.json',
-    schema: merkleTreeSchema,
-  });
-  const { data: signers } = readSignerDataFrom('dapi-pricing-merkle-tree-root');
-
   const showRawValues = context.query.raw === 'true';
-  const diffResult = await createTreeDiff({
+
+  const { currentTree, signers, diffResult } = await getMerkleTreeServerSideProps({
     subfolder: 'dapi-pricing-merkle-tree-root',
-    previousData: previousTree,
-    previousDataPath: previousTreePath,
-    currentData: currentTree,
-    currentDataPath: currentTreePath,
-    preProcess: !showRawValues,
-    preProcessor: (values) => {
-      return [
-        ethers.utils.parseBytes32String(values[0]),
-        getChainAlias(values[1]),
-        formatUpdateParams(values[2]),
-        formatDuration(values[3]),
-        ethers.utils.commify(ethers.utils.formatEther(values[4])),
-      ];
+    schema: merkleTreeSchema,
+    diff: {
+      preProcess: !showRawValues,
+      preProcessor: (values) => {
+        return [
+          ethers.utils.parseBytes32String(values[0]),
+          getChainAlias(values[1]),
+          formatUpdateParams(values[2]),
+          formatDuration(values[3]),
+          ethers.utils.commify(ethers.utils.formatEther(values[4])),
+        ];
+      },
     },
   });
 

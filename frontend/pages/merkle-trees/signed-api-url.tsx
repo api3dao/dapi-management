@@ -11,7 +11,7 @@ import {
   TreeDiff,
   ViewOptionsMenu,
 } from '~/components/merkle-tree-elements';
-import { readTreeDataFrom, readSignerDataFrom, createTreeDiff } from '~/lib/server/file-utils';
+import { getMerkleTreeServerSideProps } from '~/lib/server/page-props';
 import { createSignedApiUrlMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
@@ -27,28 +27,16 @@ const merkleTreeSchema = z.object({
 });
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
-  const { path: currentTreePath, data: currentTree } = readTreeDataFrom({
-    subfolder: 'signed-api-url-merkle-tree-root',
-    file: 'current-hash.json',
-    schema: merkleTreeSchema,
-  });
-  const { path: previousTreePath, data: previousTree } = readTreeDataFrom({
-    subfolder: 'signed-api-url-merkle-tree-root',
-    file: 'previous-hash.json',
-    schema: merkleTreeSchema,
-  });
-  const { data: signers } = readSignerDataFrom('signed-api-url-merkle-tree-root');
-
   const showRawValues = context.query.raw === 'true';
-  const diffResult = await createTreeDiff({
+
+  const { currentTree, signers, diffResult } = await getMerkleTreeServerSideProps({
     subfolder: 'signed-api-url-merkle-tree-root',
-    previousData: previousTree,
-    previousDataPath: previousTreePath,
-    currentData: currentTree,
-    currentDataPath: currentTreePath,
-    preProcess: !showRawValues,
-    preProcessor: (values) => {
-      return [getProviders(values[0]), values[1]];
+    schema: merkleTreeSchema,
+    diff: {
+      preProcess: !showRawValues,
+      preProcessor: (values) => {
+        return [getProviders(values[0]), values[1]];
+      },
     },
   });
 

@@ -16,7 +16,7 @@ import {
   ViewOptionsMenu,
   TreeDiff,
 } from '~/components/merkle-tree-elements';
-import { readTreeDataFrom, readSignerDataFrom, createTreeDiff } from '~/lib/server/file-utils';
+import { getMerkleTreeServerSideProps } from '~/lib/server/page-props';
 import { createDapiManagementMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from 'next';
 import { useToast } from '~/components/ui/toast/use-toast';
@@ -34,29 +34,17 @@ const merkleTreeSchema = z.object({
 });
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
-  const { path: currentTreePath, data: currentTree } = readTreeDataFrom({
-    subfolder: 'dapi-management-merkle-tree-root',
-    file: 'current-hash.json',
-    schema: merkleTreeSchema,
-  });
-  const { path: previousTreePath, data: previousTree } = readTreeDataFrom({
-    subfolder: 'dapi-management-merkle-tree-root',
-    file: 'previous-hash.json',
-    schema: merkleTreeSchema,
-  });
-  const { data: signers } = readSignerDataFrom('dapi-management-merkle-tree-root');
-
   const showRawValues = context.query.raw === 'true';
-  const diffResult = await createTreeDiff({
+
+  const { currentTree, signers, diffResult } = await getMerkleTreeServerSideProps({
     subfolder: 'dapi-management-merkle-tree-root',
-    previousData: previousTree,
-    previousDataPath: previousTreePath,
-    currentData: currentTree,
-    currentDataPath: currentTreePath,
-    preProcess: !showRawValues,
-    preProcessor: (values) => {
-      const dapiName = ethers.utils.parseBytes32String(values[0]);
-      return [dapiName, getProviders(dapiName), values[2]];
+    schema: merkleTreeSchema,
+    diff: {
+      preProcess: !showRawValues,
+      preProcessor: (values) => {
+        const dapiName = ethers.utils.parseBytes32String(values[0]);
+        return [dapiName, getProviders(dapiName), values[2]];
+      },
     },
   });
 
