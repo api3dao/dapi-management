@@ -98,7 +98,7 @@ export default function DapiManagementTree(props: Props) {
         </div>
         <TabsContent value="0">
           {showRawValues ? (
-            <RawValuesTable values={currentTree.merkleTreeValues.values} />
+            <RawValuesTable values={currentTree.merkleTreeValues} />
           ) : (
             <Table className="mt-4">
               <TableHeader sticky>

@@ -76,7 +76,7 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
   previousData: T;
   previousDataPath: string;
   preProcess: boolean;
-  preProcessor: (values: T['merkleTreeValues']['values'][number]) => string[];
+  preProcessor: (values: T['merkleTreeValues'][number]) => string[];
 }) {
   const { subfolder, currentData, currentDataPath, previousData, previousDataPath, preProcess, preProcessor } = options;
 
@@ -112,7 +112,7 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
     const processedData: T = {
       ...treeData,
       merkleTreeValues: {
-        values: treeData.merkleTreeValues.values.map(preProcessor),
+        values: treeData.merkleTreeValues.map(preProcessor),
       },
     };
     writeMerkleTreeData(path, processedData);

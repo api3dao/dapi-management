@@ -12,7 +12,7 @@ export async function getMerkleTreeServerSideProps<T extends MerkleTreeData>(opt
   schema: z.ZodSchema<T>;
   diff: {
     preProcess: boolean;
-    preProcessor: (values: T['merkleTreeValues']['values'][number]) => string[];
+    preProcessor: (values: T['merkleTreeValues'][number]) => string[];
   };
 }) {
   const { subfolder, schema } = options;
