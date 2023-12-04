@@ -45,14 +45,15 @@ function generateDapiManagementMT() {
     merkleTreeValues,
   };
 
-  // save the current hash
-  fs.writeFileSync(MT_OUTPUT_PATH, JSON.stringify(dapiManagementMT, null, 2));
   // save the previous hash
   const previousDapiManagementMT = JSON.parse(fs.readFileSync(MT_OUTPUT_PATH, 'utf-8'));
   fs.writeFileSync(
     MT_OUTPUT_PATH.replace('current-hash', 'previous-hash'),
     JSON.stringify(previousDapiManagementMT, null, 2)
   );
+  // save the current hash
+  fs.writeFileSync(MT_OUTPUT_PATH, JSON.stringify(dapiManagementMT, null, 2));
+
   execSync('yarn format');
 }
 
