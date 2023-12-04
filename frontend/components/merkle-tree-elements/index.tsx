@@ -79,9 +79,7 @@ export function SignRootButton(props: SignRootButtonProps) {
           {button}
         </span>
       </TooltipTrigger>
-      <TooltipContent className="">
-        <p className="flex items-center">You are not a signer</p>
-      </TooltipContent>
+      <TooltipContent>You are not a signer</TooltipContent>
     </Tooltip>
   );
 }

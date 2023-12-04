@@ -38,19 +38,11 @@ export function ViewOptionsMenu(props: Props) {
         <DropdownMenuRadioGroup
           value={params.get('raw') === 'true' ? 'raw' : 'human-readable'}
           onValueChange={(value) => {
-            if (value === 'raw') {
-              router.replace(router.pathname + `?raw=true`);
-            } else {
-              router.replace(router.pathname);
-            }
+            router.replace(router.pathname + (value === 'raw' ? '?raw=true' : ''));
           }}
         >
-          <DropdownMenuRadioItem value="human-readable" className="flex gap-2">
-            Human-readable
-          </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="raw" className="flex gap-2">
-            Raw
-          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="human-readable">Human-readable</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="raw">Raw</DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
 
         <DropdownMenuSeparator className="my-3" />

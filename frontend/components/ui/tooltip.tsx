@@ -4,23 +4,32 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 
 import { cn } from '~/lib/utils';
 
+const TooltipContext = createContext<{
+  preventCloseOnClick: boolean;
+  triggerRef: React.RefObject<HTMLElement>;
+} | null>(null);
+
+function useTooltipContext() {
+  const ctx = useContext(TooltipContext);
+  if (!ctx) {
+    throw new Error('Missing TooltipContext. All tooltip elements need to be nested inside a <Tooltip> component.');
+  }
+  return ctx;
+}
+
 const TooltipProvider = TooltipPrimitive.Provider;
 
 interface TooltipProps extends React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root> {
   preventCloseOnClick?: boolean;
 }
 
-const Context = createContext<{
-  preventCloseOnClick: boolean;
-  triggerRef: React.RefObject<HTMLElement>;
-} | null>(null);
-
 const Tooltip = ({ preventCloseOnClick = false, ...props }: TooltipProps) => {
   const triggerRef = useRef<HTMLElement>(null);
+
   return (
-    <Context.Provider value={{ preventCloseOnClick, triggerRef }}>
+    <TooltipContext.Provider value={{ preventCloseOnClick, triggerRef }}>
       <TooltipPrimitive.Root {...props} />
-    </Context.Provider>
+    </TooltipContext.Provider>
   );
 };
 
@@ -28,7 +37,7 @@ const TooltipTrigger = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger>
 >(({ onClick, ...props }, ref) => {
-  const ctx = useContext(Context)!;
+  const ctx = useTooltipContext();
 
   useImperativeHandle(ref, () => ctx.triggerRef.current as HTMLButtonElement);
 
@@ -53,7 +62,7 @@ const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
 >(({ className, sideOffset = 4, onPointerDownOutside, ...props }, ref) => {
-  const ctx = useContext(Context)!;
+  const ctx = useTooltipContext();
 
   return (
     <TooltipPrimitive.Content
