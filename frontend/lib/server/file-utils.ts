@@ -111,9 +111,7 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
   const processAndWriteData = (path: string, treeData: T) => {
     const processedData: T = {
       ...treeData,
-      merkleTreeValues: {
-        values: treeData.merkleTreeValues.map(preProcessor),
-      },
+      merkleTreeValues: treeData.merkleTreeValues.map(preProcessor),
     };
     writeMerkleTreeData(path, processedData);
     hasProcessed = true;
