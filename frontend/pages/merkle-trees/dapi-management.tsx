@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { z } from 'zod';
 import { ethers } from 'ethers';
 import { apisData } from '@api3/api-integrations';
@@ -119,7 +119,9 @@ export default function DapiManagementTree(props: Props) {
                 <TableRow>
                   <TableHead className="whitespace-nowrap">dAPI Name</TableHead>
                   <TableHead className="min-w-[30ch]">API Providers</TableHead>
-                  <SponsorWalletTableHead />
+                  <VerifiedTableHead tooltip="The CI verifies the Sponsor Wallet Addresses for you">
+                    Sponsor Wallet Address
+                  </VerifiedTableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -155,18 +157,10 @@ function RawValuesTable(props: RawValuesTableProps) {
       <TableHeader sticky>
         <TableRow>
           <TableHead className="whitespace-nowrap">dAPI Name</TableHead>
-          <TableHead>
-            <Tooltip delayDuration={0} preventCloseOnClick>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" className="group flex h-4 cursor-auto items-center gap-1.5 p-0">
-                  <CheckIcon className="h-4 w-4 text-slate-400 group-hover:text-slate-500" />
-                  Data Feed ID
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>The CI verifies the Data Feed IDs for you</TooltipContent>
-            </Tooltip>
-          </TableHead>
-          <SponsorWalletTableHead />
+          <VerifiedTableHead tooltip="The CI verifies the Data Feed IDs for you">Data Feed ID</VerifiedTableHead>
+          <VerifiedTableHead tooltip="The CI verifies the Sponsor Wallet Addresses for you">
+            Sponsor Wallet Address
+          </VerifiedTableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -184,17 +178,22 @@ function RawValuesTable(props: RawValuesTableProps) {
   );
 }
 
-function SponsorWalletTableHead() {
+interface VerifiedTableHeadProps {
+  children: ReactNode;
+  tooltip: string;
+}
+
+function VerifiedTableHead(props: VerifiedTableHeadProps) {
   return (
     <TableHead>
       <Tooltip delayDuration={0} preventCloseOnClick>
         <TooltipTrigger asChild>
           <Button variant="ghost" className="group flex h-4 cursor-auto items-center gap-1.5 p-0">
             <CheckIcon className="h-4 w-4 text-slate-400 group-hover:text-slate-500" />
-            Sponsor Wallet Address
+            {props.children}
           </Button>
         </TooltipTrigger>
-        <TooltipContent>The CI verifies the Sponsor Wallet Addresses for you</TooltipContent>
+        <TooltipContent>{props.tooltip}</TooltipContent>
       </Tooltip>
     </TableHead>
   );
