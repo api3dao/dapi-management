@@ -2,10 +2,8 @@
   "timestamp": 1676940000,
   "hash": "0x4c8fc9676ad514138764eaa4696b7ab87c45648b03e533865c73c418b6ae3f05",
   "signatures": {},
-  "merkleTreeValues": {
-    "values": [
-      ["0x1DA48273Fc2ACd6f40b629538aE150Bea08cC7bB", "https://example.com"],
-      ["0x71B88fC1a8cce02B1339901CcC88C4234ee4cc57", "https://example.wtf"]
-    ]
-  }
+  "merkleTreeValues": [
+    ["0x1DA48273Fc2ACd6f40b629538aE150Bea08cC7bB", "https://example.com"],
+    ["0x71B88fC1a8cce02B1339901CcC88C4234ee4cc57", "https://example.wtf"]
+  ]
 }
