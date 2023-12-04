@@ -21,9 +21,7 @@ const merkleTreeSchema = z.object({
   timestamp: z.number(),
   hash: z.string(),
   signatures: z.record(z.string()),
-  merkleTreeValues: z.object({
-    values: z.array(z.tuple([z.string(), z.string()])),
-  }),
+  merkleTreeValues: z.array(z.tuple([z.string(), z.string()])),
 });
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
@@ -50,7 +48,7 @@ type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 export default function SignedApiUrlTree(props: Props) {
   const { currentTree, signers, showRawValues } = props;
 
-  const merkleTree = createSignedApiUrlMerkleTree(currentTree.merkleTreeValues.values);
+  const merkleTree = createSignedApiUrlMerkleTree(currentTree.merkleTreeValues);
 
   const { signRoot, isSigning } = useTreeSigner('Signed API URL Merkle tree', merkleTree.root, currentTree.timestamp);
 
@@ -90,7 +88,7 @@ export default function SignedApiUrlTree(props: Props) {
         </div>
         <TabsContent value="0">
           {showRawValues ? (
-            <RawValuesTable values={currentTree.merkleTreeValues.values} />
+            <RawValuesTable values={currentTree.merkleTreeValues} />
           ) : (
             <Table className="mt-4 table-fixed">
               <TableHeader sticky>
@@ -100,7 +98,7 @@ export default function SignedApiUrlTree(props: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentTree.merkleTreeValues.values.map((rowValues, i) => (
+                {currentTree.merkleTreeValues.map((rowValues, i) => (
                   <TableRow key={i}>
                     <TableCell>{getProviders(rowValues[0])}</TableCell>
                     <TableCell>{rowValues[1]}</TableCell>

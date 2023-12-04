@@ -20,9 +20,7 @@ const merkleTreeSchema = z.object({
   timestamp: z.number(),
   hash: z.string(),
   signatures: z.record(z.string()),
-  merkleTreeValues: z.object({
-    values: z.array(z.array(z.any())),
-  }),
+  merkleTreeValues: z.array(z.array(z.any())),
 });
 
 const signersSchema = z.object({

@@ -28,9 +28,7 @@ const merkleTreeSchema = z.object({
   timestamp: z.number(),
   hash: z.string(),
   signatures: z.record(z.string()),
-  merkleTreeValues: z.object({
-    values: z.array(z.tuple([z.string(), z.string(), z.string()])),
-  }),
+  merkleTreeValues: z.array(z.tuple([z.string(), z.string(), z.string()])),
 });
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
@@ -58,7 +56,7 @@ type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 export default function DapiManagementTree(props: Props) {
   const { currentTree, signers, showRawValues } = props;
 
-  const merkleTree = createDapiManagementMerkleTree(currentTree.merkleTreeValues.values);
+  const merkleTree = createDapiManagementMerkleTree(currentTree.merkleTreeValues);
 
   const { signRoot, isSigning } = useTreeSigner('dAPI management Merkle tree', merkleTree.root, currentTree.timestamp);
 
@@ -113,7 +111,7 @@ export default function DapiManagementTree(props: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentTree.merkleTreeValues.values.map((rowValues, i) => {
+                {currentTree.merkleTreeValues.map((rowValues, i) => {
                   const dapiName = ethers.utils.parseBytes32String(rowValues[0]);
                   return (
                     <TableRow key={i}>

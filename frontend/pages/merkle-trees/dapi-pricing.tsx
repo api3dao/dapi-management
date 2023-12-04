@@ -27,9 +27,7 @@ const merkleTreeSchema = z.object({
   timestamp: z.number(),
   hash: z.string(),
   signatures: z.record(z.string()),
-  merkleTreeValues: z.object({
-    values: z.array(z.tuple([z.string(), z.string(), z.string(), z.string(), z.string()])),
-  }),
+  merkleTreeValues: z.array(z.tuple([z.string(), z.string(), z.string(), z.string(), z.string()])),
 });
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
@@ -105,7 +103,7 @@ export default function DapiPricingTree(props: Props) {
         </div>
         <TabsContent value="0">
           {showRawValues ? (
-            <RawValuesTable values={currentTree.merkleTreeValues.values} />
+            <RawValuesTable values={currentTree.merkleTreeValues} />
           ) : (
             <Table className="mt-4">
               <TableHeader sticky>
@@ -129,7 +127,7 @@ export default function DapiPricingTree(props: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentTree.merkleTreeValues.values.slice(0, 100).map((pricing, i) => (
+                {currentTree.merkleTreeValues.slice(0, 100).map((pricing, i) => (
                   <TableRow key={i}>
                     <TableCell>{ethers.utils.parseBytes32String(pricing[0])}</TableCell>
                     <TableCell>{getChainAlias(pricing[1])}</TableCell>
