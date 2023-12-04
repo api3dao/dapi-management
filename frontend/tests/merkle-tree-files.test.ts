@@ -20,7 +20,7 @@ import {
 
 describe('dAPI fallback Merkle tree current-hash.json', () => {
   it('has the correct tree root', () => {
-    const tree = createDapiFallbackMerkleTree(dapiFallbackTree.merkleTreeValues.values);
+    const tree = createDapiFallbackMerkleTree(dapiFallbackTree.merkleTreeValues);
     expect(dapiFallbackTree.hash).toEqual(tree.root);
   });
 
@@ -46,7 +46,7 @@ describe('dAPI fallback Merkle tree current-hash.json', () => {
 
 describe('dAPI management Merkle tree current-hash.json', () => {
   it('has the correct tree root', () => {
-    const tree = createDapiManagementMerkleTree(dapiManagementTree.merkleTreeValues.values);
+    const tree = createDapiManagementMerkleTree(dapiManagementTree.merkleTreeValues);
     expect(dapiManagementTree.hash).toEqual(tree.root);
   });
 
@@ -72,7 +72,7 @@ describe('dAPI management Merkle tree current-hash.json', () => {
 
 describe('dAPI pricing Merkle tree current-hash.json', () => {
   it('has the correct tree root', () => {
-    const tree = createDapiPricingMerkleTree(dapiPricingTree.merkleTreeValues.values);
+    const tree = createDapiPricingMerkleTree(dapiPricingTree.merkleTreeValues);
     expect(dapiPricingTree.hash).toEqual(tree.root);
   });
 
@@ -98,7 +98,7 @@ describe('dAPI pricing Merkle tree current-hash.json', () => {
 
 describe('Signed API URL Merkle tree current-hash.json', () => {
   it('has the correct tree root', () => {
-    const tree = createSignedApiUrlMerkleTree(signedApiUrlTree.merkleTreeValues.values);
+    const tree = createSignedApiUrlMerkleTree(signedApiUrlTree.merkleTreeValues);
     expect(signedApiUrlTree.hash).toEqual(tree.root);
   });
 

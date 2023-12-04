@@ -51,8 +51,8 @@ This command constructs the Merkle tree based on the data, signs the root, and u
 - **Values**:
   - **dAPI Name (bytes32)**: dAPI name string formatted as bytes32.
   - **Chain ID (uint256)**: Identifier for the blockchain network.
-  - **dAPI Update Parameters (bytes)**: Encoded parameters for dAPI updates. It decodes as, Deviation Threshold in Percentage (uint256) [multiplied by 1e8](https://github.com/api3dao/airnode-protocol-v1/blob/b45d225ef33257d82124dd895731846bc7e46eed/contracts/api3-server-v1/extensions/BeaconSetUpdatesWithPsp.sol#L27), Deviation Reference (int224), Heartbeat Interval (uint32) in seconds.
-  - **Duration (uint256)**: The duration in seconds for which the price is valid.
+  - **dAPI Update Parameters (bytes)**: Encoded parameters for dAPI updates. It decodes as, Deviation Threshold in Percentage (uint256) [multiplied by 1e6](https://github.com/api3dao/airnode-protocol-v1/blob/b45d225ef33257d82124dd895731846bc7e46eed/contracts/api3-server-v1/extensions/BeaconSetUpdatesWithPsp.sol#L27), Deviation Reference (int224), Heartbeat Interval (uint32) in seconds.
+  - **Duration (uint256)**: Subscription duration in seconds.
   - **Price (uint256)**: The cost in the native currency of the chain, expressed in wei.
 
 ### 2. dAPI management Merkle Tree
@@ -73,7 +73,7 @@ This command constructs the Merkle tree based on the data, signs the root, and u
 
 - **Values**:
   - **Airnode Address (address)**: The contract address of the Airnode.
-  - **Signed API URL (bytes32)**: The signed URL of the API. Verified by referring to the DNS records of the base URL.
+  - **Signed API URL (string)**: The signed URL of the API. Verified by referring to the DNS records of the base URL.
 
 ## Merkle Tree Types
 
