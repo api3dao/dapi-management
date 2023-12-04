@@ -8,6 +8,7 @@ import { useWeb3Data } from '~/contexts/web3-data-context';
 import addressBook from '../../../data/address-book.json';
 import 'diff2html/bundles/css/diff2html.min.css';
 
+export { ViewOptionsMenu } from './view-options-menu';
 export { TreeDiff } from './tree-diff';
 
 interface TreeStatusBadgeProps {

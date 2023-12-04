@@ -1,23 +1,25 @@
+import { useState } from 'react';
+import { ethers } from 'ethers';
 import { z } from 'zod';
 import round from 'lodash/round';
 import { CHAINS } from '@api3/chains';
 import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import {
   TreeStatusBadge,
   TreeRootBadge,
   SignatureTable,
   TreeDiff,
   SignRootButton,
+  ViewOptionsMenu,
 } from '~/components/merkle-tree-elements';
 import { readTreeDataFrom, readSignerDataFrom, createTreeDiff } from '~/lib/server/file-utils';
 import { validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
-import { InferGetServerSidePropsType } from 'next';
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
-import { useState } from 'react';
-import { ethers } from 'ethers';
+import { useDiffMode } from '~/components/merkle-tree-elements/use-diff-mode';
 
 type Unit = 'wei' | 'ether';
 
@@ -30,45 +32,47 @@ const merkleTreeSchema = z.object({
   }),
 });
 
-export async function getServerSideProps() {
-  const { data: currentTree } = readTreeDataFrom({
+export async function getServerSideProps(context: GetServerSidePropsContext) {
+  const { path: currentTreePath, data: currentTree } = readTreeDataFrom({
     subfolder: 'dapi-pricing-merkle-tree-root',
     file: 'current-hash.json',
     schema: merkleTreeSchema,
   });
-  const { data: previousTree } = readTreeDataFrom({
+  const { path: previousTreePath, data: previousTree } = readTreeDataFrom({
     subfolder: 'dapi-pricing-merkle-tree-root',
     file: 'previous-hash.json',
     schema: merkleTreeSchema,
   });
   const { data: signers } = readSignerDataFrom('dapi-pricing-merkle-tree-root');
 
-  const diffResult = previousTree
-    ? await createTreeDiff({
-        subfolder: 'dapi-pricing-merkle-tree-root',
-        previousData: previousTree,
-        currentData: currentTree,
-        preProcessor: (values) => {
-          return [
-            ethers.utils.parseBytes32String(values[0]),
-            getChainAlias(values[1]),
-            formatUpdateParams(values[2]),
-            formatDuration(values[3]),
-            ethers.utils.commify(ethers.utils.formatEther(values[4])),
-          ];
-        },
-      })
-    : null;
+  const showRawValues = context.query.raw === 'true';
+  const diffResult = await createTreeDiff({
+    subfolder: 'dapi-pricing-merkle-tree-root',
+    previousData: previousTree,
+    previousDataPath: previousTreePath,
+    currentData: currentTree,
+    currentDataPath: currentTreePath,
+    preProcess: !showRawValues,
+    preProcessor: (values) => {
+      return [
+        ethers.utils.parseBytes32String(values[0]),
+        getChainAlias(values[1]),
+        formatUpdateParams(values[2]),
+        formatDuration(values[3]),
+        ethers.utils.commify(ethers.utils.formatEther(values[4])),
+      ];
+    },
+  });
 
   return {
-    props: { currentTree, signers, diffResult },
+    props: { currentTree, signers, diffResult, showRawValues },
   };
 }
 
 type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 
 export default function DapiPricingTree(props: Props) {
-  const { currentTree, signers } = props;
+  const { currentTree, signers, showRawValues } = props;
   const [priceUnit, setPriceUnit] = useState<Unit>('ether');
 
   const { signRoot, isSigning } = useTreeSigner('dAPI pricing Merkle tree', currentTree.hash, currentTree.timestamp);
@@ -80,6 +84,8 @@ export default function DapiPricingTree(props: Props) {
     currentTree.signatures,
     signers
   );
+
+  const [diffMode, setDiffMode] = useDiffMode();
 
   const convertPrice = (price: string) => {
     return priceUnit === 'ether' ? ethers.utils.commify(ethers.utils.formatEther(price)) : price;
@@ -102,50 +108,88 @@ export default function DapiPricingTree(props: Props) {
       </div>
 
       <Tabs defaultValue="0">
-        <TabsList>
-          <TabsTrigger value="0">Tree Values</TabsTrigger>
-          <TabsTrigger value="1">Tree Diff</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="0">Tree Values</TabsTrigger>
+            <TabsTrigger value="1">Tree Diff</TabsTrigger>
+          </TabsList>
+          <ViewOptionsMenu diffMode={diffMode} onDiffModeChange={setDiffMode} />
+        </div>
         <TabsContent value="0">
-          <Table className="mt-4">
-            <TableHeader sticky>
-              <TableRow>
-                <TableHead>dAPI Name</TableHead>
-                <TableHead>Chain</TableHead>
-                <TableHead>dAPI Update Parameters</TableHead>
-                <TableHead>Duration (Days)</TableHead>
-                <TableHead>
-                  Price
-                  <Select value={priceUnit} onValueChange={(unit: Unit) => setPriceUnit(unit)}>
-                    <SelectTrigger className="ml-1 inline-flex h-8 w-[100px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ether">Ether</SelectItem>
-                      <SelectItem value="wei">Wei</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentTree.merkleTreeValues.values.map((pricing, i) => (
-                <TableRow key={i}>
-                  <TableCell>{ethers.utils.parseBytes32String(pricing[0])}</TableCell>
-                  <TableCell>{getChainAlias(pricing[1])}</TableCell>
-                  <TableCell>{formatUpdateParams(pricing[2])}</TableCell>
-                  <TableCell>{formatDuration(pricing[3])}</TableCell>
-                  <TableCell>{convertPrice(pricing[4])}</TableCell>
+          {showRawValues ? (
+            <RawValuesTable values={currentTree.merkleTreeValues.values} />
+          ) : (
+            <Table className="mt-4">
+              <TableHeader sticky>
+                <TableRow>
+                  <TableHead>dAPI Name</TableHead>
+                  <TableHead>Chain</TableHead>
+                  <TableHead>dAPI Update Parameters</TableHead>
+                  <TableHead>Duration (Days)</TableHead>
+                  <TableHead>
+                    Price
+                    <Select value={priceUnit} onValueChange={(unit: Unit) => setPriceUnit(unit)}>
+                      <SelectTrigger className="ml-1 inline-flex h-8 w-[100px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ether">Ether</SelectItem>
+                        <SelectItem value="wei">Wei</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {currentTree.merkleTreeValues.values.map((pricing, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{ethers.utils.parseBytes32String(pricing[0])}</TableCell>
+                    <TableCell>{getChainAlias(pricing[1])}</TableCell>
+                    <TableCell>{formatUpdateParams(pricing[2])}</TableCell>
+                    <TableCell>{formatDuration(pricing[3])}</TableCell>
+                    <TableCell>{convertPrice(pricing[4])}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </TabsContent>
         <TabsContent value="1" forceMount>
-          <TreeDiff diffResult={props.diffResult} />
+          <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={showRawValues} />
         </TabsContent>
       </Tabs>
     </RootLayout>
+  );
+}
+
+interface RawValuesTableProps {
+  values: string[][];
+}
+
+function RawValuesTable(props: RawValuesTableProps) {
+  return (
+    <Table className="mt-4">
+      <TableHeader sticky>
+        <TableRow>
+          <TableHead>dAPI Name</TableHead>
+          <TableHead className="whitespace-nowrap">Chain ID</TableHead>
+          <TableHead>dAPI Update Parameters</TableHead>
+          <TableHead>Duration (Seconds)</TableHead>
+          <TableHead>Price (Wei)</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {props.values.map((pricing, i) => (
+          <TableRow key={i}>
+            <TableCell>{pricing[0]}</TableCell>
+            <TableCell>{pricing[1]}</TableCell>
+            <TableCell>{pricing[2]}</TableCell>
+            <TableCell>{pricing[3]}</TableCell>
+            <TableCell>{pricing[4]}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 

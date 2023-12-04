@@ -74,10 +74,22 @@ export function writeMerkleTreeData(path: string, data: MerkleTreeData) {
 export async function createTreeDiff<T extends MerkleTreeData>(options: {
   subfolder: TreeSubFolder;
   currentData: T;
+  currentDataPath: string;
   previousData: T;
+  previousDataPath: string;
+  preProcess: boolean;
   preProcessor: (values: T['merkleTreeValues']['values'][number]) => string[];
 }) {
-  const { subfolder, currentData, previousData, preProcessor } = options;
+  const { subfolder, currentData, currentDataPath, previousData, previousDataPath, preProcess, preProcessor } = options;
+
+  if (!previousData) {
+    return null;
+  }
+
+  if (!preProcess) {
+    // No need to pre-process the files, so we diff the raw files
+    return await createFileDiff(previousDataPath, currentDataPath);
+  }
 
   const treeDirPath = join(process.cwd(), '../data/.processed', subfolder);
   const metadataPath = join(treeDirPath, 'metadata.json');
@@ -88,7 +100,7 @@ export async function createTreeDiff<T extends MerkleTreeData>(options: {
   if (!existsSync(treeDirPath)) {
     mkdirSync(treeDirPath, { recursive: true });
     metadata = { processedAt: '', commit: '' };
-    writeFileSync(metadataPath, JSON.stringify(metadata));
+    writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
   } else {
     metadata = JSON.parse(readFileSync(metadataPath, 'utf8'));
   }

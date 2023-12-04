@@ -1,28 +1,21 @@
-import { ReactNode, useEffect, useState } from 'react';
-import { createRoot, Root } from 'react-dom/client';
+import { useEffect } from 'react';
+import forEach from 'lodash/forEach';
 import { Diff2HtmlUI } from 'diff2html/lib/ui/js/diff2html-ui';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip';
-import { Toggle } from '~/components/ui/toggle';
 import addressBook from '../../../data/address-book.json';
+import { DiffMode } from './types';
 import 'diff2html/bundles/css/diff2html.min.css';
 
 interface TreeDiffProps {
   diffResult: null | { diff: string; status: 'success' } | { status: 'error' };
+  diffMode: DiffMode;
+  raw: boolean;
 }
 
-type DiffMode = null | 'unified' | 'split';
-
 export function TreeDiff(props: TreeDiffProps) {
-  const { diffResult } = props;
-
-  const [mode, setMode] = useState<DiffMode>(null);
-  useEffect(() => {
-    const storedMode = window.localStorage.getItem('diff-mode');
-    setMode((storedMode || 'split') as DiffMode);
-  }, []);
+  const { diffResult, diffMode, raw } = props;
 
   useEffect(() => {
-    if (!mode) return;
+    if (!diffMode) return;
 
     if (diffResult?.status === 'success' && diffResult.diff) {
       const element = document.getElementById('tree-diff-container')!;
@@ -30,42 +23,37 @@ export function TreeDiff(props: TreeDiffProps) {
         drawFileList: false,
         fileContentToggle: false,
         synchronisedScroll: true,
-        outputFormat: mode === 'unified' ? 'line-by-line' : 'side-by-side',
+        outputFormat: diffMode === 'unified' ? 'line-by-line' : 'side-by-side',
         rawTemplates: { 'tag-file-renamed': '' },
       });
       ui.draw();
       ui.highlightCode();
 
-      const elements = document.querySelectorAll('.hljs-attr:not(:has(*))');
-      const roots: Root[] = [];
-      elements.forEach((el) => {
-        const textContent = el.textContent!;
-        if (textContent === '"') {
-          return;
-        }
+      if (raw) {
+        // Keep known addresses as is
+        return;
+      }
 
-        const textToProcess = textContent.replaceAll('"', '');
-        const addressAlias = addressBook[textToProcess as keyof typeof addressBook];
-        if (!addressAlias) {
-          return;
-        }
+      // Replace known addresses with their names
+      const elementsToUpdate: [HTMLElement, string][] = [];
+      forEach(addressBook, (name, address) => {
+        const xpath = `//span[text()='${address}' or text()='"${address}"']`;
+        const result = document.evaluate(xpath, element, null, XPathResult.ANY_TYPE, null);
+        let matchingElement = result.iterateNext() as HTMLElement | null;
 
-        const wrapInQuotes = textContent.startsWith('"');
-        const root = createRoot(el);
-        root.render(
-          <DiffTextWithTooltip content={textToProcess} wrapInQuotes={wrapInQuotes}>
-            {addressAlias}
-          </DiffTextWithTooltip>
-        );
-        roots.push(root);
+        while (matchingElement) {
+          const wrapInQuotes = matchingElement.textContent!.startsWith('"');
+          // We can't update the DOM while iterating over the xpath results
+          elementsToUpdate.push([matchingElement, wrapInQuotes ? `"${name}"` : name]);
+          matchingElement = result.iterateNext() as HTMLElement | null;
+        }
       });
 
-      return () => {
-        // We run this in a timeout to avoid a false positive warning from React
-        setTimeout(() => roots.forEach((root) => root.unmount()), 0);
-      };
+      elementsToUpdate.forEach(([el, newText]) => {
+        el.textContent = newText;
+      });
     }
-  }, [diffResult, mode]);
+  }, [diffResult, diffMode, raw]);
 
   const previousFile = <span className="font-semibold">previous-hash.json</span>;
   const currentFile = <span className="font-semibold">current-hash.json</span>;
@@ -86,55 +74,12 @@ export function TreeDiff(props: TreeDiffProps) {
         </p>
       ) : (
         <>
-          <div className="flex items-center justify-between gap-4">
-            <p className="my-4 text-sm text-gray-500">
-              Shows the difference between the {previousFile} and the {currentFile} files.
-            </p>
-            <Toggle
-              variant="outline"
-              size="sm"
-              onPressedChange={(unified) => {
-                const newMode = unified ? 'unified' : 'split';
-                setMode(newMode);
-                window.localStorage.setItem('diff-mode', newMode);
-              }}
-              pressed={mode === 'unified'}
-              aria-label="Toggle unified"
-            >
-              Unified
-            </Toggle>
-          </div>
+          <p className="my-4 text-sm text-gray-500">
+            Shows the difference between the {previousFile} and the {currentFile} files.
+          </p>
           <div id="tree-diff-container" className="w-full overflow-x-auto" />
         </>
       )}
     </div>
-  );
-}
-
-interface DiffAliasProps {
-  children: ReactNode;
-  content: string;
-  wrapInQuotes: boolean;
-}
-
-function DiffTextWithTooltip(props: DiffAliasProps) {
-  const { children, content, wrapInQuotes } = props;
-  return (
-    <TooltipProvider>
-      <Tooltip delayDuration={0} preventCloseOnClick>
-        {wrapInQuotes && '"'}
-        <TooltipTrigger asChild>
-          <span
-            className="cursor-default underline decoration-transparent/40 underline-offset-2 hover:decoration-transparent/70"
-            role="button"
-            tabIndex={0}
-          >
-            {children}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>{content}</TooltipContent>
-        {wrapInQuotes && '"'}
-      </Tooltip>
-    </TooltipProvider>
   );
 }
