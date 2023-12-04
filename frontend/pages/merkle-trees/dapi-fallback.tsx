@@ -14,6 +14,7 @@ import { readTreeDataFrom, readSignerDataFrom, createFileDiff } from '~/lib/serv
 import { createDapiFallbackMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
+import { useDiffMode } from '~/components/merkle-tree-elements/use-diff-mode';
 
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
@@ -60,6 +61,8 @@ export default function DapiFallbackTree(props: Props) {
     signers
   );
 
+  const [diffMode] = useDiffMode();
+
   return (
     <RootLayout>
       <div>
@@ -102,7 +105,7 @@ export default function DapiFallbackTree(props: Props) {
           </Table>
         </TabsContent>
         <TabsContent value="1" forceMount>
-          <TreeDiff diffResult={props.diffResult} />
+          <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={false} />
         </TabsContent>
       </Tabs>
     </RootLayout>
