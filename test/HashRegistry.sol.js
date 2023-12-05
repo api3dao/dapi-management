@@ -9,9 +9,9 @@ describe('HashRegistry', function () {
     const roleNames = [
       'deployer',
       'owner',
-      'dapiManagementRootSigner1',
-      'dapiManagementRootSigner2',
-      'dapiManagementRootSigner3',
+      'dapiFallbackRootSigner1',
+      'dapiFallbackRootSigner2',
+      'dapiFallbackRootSigner3',
       'airnode',
       'randomPerson',
     ];
@@ -24,14 +24,14 @@ describe('HashRegistry', function () {
     const hashRegistry = await HashRegistry.deploy(roles.owner.address);
 
     const dapiName = 'API3/USD';
-    const dataFeedTemplateId = generateRandomBytes32();
-    const dataFeedId = hre.ethers.utils.solidityKeccak256(
+    const fallbackBeaconTemplateId = generateRandomBytes32();
+    const fallbackBeaconId = hre.ethers.utils.solidityKeccak256(
       ['address', 'bytes32'],
-      [roles.airnode.address, dataFeedTemplateId]
+      [roles.airnode.address, fallbackBeaconTemplateId]
     );
-    const dapiSponsorWalletAddress = generateRandomAddress();
+    const fallbackSponsorWalletAddress = generateRandomAddress();
 
-    const treeEntry = [hre.ethers.utils.formatBytes32String(dapiName), dataFeedId, dapiSponsorWalletAddress];
+    const treeEntry = [hre.ethers.utils.formatBytes32String(dapiName), fallbackBeaconId, fallbackSponsorWalletAddress];
     const treeValues = [
       [generateRandomBytes32(), generateRandomBytes32(), generateRandomAddress()],
       [generateRandomBytes32(), generateRandomBytes32(), generateRandomAddress()],
@@ -43,18 +43,12 @@ describe('HashRegistry', function () {
     const root = tree.root;
     const timestamp = Math.floor(Date.now() / 1000);
 
-    const dapiManagementMerkleTreeRootHashType = hre.ethers.utils.solidityKeccak256(
-      ['string'],
-      ['dAPI management Merkle tree root']
-    );
+    const dapiFallbackHashType = hre.ethers.utils.solidityKeccak256(['string'], ['dAPI fallback root']);
     const messages = hre.ethers.utils.arrayify(
-      hre.ethers.utils.solidityKeccak256(
-        ['bytes32', 'bytes32', 'uint256'],
-        [dapiManagementMerkleTreeRootHashType, root, timestamp]
-      )
+      hre.ethers.utils.solidityKeccak256(['bytes32', 'bytes32', 'uint256'], [dapiFallbackHashType, root, timestamp])
     );
     const signatures = await Promise.all(
-      [roles.dapiManagementRootSigner1, roles.dapiManagementRootSigner2, roles.dapiManagementRootSigner3].map(
+      [roles.dapiFallbackRootSigner1, roles.dapiFallbackRootSigner2, roles.dapiFallbackRootSigner3].map(
         async (rootSigner) => await rootSigner.signMessage(messages)
       )
     );
@@ -63,10 +57,10 @@ describe('HashRegistry', function () {
       roles,
       hashRegistry,
       dapiName,
-      dataFeedTemplateId,
-      dataFeedId,
-      dapiSponsorWalletAddress,
-      dapiManagementMerkleTreeRootHashType,
+      fallbackBeaconTemplateId,
+      fallbackBeaconId,
+      fallbackSponsorWalletAddress,
+      dapiFallbackHashType,
       root,
       timestamp,
       messages,
@@ -81,52 +75,48 @@ describe('HashRegistry', function () {
     });
   });
 
-  describe('setSigners', function () {
+  describe('setupSigners', function () {
     context('Signers is not emtpy', function () {
       context('Hash type signers is empty', function () {
-        it('set up signers', async function () {
-          const { roles, hashRegistry, dapiManagementMerkleTreeRootHashType } = await helpers.loadFixture(deploy);
-          expect(await hashRegistry.getSigners(dapiManagementMerkleTreeRootHashType)).to.deep.equal([]);
+        it('setup signers', async function () {
+          const { roles, hashRegistry, dapiFallbackHashType } = await helpers.loadFixture(deploy);
+          expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([]);
           const signers = [
-            roles.dapiManagementRootSigner1.address,
-            roles.dapiManagementRootSigner2.address,
-            roles.dapiManagementRootSigner3.address,
+            roles.dapiFallbackRootSigner1.address,
+            roles.dapiFallbackRootSigner2.address,
+            roles.dapiFallbackRootSigner3.address,
           ];
-          await expect(hashRegistry.connect(roles.owner).setSigners(dapiManagementMerkleTreeRootHashType, signers))
-            .to.emit(hashRegistry, 'SetSigners')
-            .withArgs(dapiManagementMerkleTreeRootHashType, signers);
-          expect(await hashRegistry.getSigners(dapiManagementMerkleTreeRootHashType)).to.deep.equal(signers);
+          await expect(hashRegistry.connect(roles.owner).setupSigners(dapiFallbackHashType, signers))
+            .to.emit(hashRegistry, 'SetupSigners')
+            .withArgs(dapiFallbackHashType, signers);
+          expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal(signers);
         });
       });
-      context('Signers already set', function () {
+      context('Hash type signers is not empty', function () {
         it('reverts', async function () {
-          const { roles, hashRegistry, dapiManagementMerkleTreeRootHashType } = await helpers.loadFixture(deploy);
-          expect(await hashRegistry.getSigners(dapiManagementMerkleTreeRootHashType)).to.deep.equal([]);
+          const { roles, hashRegistry, dapiFallbackHashType } = await helpers.loadFixture(deploy);
+          expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([]);
           await expect(
-            hashRegistry
-              .connect(roles.owner)
-              .addSigner(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner1.address)
+            hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
           )
             .to.emit(hashRegistry, 'AddedSigner')
-            .withArgs(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner1.address, [
-              roles.dapiManagementRootSigner1.address,
-            ]);
+            .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
           await expect(
             hashRegistry
               .connect(roles.owner)
-              .setSigners(dapiManagementMerkleTreeRootHashType, [
-                roles.dapiManagementRootSigner2.address,
-                roles.dapiManagementRootSigner3.address,
+              .setupSigners(dapiFallbackHashType, [
+                roles.dapiFallbackRootSigner2.address,
+                roles.dapiFallbackRootSigner3.address,
               ])
-          ).to.be.revertedWith('Signers already set');
+          ).to.be.revertedWith('Hash type signers is not empty');
         });
       });
     });
     context('Signers is emtpy', function () {
       it('reverts', async function () {
         const { roles, hashRegistry } = await helpers.loadFixture(deploy);
-        await expect(hashRegistry.connect(roles.owner).setSigners(generateRandomBytes32(), [])).to.be.revertedWith(
-          'Signers empty'
+        await expect(hashRegistry.connect(roles.owner).setupSigners(generateRandomBytes32(), [])).to.be.revertedWith(
+          'Signers is empty'
         );
       });
     });
@@ -138,74 +128,59 @@ describe('HashRegistry', function () {
         context('Signer is not zero', function () {
           context('Signer does not exist', function () {
             it('adds signer', async function () {
-              const { roles, hashRegistry, dapiManagementMerkleTreeRootHashType } = await helpers.loadFixture(deploy);
-              expect(await hashRegistry.getSigners(dapiManagementMerkleTreeRootHashType)).to.deep.equal([]);
+              const { roles, hashRegistry, dapiFallbackHashType } = await helpers.loadFixture(deploy);
+              expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([]);
               await expect(
-                hashRegistry
-                  .connect(roles.owner)
-                  .addSigner(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner1.address)
+                hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
               )
                 .to.emit(hashRegistry, 'AddedSigner')
-                .withArgs(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner1.address, [
-                  roles.dapiManagementRootSigner1.address,
-                ]);
-              expect(await hashRegistry.getSigners(dapiManagementMerkleTreeRootHashType)).to.deep.equal([
-                roles.dapiManagementRootSigner1.address,
+                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
+              expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([
+                roles.dapiFallbackRootSigner1.address,
               ]);
               await expect(
-                hashRegistry
-                  .connect(roles.owner)
-                  .addSigner(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner2.address)
+                hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address)
               )
                 .to.emit(hashRegistry, 'AddedSigner')
-                .withArgs(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner2.address, [
-                  roles.dapiManagementRootSigner1.address,
-                  roles.dapiManagementRootSigner2.address,
-                ]);
-              expect(await hashRegistry.getSigners(dapiManagementMerkleTreeRootHashType)).to.deep.equal([
-                roles.dapiManagementRootSigner1.address,
-                roles.dapiManagementRootSigner2.address,
+                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address);
+              expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([
+                roles.dapiFallbackRootSigner1.address,
+                roles.dapiFallbackRootSigner2.address,
               ]);
             });
           });
           context('Signer exists', function () {
             it('reverts', async function () {
-              const { roles, hashRegistry, dapiManagementMerkleTreeRootHashType } = await helpers.loadFixture(deploy);
-              expect(await hashRegistry.getSigners(dapiManagementMerkleTreeRootHashType)).to.deep.equal([]);
+              const { roles, hashRegistry, dapiFallbackHashType } = await helpers.loadFixture(deploy);
+              expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([]);
               await expect(
-                hashRegistry
-                  .connect(roles.owner)
-                  .addSigner(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner1.address)
+                hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
               )
                 .to.emit(hashRegistry, 'AddedSigner')
-                .withArgs(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner1.address, [
-                  roles.dapiManagementRootSigner1.address,
-                ]);
+                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
               await expect(
-                hashRegistry
-                  .connect(roles.owner)
-                  .addSigner(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner1.address)
-              ).to.be.revertedWith('Duplicate signer address');
+                hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
+              ).to.be.revertedWith('Signer already exists');
             });
           });
         });
-        context('Signer address zero', function () {
+        context('Signer is zero', function () {
           it('reverts', async function () {
             const { roles, hashRegistry } = await helpers.loadFixture(deploy);
             await expect(
               hashRegistry.connect(roles.owner).addSigner(generateRandomBytes32(), hre.ethers.constants.AddressZero)
-            ).to.be.revertedWith('Signer address zero');
+            ).to.be.revertedWith('Signer is zero');
           });
         });
       });
-      context('Hash type zero', function () {
+      context('Hash type is zero', function () {
         it('reverts', async function () {
           const { roles, hashRegistry } = await helpers.loadFixture(deploy);
           await expect(
             hashRegistry
               .connect(roles.owner)
-              .addSigner(hre.ethers.constants.HashZero, roles.dapiManagementRootSigner1.address)
-          ).to.be.revertedWith('Hash type zero');
+              .addSigner(hre.ethers.constants.HashZero, roles.dapiFallbackRootSigner1.address)
+          ).to.be.revertedWith('Hash type is zero');
         });
       });
     });
@@ -221,79 +196,87 @@ describe('HashRegistry', function () {
 
   describe('removeSigner', function () {
     context('Sender is the owner', function () {
-      context('Signer exists', function () {
-        it('removes signer', async function () {
-          const { roles, hashRegistry, dapiManagementMerkleTreeRootHashType } = await helpers.loadFixture(deploy);
-          const signers = [
-            roles.dapiManagementRootSigner1,
-            roles.dapiManagementRootSigner2,
-            roles.dapiManagementRootSigner3,
-          ];
-          expect(await hashRegistry.getSigners(dapiManagementMerkleTreeRootHashType)).to.deep.equal([]);
-          const expectedSigners = [];
-          for (const signer of signers) {
-            expectedSigners.push(signer.address);
+      context('Hash type is not zero', function () {
+        context('Signer is not zero', function () {
+          context('Signer exists', function () {
+            it('removes signer', async function () {
+              const { roles, hashRegistry, dapiFallbackHashType } = await helpers.loadFixture(deploy);
+              const signers = [
+                roles.dapiFallbackRootSigner1,
+                roles.dapiFallbackRootSigner2,
+                roles.dapiFallbackRootSigner3,
+              ];
+              expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([]);
+              for (const signer of signers) {
+                await expect(hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, signer.address))
+                  .to.emit(hashRegistry, 'AddedSigner')
+                  .withArgs(dapiFallbackHashType, signer.address);
+              }
+              // remove from the middle
+              await expect(
+                hashRegistry
+                  .connect(roles.owner)
+                  .removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address)
+              )
+                .to.emit(hashRegistry, 'RemovedSigner')
+                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address);
+              // remove at the end
+              await expect(
+                hashRegistry
+                  .connect(roles.owner)
+                  .removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner3.address)
+              )
+                .to.emit(hashRegistry, 'RemovedSigner')
+                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner3.address);
+              // remove remaining signer
+              await expect(
+                hashRegistry
+                  .connect(roles.owner)
+                  .removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
+              )
+                .to.emit(hashRegistry, 'RemovedSigner')
+                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
+            });
+          });
+          context('Signer does not exist', function () {
+            it('reverts', async function () {
+              const { roles, hashRegistry, dapiFallbackHashType } = await helpers.loadFixture(deploy);
+              expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal([]);
+              await expect(
+                hashRegistry
+                  .connect(roles.owner)
+                  .removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
+              ).to.be.revertedWith('Signer does not exist');
+              await expect(
+                hashRegistry.connect(roles.owner).addSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address)
+              )
+                .to.emit(hashRegistry, 'AddedSigner')
+                .withArgs(dapiFallbackHashType, roles.dapiFallbackRootSigner1.address);
+              await expect(
+                hashRegistry
+                  .connect(roles.owner)
+                  .removeSigner(dapiFallbackHashType, roles.dapiFallbackRootSigner2.address)
+              ).to.be.revertedWith('Signer does not exist');
+            });
+          });
+        });
+        context('Signer is zero', function () {
+          it('reverts', async function () {
+            const { roles, hashRegistry } = await helpers.loadFixture(deploy);
             await expect(
-              hashRegistry.connect(roles.owner).addSigner(dapiManagementMerkleTreeRootHashType, signer.address)
-            )
-              .to.emit(hashRegistry, 'AddedSigner')
-              .withArgs(dapiManagementMerkleTreeRootHashType, signer.address, expectedSigners);
-          }
-          // remove from the middle
-          await expect(
-            hashRegistry
-              .connect(roles.owner)
-              .removeSigner(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner2.address)
-          )
-            .to.emit(hashRegistry, 'RemovedSigner')
-            .withArgs(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner2.address, [
-              roles.dapiManagementRootSigner1.address,
-              roles.dapiManagementRootSigner3.address,
-            ]);
-
-          // remove at the end
-          await expect(
-            hashRegistry
-              .connect(roles.owner)
-              .removeSigner(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner3.address)
-          )
-            .to.emit(hashRegistry, 'RemovedSigner')
-            .withArgs(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner3.address, [
-              roles.dapiManagementRootSigner1.address,
-            ]);
-          // remove remaining signer
-          await expect(
-            hashRegistry
-              .connect(roles.owner)
-              .removeSigner(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner1.address)
-          )
-            .to.emit(hashRegistry, 'RemovedSigner')
-            .withArgs(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner1.address, []);
+              hashRegistry.connect(roles.owner).removeSigner(generateRandomBytes32(), hre.ethers.constants.AddressZero)
+            ).to.be.revertedWith('Signer is zero');
+          });
         });
       });
-      context('Signer does not exist', function () {
+      context('Hash type is zero', function () {
         it('reverts', async function () {
-          const { roles, hashRegistry, dapiManagementMerkleTreeRootHashType } = await helpers.loadFixture(deploy);
-          expect(await hashRegistry.getSigners(dapiManagementMerkleTreeRootHashType)).to.deep.equal([]);
+          const { roles, hashRegistry } = await helpers.loadFixture(deploy);
           await expect(
             hashRegistry
               .connect(roles.owner)
-              .removeSigner(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner1.address)
-          ).to.be.revertedWith('Signer does not exist');
-          await expect(
-            hashRegistry
-              .connect(roles.owner)
-              .addSigner(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner1.address)
-          )
-            .to.emit(hashRegistry, 'AddedSigner')
-            .withArgs(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner1.address, [
-              roles.dapiManagementRootSigner1.address,
-            ]);
-          await expect(
-            hashRegistry
-              .connect(roles.owner)
-              .removeSigner(dapiManagementMerkleTreeRootHashType, roles.dapiManagementRootSigner2.address)
-          ).to.be.revertedWith('Signer does not exist');
+              .removeSigner(hre.ethers.constants.HashZero, roles.dapiFallbackRootSigner1.address)
+          ).to.be.revertedWith('Hash type is zero');
         });
       });
     });
@@ -308,150 +291,145 @@ describe('HashRegistry', function () {
   });
 
   describe('registerHash', function () {
-    context('Signers is not empty', function () {
-      context('Number of signatures is equal to number of signers', function () {
-        context('All signatures match', function () {
-          context('Timestamp is newer', function () {
-            it('registers hash', async function () {
-              const { roles, hashRegistry, dapiManagementMerkleTreeRootHashType, root, timestamp, signatures } =
-                await helpers.loadFixture(deploy);
-              const signers = [
-                roles.dapiManagementRootSigner1.address,
-                roles.dapiManagementRootSigner2.address,
-                roles.dapiManagementRootSigner3.address,
-              ];
-              const hashBefore = await hashRegistry.hashes(dapiManagementMerkleTreeRootHashType);
-              expect(hashBefore.value).to.equal(hre.ethers.constants.HashZero);
-              expect(hashBefore.timestamp).to.equal(0);
-              await hashRegistry
-                .connect(roles.owner)
-                .multicall(
-                  signers.map((signer) =>
-                    hashRegistry.interface.encodeFunctionData('addSigner', [
-                      dapiManagementMerkleTreeRootHashType,
-                      signer,
-                    ])
-                  )
-                );
-              await expect(hashRegistry.registerHash(dapiManagementMerkleTreeRootHashType, root, timestamp, signatures))
-                .to.emit(hashRegistry, 'RegisteredHash')
-                .withArgs(dapiManagementMerkleTreeRootHashType, root, timestamp);
-              const hashAfter = await hashRegistry.hashes(dapiManagementMerkleTreeRootHashType);
-              expect(hashAfter.value).to.equal(root);
-              expect(hashAfter.timestamp).to.equal(timestamp);
+    context('Hash type is not zero', function () {
+      context('Signers is not empty', function () {
+        context('Number of signatures is equal to number of signers', function () {
+          context('All signatures match', function () {
+            context('Timestamp is newer', function () {
+              it('registers hash', async function () {
+                const { roles, hashRegistry, dapiFallbackHashType, root, timestamp, signatures } =
+                  await helpers.loadFixture(deploy);
+                const signers = [
+                  roles.dapiFallbackRootSigner1.address,
+                  roles.dapiFallbackRootSigner2.address,
+                  roles.dapiFallbackRootSigner3.address,
+                ];
+                expect(await hashRegistry.hashTypeToHash(dapiFallbackHashType)).to.equal(hre.ethers.constants.HashZero);
+                expect(await hashRegistry.hashTypeToTimestamp(dapiFallbackHashType)).to.equal(0);
+                await hashRegistry
+                  .connect(roles.owner)
+                  .multicall(
+                    signers.map((signer) =>
+                      hashRegistry.interface.encodeFunctionData('addSigner', [dapiFallbackHashType, signer])
+                    )
+                  );
+                await expect(hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, signatures))
+                  .to.emit(hashRegistry, 'RegisteredHash')
+                  .withArgs(dapiFallbackHashType, root, timestamp);
+                expect(await hashRegistry.hashTypeToHash(dapiFallbackHashType)).to.equal(root);
+                expect(await hashRegistry.hashTypeToTimestamp(dapiFallbackHashType)).to.equal(timestamp);
+              });
+            });
+            context('Timestamp is not newer', function () {
+              it('reverts', async function () {
+                const { roles, hashRegistry, dapiFallbackHashType, root, timestamp, signatures } =
+                  await helpers.loadFixture(deploy);
+                const signers = [
+                  roles.dapiFallbackRootSigner1.address,
+                  roles.dapiFallbackRootSigner2.address,
+                  roles.dapiFallbackRootSigner3.address,
+                ];
+                await hashRegistry
+                  .connect(roles.owner)
+                  .multicall(
+                    signers.map((signer) =>
+                      hashRegistry.interface.encodeFunctionData('addSigner', [dapiFallbackHashType, signer])
+                    )
+                  );
+                expect(await hashRegistry.getSigners(dapiFallbackHashType)).to.deep.equal(signers);
+                await expect(hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, signatures))
+                  .to.emit(hashRegistry, 'RegisteredHash')
+                  .withArgs(dapiFallbackHashType, root, timestamp);
+                await expect(
+                  hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, signatures)
+                ).to.be.revertedWith('Timestamp is not newer');
+              });
             });
           });
-          context('Timestamp not more recent', function () {
+          context('All signatures do not match', function () {
             it('reverts', async function () {
-              const { roles, hashRegistry, dapiManagementMerkleTreeRootHashType, root, timestamp, signatures } =
+              const { roles, hashRegistry, dapiFallbackHashType, root, timestamp, signatures, messages } =
                 await helpers.loadFixture(deploy);
               const signers = [
-                roles.dapiManagementRootSigner1.address,
-                roles.dapiManagementRootSigner2.address,
-                roles.dapiManagementRootSigner3.address,
+                roles.dapiFallbackRootSigner1.address,
+                roles.dapiFallbackRootSigner2.address,
+                roles.dapiFallbackRootSigner3.address,
               ];
               await hashRegistry
                 .connect(roles.owner)
                 .multicall(
                   signers.map((signer) =>
-                    hashRegistry.interface.encodeFunctionData('addSigner', [
-                      dapiManagementMerkleTreeRootHashType,
-                      signer,
-                    ])
+                    hashRegistry.interface.encodeFunctionData('addSigner', [dapiFallbackHashType, signer])
                   )
                 );
-              expect(await hashRegistry.getSigners(dapiManagementMerkleTreeRootHashType)).to.deep.equal(signers);
-              await expect(hashRegistry.registerHash(dapiManagementMerkleTreeRootHashType, root, timestamp, signatures))
-                .to.emit(hashRegistry, 'RegisteredHash')
-                .withArgs(dapiManagementMerkleTreeRootHashType, root, timestamp);
+              // Signed by a different signer
               await expect(
-                hashRegistry.registerHash(dapiManagementMerkleTreeRootHashType, root, timestamp, signatures)
-              ).to.be.revertedWith('Timestamp not more recent');
+                hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, [
+                  await roles.randomPerson.signMessage(messages),
+                  ...signatures.slice(1),
+                ])
+              ).to.be.revertedWith('Signature mismatch');
+              // Signed a different root
+              const wrongRootMessages = hre.ethers.utils.arrayify(
+                hre.ethers.utils.solidityKeccak256(
+                  ['bytes32', 'bytes32', 'uint256'],
+                  [dapiFallbackHashType, generateRandomBytes32(), timestamp]
+                )
+              );
+              await expect(
+                hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, [
+                  await roles.dapiFallbackRootSigner1.signMessage(wrongRootMessages),
+                  ...signatures.slice(1),
+                ])
+              ).to.be.revertedWith('Signature mismatch');
+              // All signatures are different
+              await expect(
+                hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, Array(3).fill(signatures[0]))
+              ).to.be.revertedWith('Signature mismatch');
+              // All signatures are in the expected order
+              await expect(
+                hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, signatures.reverse())
+              ).to.be.revertedWith('Signature mismatch');
             });
           });
         });
-        context('All signatures do not match', function () {
+        context('Number of signatures is not equal to number of signers', function () {
           it('reverts', async function () {
-            const { roles, hashRegistry, dapiManagementMerkleTreeRootHashType, root, timestamp, signatures, messages } =
+            const { roles, hashRegistry, dapiFallbackHashType, root, timestamp, signatures } =
               await helpers.loadFixture(deploy);
             const signers = [
-              roles.dapiManagementRootSigner1.address,
-              roles.dapiManagementRootSigner2.address,
-              roles.dapiManagementRootSigner3.address,
+              roles.dapiFallbackRootSigner1.address,
+              roles.dapiFallbackRootSigner2.address,
+              roles.dapiFallbackRootSigner3.address,
             ];
             await hashRegistry
               .connect(roles.owner)
               .multicall(
                 signers.map((signer) =>
-                  hashRegistry.interface.encodeFunctionData('addSigner', [dapiManagementMerkleTreeRootHashType, signer])
+                  hashRegistry.interface.encodeFunctionData('addSigner', [dapiFallbackHashType, signer])
                 )
               );
-            // Signed by a different signer
             await expect(
-              hashRegistry.registerHash(dapiManagementMerkleTreeRootHashType, root, timestamp, [
-                await roles.randomPerson.signMessage(messages),
-                ...signatures.slice(1),
-              ])
-            ).to.be.revertedWith('Signature mismatch');
-            // Signed a different root
-            const wrongRootMessages = hre.ethers.utils.arrayify(
-              hre.ethers.utils.solidityKeccak256(
-                ['bytes32', 'bytes32', 'uint256'],
-                [dapiManagementMerkleTreeRootHashType, generateRandomBytes32(), timestamp]
-              )
-            );
-            await expect(
-              hashRegistry.registerHash(dapiManagementMerkleTreeRootHashType, root, timestamp, [
-                await roles.dapiManagementRootSigner1.signMessage(wrongRootMessages),
-                ...signatures.slice(1),
-              ])
-            ).to.be.revertedWith('Signature mismatch');
-            // All signatures are different
-            await expect(
-              hashRegistry.registerHash(
-                dapiManagementMerkleTreeRootHashType,
-                root,
-                timestamp,
-                Array(3).fill(signatures[0])
-              )
-            ).to.be.revertedWith('Signature mismatch');
-            // All signatures are in the expected order
-            await expect(
-              hashRegistry.registerHash(dapiManagementMerkleTreeRootHashType, root, timestamp, signatures.reverse())
-            ).to.be.revertedWith('Signature mismatch');
+              hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, signatures.slice(1))
+            ).to.be.revertedWith('Invalid number of signatures');
           });
         });
       });
-      context('Number of signatures is not equal to number of signers', function () {
+      context('Signers is empty', function () {
         it('reverts', async function () {
-          const { roles, hashRegistry, dapiManagementMerkleTreeRootHashType, root, timestamp, signatures } =
-            await helpers.loadFixture(deploy);
-          const signers = [
-            roles.dapiManagementRootSigner1.address,
-            roles.dapiManagementRootSigner2.address,
-            roles.dapiManagementRootSigner3.address,
-          ];
-          await hashRegistry
-            .connect(roles.owner)
-            .multicall(
-              signers.map((signer) =>
-                hashRegistry.interface.encodeFunctionData('addSigner', [dapiManagementMerkleTreeRootHashType, signer])
-              )
-            );
-          await expect(
-            hashRegistry.registerHash(dapiManagementMerkleTreeRootHashType, root, timestamp, signatures.slice(1))
-          ).to.be.revertedWith('Signature mismatch');
+          const { hashRegistry, dapiFallbackHashType, root, timestamp } = await helpers.loadFixture(deploy);
+          await expect(hashRegistry.registerHash(dapiFallbackHashType, root, timestamp, [])).to.be.revertedWith(
+            'Signers have not been set'
+          );
         });
       });
     });
-    context('Signers empty', function () {
+    context('Hash type is zero', function () {
       it('reverts', async function () {
-        const { hashRegistry, dapiManagementMerkleTreeRootHashType, root, timestamp } = await helpers.loadFixture(
-          deploy
-        );
+        const { hashRegistry, root, timestamp, signatures } = await helpers.loadFixture(deploy);
         await expect(
-          hashRegistry.registerHash(dapiManagementMerkleTreeRootHashType, root, timestamp, [])
-        ).to.be.revertedWith('Signers not set');
+          hashRegistry.registerHash(hre.ethers.constants.HashZero, root, timestamp, signatures)
+        ).to.be.revertedWith('Hash type is zero');
       });
     });
   });

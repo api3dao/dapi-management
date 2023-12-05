@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@api3/airnode-protocol-v1/contracts/utils/SelfMulticall.sol";
-import "./interfaces/IHashRegistry.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "./interfaces/IHashRegistry.sol";
 
 /// @title Contract that allows users to manage hashes by type which have been
 /// signed by a set of pre-defined signer accounts
@@ -21,43 +21,49 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 /// signed following the ERC-191: Signed Data Standard (version 0x45 (E)).
 /// https://eips.ethereum.org/EIPS/eip-191
 contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
-    using EnumerableSet for EnumerableSet.AddressSet;
     using ECDSA for bytes32;
-
-    struct Hash {
-        bytes32 value;
-        uint256 timestamp;
-    }
-
-    mapping(bytes32 => Hash) public override hashes;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     mapping(bytes32 => EnumerableSet.AddressSet) private _hashTypeToSigners;
 
-    /// @param owner_ Owner address
-    constructor(address owner_) {
-        transferOwnership(owner_);
+    /// @notice Hashes by type (i.e. a merkle tree root, etc)
+    mapping(bytes32 => bytes32) public override hashTypeToHash;
+    /// @notice Timestamps representing when each hash was signed
+    mapping(bytes32 => uint256) public override hashTypeToTimestamp;
+
+    /// @param _owner Owner address
+    constructor(address _owner) {
+        transferOwnership(_owner);
     }
 
     /// @notice Called by the owner to set the hash signers
     /// @param hashType Hash representing a hash type
     /// @param signers Hash signers
-    function setSigners(
+    function setupSigners(
         bytes32 hashType,
         address[] calldata signers
     ) external override onlyOwner {
-        require(hashType != bytes32(0), "Hash type zero");
-        uint256 signersCount = signers.length;
-        require(signersCount != 0, "Signers empty");
-        EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
-            hashType
-        ];
-        require(_signers.length() == 0, "Signers already set");
-        for (uint256 ind = 0; ind < signersCount; ind++) {
-            address signer = signers[ind];
-            require(signer != address(0), "Signer address zero");
-            require(_signers.add(signer), "Duplicate signer address");
+        require(signers.length != 0, "Signers is empty");
+        require(
+            _hashTypeToSigners[hashType].length() == 0,
+            "Hash type signers is not empty"
+        );
+        for (uint256 ind = 0; ind < signers.length; ind++) {
+            _addSigner(hashType, signers[ind]);
         }
-        emit SetSigners(hashType, signers);
+        emit SetupSigners(hashType, signers);
+    }
+
+    /// @notice Called privately to add a new signer to the set of addresses
+    /// @param hashType Hash representing a hash type
+    /// @param signer // Signer address
+    function _addSigner(bytes32 hashType, address signer) private {
+        require(hashType != bytes32(0), "Hash type is zero");
+        require(signer != address(0), "Signer is zero");
+        require(
+            _hashTypeToSigners[hashType].add(signer),
+            "Signer already exists"
+        );
     }
 
     /// @notice Called by the owner to add a new signer to the address set
@@ -66,15 +72,9 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     function addSigner(
         bytes32 hashType,
         address signer
-    ) external override onlyOwner returns (address[] memory signers) {
-        require(hashType != bytes32(0), "Hash type zero");
-        require(signer != address(0), "Signer address zero");
-        EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
-            hashType
-        ];
-        require(_signers.add(signer), "Duplicate signer address");
-        signers = _signers.values();
-        emit AddedSigner(hashType, signer, signers);
+    ) external override onlyOwner {
+        _addSigner(hashType, signer);
+        emit AddedSigner(hashType, signer);
     }
 
     /// @notice Called by the owner to remove a signer from the address set
@@ -82,20 +82,27 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
     /// must be considered when trying to register a new hash since signatures
     /// are expected to be received in the same order of the signers stored in
     /// the contract
-    /// In the case that all signers are removed, subsequent registerHash() calls
-    /// will fail until new signers are added
     /// @param hashType Hash representing a hash type
     /// @param signer // Signer address
     function removeSigner(
         bytes32 hashType,
         address signer
-    ) external override onlyOwner returns (address[] memory signers) {
-        EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
-            hashType
-        ];
-        require(_signers.remove(signer), "Signer does not exist");
-        signers = _signers.values();
-        emit RemovedSigner(hashType, signer, signers);
+    ) external override onlyOwner {
+        require(hashType != bytes32(0), "Hash type is zero");
+        require(signer != address(0), "Signer is zero");
+        require(
+            _hashTypeToSigners[hashType].remove(signer),
+            "Signer does not exist"
+        );
+        emit RemovedSigner(hashType, signer);
+    }
+
+    /// @notice Returns the signers that are required to sign the hash for a type
+    /// @param hashType Hash representing a hash type
+    function getSigners(
+        bytes32 hashType
+    ) external view override returns (address[] memory signers) {
+        signers = _hashTypeToSigners[hashType].values();
     }
 
     /// @notice Called to register a new hash for a type
@@ -109,40 +116,29 @@ contract HashRegistry is Ownable, SelfMulticall, IHashRegistry {
         uint256 timestamp,
         bytes[] calldata signatures
     ) external override {
-        require(timestamp <= block.timestamp, "Timestamp from future");
+        require(hashType != bytes32(0), "Hash type is zero");
         require(
-            timestamp > hashes[hashType].timestamp,
-            "Timestamp not more recent"
+            timestamp > hashTypeToTimestamp[hashType],
+            "Timestamp is not newer"
         );
-        EnumerableSet.AddressSet storage _signers = _hashTypeToSigners[
-            hashType
-        ];
-        uint256 signersCount = _signers.length();
-        require(signersCount != 0, "Signers not set");
+        EnumerableSet.AddressSet storage signers = _hashTypeToSigners[hashType];
+        uint256 signersCount = signers.length();
+        require(signersCount != 0, "Signers have not been set");
+        require(
+            signatures.length == signersCount,
+            "Invalid number of signatures"
+        );
         for (uint256 ind = 0; ind < signersCount; ind++) {
             require(
                 (
                     keccak256(abi.encode(hashType, hash, timestamp))
                         .toEthSignedMessageHash()
-                ).recover(signatures[ind]) == _signers.at(ind),
+                ).recover(signatures[ind]) == signers.at(ind),
                 "Signature mismatch"
             );
         }
-        hashes[hashType] = Hash({value: hash, timestamp: timestamp});
+        hashTypeToHash[hashType] = hash;
+        hashTypeToTimestamp[hashType] = timestamp;
         emit RegisteredHash(hashType, hash, timestamp);
-    }
-
-    /// @notice Returns the signers that are required to sign the hash for a type
-    /// @param hashType Hash representing a hash type
-    function getSigners(
-        bytes32 hashType
-    ) external view override returns (address[] memory signers) {
-        signers = _hashTypeToSigners[hashType].values();
-    }
-
-    function getHashValue(
-        bytes32 hashType
-    ) external view override returns (bytes32 value) {
-        value = hashes[hashType].value;
     }
 }

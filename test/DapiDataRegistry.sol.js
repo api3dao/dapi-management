@@ -155,7 +155,7 @@ describe('DapiDataRegistry', function () {
     const apiTreeRootSignatures = await Promise.all(
       rootSigners.map(async (rootSigner) => await rootSigner.signMessage(apiMessage))
     );
-    await hashRegistry.connect(roles.owner).setSigners(
+    await hashRegistry.connect(roles.owner).setupSigners(
       apiHashType,
       rootSigners.map((rootSigner) => rootSigner.address)
     );
@@ -193,7 +193,7 @@ describe('DapiDataRegistry', function () {
     const dapiTreeRootSignatures = await Promise.all(
       rootSigners.map(async (rootSigner) => await rootSigner.signMessage(dapiMessage))
     );
-    await hashRegistry.connect(roles.owner).setSigners(
+    await hashRegistry.connect(roles.owner).setupSigners(
       dapiHashType,
       rootSigners.map((rootSigner) => rootSigner.address)
     );
