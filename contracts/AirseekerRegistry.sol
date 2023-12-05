@@ -68,9 +68,15 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
         bytes32 dataFeedIdOrDapiName,
         bytes calldata updateParameters
     ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dataFeedIdOrDapiName) {
-        dataFeedIdOrDapiNameToUpdateParameters[
-            dataFeedIdOrDapiName
-        ] = updateParameters;
+        if (
+            keccak256(
+                dataFeedIdOrDapiNameToUpdateParameters[dataFeedIdOrDapiName]
+            ) != keccak256(updateParameters)
+        ) {
+            dataFeedIdOrDapiNameToUpdateParameters[
+                dataFeedIdOrDapiName
+            ] = updateParameters;
+        }
         emit SetUpdateParameters(dataFeedIdOrDapiName, updateParameters);
     }
 
@@ -83,7 +89,12 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
             abi.encodePacked(signedApiUrl).length <= 256,
             "Signed API URL too long"
         );
-        airnodeToSignedApiUrl[airnode] = signedApiUrl;
+        if (
+            keccak256(bytes(airnodeToSignedApiUrl[airnode])) !=
+            keccak256(bytes(signedApiUrl))
+        ) {
+            airnodeToSignedApiUrl[airnode] = signedApiUrl;
+        }
         emit SetSignedApiUrl(airnode, signedApiUrl);
     }
 
