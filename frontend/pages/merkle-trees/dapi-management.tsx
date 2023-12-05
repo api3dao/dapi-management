@@ -17,12 +17,13 @@ import {
   TreeDiff,
 } from '~/components/merkle-tree-elements';
 import { getMerkleTreeServerSideProps } from '~/lib/server/page-props';
-import { createDapiManagementMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
+import { validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from 'next';
 import { useToast } from '~/components/ui/toast/use-toast';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
 import { useDiffMode } from '~/components/merkle-tree-elements/use-diff-mode';
 import dapis from '../../../data/dapis.json';
+import ScrollToTopWrapper from '~/components/ui/srollToTopWrapper';
 
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
@@ -56,13 +57,11 @@ type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 export default function DapiManagementTree(props: Props) {
   const { currentTree, signers, showRawValues } = props;
 
-  const merkleTree = createDapiManagementMerkleTree(currentTree.merkleTreeValues);
-
-  const { signRoot, isSigning } = useTreeSigner('dAPI management Merkle tree', merkleTree.root, currentTree.timestamp);
+  const { signRoot, isSigning } = useTreeSigner('dAPI management Merkle tree', currentTree.hash, currentTree.timestamp);
 
   const signatures = validateTreeRootSignatures(
     'dAPI management Merkle tree root',
-    merkleTree.root,
+    currentTree.hash,
     currentTree.timestamp,
     currentTree.signatures,
     signers
@@ -78,7 +77,7 @@ export default function DapiManagementTree(props: Props) {
         <TreeStatusBadge signatures={signatures} />
       </div>
       <h1 className="mb-2 text-3xl font-bold">dAPI Management Merkle Tree</h1>
-      <TreeRootBadge className="mb-3" root={merkleTree.root} />
+      <TreeRootBadge className="mb-3" root={currentTree.hash} />
 
       <div className="mb-10">
         <SignRootButton signatures={signatures} signRoot={signRoot} isSigning={isSigning} />
@@ -96,34 +95,36 @@ export default function DapiManagementTree(props: Props) {
           </TabsList>
           <ViewOptionsMenu diffMode={diffMode} onDiffModeChange={setDiffMode} />
         </div>
-        <TabsContent value="0">
-          {showRawValues ? (
-            <RawValuesTable values={currentTree.merkleTreeValues} />
-          ) : (
-            <Table className="mt-4">
-              <TableHeader sticky>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">dAPI Name</TableHead>
-                  <TableHead className="min-w-[30ch]">API Providers</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentTree.merkleTreeValues.map((rowValues, i) => {
-                  const dapiName = ethers.utils.parseBytes32String(rowValues[0]);
-                  return (
-                    <TableRow key={i}>
-                      <TableCell>{dapiName}</TableCell>
-                      <TableCell>{getProviders(dapiName)}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </TabsContent>
-        <TabsContent value="1" forceMount>
-          <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={showRawValues} />
-        </TabsContent>
+        <ScrollToTopWrapper>
+          <TabsContent value="0">
+            {showRawValues ? (
+              <RawValuesTable values={currentTree.merkleTreeValues} />
+            ) : (
+              <Table className="mt-4">
+                <TableHeader sticky>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">dAPI Name</TableHead>
+                    <TableHead className="min-w-[30ch]">API Providers</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentTree.merkleTreeValues.map((rowValues, i) => {
+                    const dapiName = ethers.utils.parseBytes32String(rowValues[0]);
+                    return (
+                      <TableRow key={i}>
+                        <TableCell>{dapiName}</TableCell>
+                        <TableCell>{getProviders(dapiName)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </TabsContent>
+          <TabsContent value="1" forceMount>
+            <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={showRawValues} />
+          </TabsContent>
+        </ScrollToTopWrapper>
       </Tabs>
     </RootLayout>
   );
