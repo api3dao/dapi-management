@@ -85,11 +85,9 @@ contract HashRegistryV2 is Ownable, SelfMulticall {
         emit RegisteredHash(hashType, hash, timestamp);
     }
 
-    /*
     function getHashValue(
         bytes32 hashType
     ) external view returns (bytes32 value) {
         value = hashes[hashType].value;
     }
-    */
 }
