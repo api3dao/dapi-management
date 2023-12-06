@@ -112,7 +112,11 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
         } else if (dataFeedDetailsLength >= 256) {
             // dataFeedId maps to a Beacon set with at least two Beacons
             // Do not allow more than 21 Beacons
-            require(dataFeedDetailsLength < 2816, "Details data too long");
+            require(
+                dataFeedDetailsLength <=
+                    (2 * 32) + (32 + 21 * 32) + (32 + 21 * 32),
+                "Details data too long"
+            );
             (address[] memory airnodes, bytes32[] memory templateIds) = abi
                 .decode(dataFeedDetails, (address[], bytes32[]));
             require(
