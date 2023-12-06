@@ -63,7 +63,7 @@ contract HashRegistryV2 is Ownable, SelfMulticall {
         address[] memory signers = new address[](signaturesCount);
         for (uint256 ind = 0; ind < signaturesCount; ind++) {
             signers[ind] = (
-                keccak256(abi.encode(hashType, hash, timestamp))
+                keccak256(abi.encodePacked(hashType, hash, timestamp))
                     .toEthSignedMessageHash()
             ).recover(signatures[ind]);
         }
