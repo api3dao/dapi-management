@@ -179,7 +179,7 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
     // will be zero/empty.
     // If the respective data feed is identified by a data feed ID and not a
     // dAPI name, `dapiName` will be zero as an indication of that fact.
-    function activeDataFeedWithIndex(
+    function activeDataFeed(
         uint256 index
     )
         external
@@ -257,6 +257,18 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
 
     function activeDataFeedCount() external view returns (uint256) {
         return activeDataFeedIdsAndDapiNames.length();
+    }
+
+    // `activeDataFeed()` does not return data when the data feed is not
+    // registered. This function is implemented as a workaround to find out
+    // what the active yet unregistered feeds are.
+    function activeDataFeedIdOrDapiName(
+        uint256 index
+    ) external view returns (bytes32) {
+        if (index < activeDataFeedIdsAndDapiNames.length()) {
+            return activeDataFeedIdsAndDapiNames.at(index);
+        }
+        return bytes32(0);
     }
 
     function deriveBeaconId(
