@@ -37,6 +37,8 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
 
     EnumerableSet.Bytes32Set private activeDataFeedIdsAndDapiNames;
 
+    uint256 private constant MAXIMUM_BEACON_COUNT_IN_A_SET = 21;
+
     modifier onlyNonZeroDataFeedIdOrDapiName(bytes32 dataFeedIdOrDapiName) {
         require(
             dataFeedIdOrDapiName != bytes32(0),
@@ -110,11 +112,12 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
             );
             dataFeedId = deriveBeaconId(airnode, templateId);
         } else if (dataFeedDetailsLength >= 256) {
-            // dataFeedId maps to a Beacon set with at least two Beacons
-            // Do not allow more than 21 Beacons
+            // dataFeedId maps to a Beacon set with at least two Beacons.
             require(
                 dataFeedDetailsLength <=
-                    (2 * 32) + (32 + 21 * 32) + (32 + 21 * 32),
+                    (2 * 32) +
+                        (32 + MAXIMUM_BEACON_COUNT_IN_A_SET * 32) +
+                        (32 + MAXIMUM_BEACON_COUNT_IN_A_SET * 32),
                 "Details data too long"
             );
             (address[] memory airnodes, bytes32[] memory templateIds) = abi
