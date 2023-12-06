@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { z } from 'zod';
@@ -24,7 +24,7 @@ const signersSchema = z.object({
   hashSigners: z.array(z.string()),
 });
 
-type MerkleTreeData = z.infer<typeof merkleTreeSchema>;
+export type MerkleTreeData = z.infer<typeof merkleTreeSchema>;
 type TreeFile = 'current-hash.json' | 'previous-hash.json';
 
 export function readTreeDataFrom(options: { subfolder: TreeSubFolder; file: TreeFile }): {
@@ -64,6 +64,50 @@ export function readSignerDataFrom(subfolder: TreeSubFolder) {
 
 export function writeMerkleTreeData(path: string, data: MerkleTreeData) {
   writeFileSync(path, JSON.stringify(data, null, 2));
+}
+
+export async function createTreeDiff<T extends MerkleTreeData>(options: {
+  subfolder: TreeSubFolder;
+  currentData: T;
+  currentDataPath: string;
+  previousData: T;
+  previousDataPath: string;
+  preProcess: boolean;
+  preProcessor: (values: T['merkleTreeValues'][number]) => string[];
+}) {
+  const { subfolder, currentData, currentDataPath, previousData, previousDataPath, preProcess, preProcessor } = options;
+
+  if (!previousData) {
+    return null;
+  }
+
+  if (!preProcess) {
+    // No need to pre-process the files, so we diff the raw files
+    return await createFileDiff(previousDataPath, currentDataPath);
+  }
+
+  const treeDirPath = join(process.cwd(), '../data/.processed', subfolder);
+  const processedCurrentHashPath = join(treeDirPath, 'current-hash.json');
+  const processedPreviousHashPath = join(treeDirPath, 'previous-hash.json');
+
+  if (!existsSync(treeDirPath)) {
+    mkdirSync(treeDirPath, { recursive: true });
+  }
+
+  const processAndWriteData = (path: string, treeData: T) => {
+    const processedData: T = {
+      ...treeData,
+      merkleTreeValues: treeData.merkleTreeValues.map(preProcessor),
+    };
+    writeMerkleTreeData(path, processedData);
+  };
+
+  processAndWriteData(processedCurrentHashPath, currentData);
+  processAndWriteData(processedPreviousHashPath, previousData);
+
+  await execute(`yarn prettier --write ${treeDirPath}`); // We wait so that the diff is created with formatted files
+
+  return await createFileDiff(processedPreviousHashPath, processedCurrentHashPath);
 }
 
 export async function createFileDiff(pathA: string, pathB: string) {

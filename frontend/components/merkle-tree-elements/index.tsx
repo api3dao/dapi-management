@@ -1,15 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
 import some from 'lodash/some';
-import { Diff2HtmlUI } from 'diff2html/lib/ui/js/diff2html-ui';
-import { AlertTriangleIcon, InfoIcon, ShieldCheckIcon, ShieldEllipsisIcon } from 'lucide-react';
+import { InfoIcon, ShieldCheckIcon, ShieldEllipsisIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
 import { Button } from '~/components/ui/button';
-import { Toggle } from '~/components/ui/toggle';
 import { cn } from '~/lib/utils';
 import { useWeb3Data } from '~/contexts/web3-data-context';
 import addressBook from '../../../data/address-book.json';
 import 'diff2html/bundles/css/diff2html.min.css';
+
+export { ViewOptionsMenu } from './view-options-menu';
+export { TreeDiff } from './tree-diff';
 
 interface TreeStatusBadgeProps {
   signatures: Record<string, string>;
@@ -39,7 +39,7 @@ interface TreeRootBadgeProps {
 export function TreeRootBadge(props: TreeRootBadgeProps) {
   return (
     <span
-      className={cn('inline-block break-all rounded-md bg-blue-50 px-3 py-1 text-sm text-blue-900', props.className)}
+      className={cn('inline-block break-all rounded-md bg-slate-100 px-3 py-1 text-sm text-slate-600', props.className)}
     >
       Root: {props.root}
     </span>
@@ -54,22 +54,33 @@ interface SignRootButtonProps {
 
 export function SignRootButton(props: SignRootButtonProps) {
   const { signatures, signRoot, isSigning } = props;
-  const { address } = useWeb3Data();
+  const { address, connectStatus } = useWeb3Data();
 
   const isSigner = !!signatures[address];
   const canSign = signatures[address] === '0x' && !isSigning;
+
+  const button = (
+    <Button disabled={!canSign} className="min-w-[12ch]" onClick={() => signRoot()}>
+      {isSigning ? 'Signing...' : 'Sign Root'}
+    </Button>
+  );
+
+  if (isSigner || connectStatus !== 'connected') {
+    return button;
+  }
+
   return (
-    <>
-      <Button disabled={!canSign} className="min-w-[15ch]" onClick={() => signRoot()}>
-        {isSigning ? 'Signing...' : 'Sign Root'}
-      </Button>
-      {!!address && !isSigner && (
-        <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
-          <AlertTriangleIcon className="w-4 text-gray-300" />
-          You are not a signer.
-        </p>
-      )}
-    </>
+    <Tooltip preventCloseOnClick delayDuration={200}>
+      <TooltipTrigger asChild>
+        <span
+          className="focus-visible:ring-ring inline-flex rounded-md focus-visible:ring-2 focus-visible:ring-offset-2"
+          tabIndex={0}
+        >
+          {button}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>You are not a signer</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -124,111 +135,16 @@ interface SignerInfoProps {
 }
 
 function SignerInfo(props: SignerInfoProps) {
-  const triggerRef = useRef<HTMLButtonElement>(null);
   return (
-    <Tooltip delayDuration={0}>
+    <Tooltip delayDuration={0} preventCloseOnClick>
       <TooltipTrigger asChild>
-        <Button
-          ref={triggerRef}
-          variant="ghost"
-          className="group inline-flex h-4 cursor-auto items-center gap-1.5 p-0"
-          onClick={(ev) => {
-            // We don't want to close the tooltip when the trigger is clicked
-            ev.preventDefault();
-          }}
-        >
+        <Button variant="ghost" className="group inline-flex h-4 cursor-auto items-center gap-1.5 p-0">
           <InfoIcon className="h-4 w-4 text-gray-300 group-hover:text-gray-400" />
           {props.name}
         </Button>
       </TooltipTrigger>
-      <TooltipContent
-        className="border-0 bg-gray-600 text-xs text-gray-200"
-        onPointerDownOutside={(ev) => {
-          // We don't want to close the tooltip when the trigger is clicked
-          if (triggerRef.current!.contains(ev.target as Node)) {
-            ev.preventDefault();
-          }
-        }}
-      >
-        {props.address}
-      </TooltipContent>
+      <TooltipContent>{props.address}</TooltipContent>
     </Tooltip>
-  );
-}
-
-interface TreeDiffProps {
-  diffResult: null | { diff: string; status: 'success' } | { status: 'error' };
-}
-
-type DiffMode = null | 'unified' | 'split';
-
-export function TreeDiff(props: TreeDiffProps) {
-  const { diffResult } = props;
-
-  const [mode, setMode] = useState<DiffMode>(null);
-  useEffect(() => {
-    const storedMode = window.localStorage.getItem('diff-mode');
-    setMode((storedMode || 'split') as DiffMode);
-  }, []);
-
-  useEffect(() => {
-    if (!mode) return;
-
-    if (diffResult?.status === 'success' && diffResult.diff) {
-      const element = document.getElementById('tree-diff-container')!;
-      const ui = new Diff2HtmlUI(element, diffResult.diff, {
-        drawFileList: false,
-        fileContentToggle: false,
-        synchronisedScroll: true,
-        outputFormat: mode === 'unified' ? 'line-by-line' : 'side-by-side',
-        rawTemplates: { 'tag-file-renamed': '' },
-      });
-      ui.draw();
-      ui.highlightCode();
-    }
-  }, [diffResult, mode]);
-
-  const previousFile = <span className="font-semibold">previous-hash.json</span>;
-  const currentFile = <span className="font-semibold">current-hash.json</span>;
-
-  return (
-    <div>
-      {diffResult == null ? (
-        <p className="my-4 text-sm text-gray-500">
-          There is no {previousFile} file to compare the {currentFile} file with.
-        </p>
-      ) : diffResult.status === 'error' ? (
-        <p className="my-4 inline-block rounded bg-red-100 px-4 py-3 text-sm text-red-700">
-          Something went wrong comparing {previousFile} and {currentFile}.
-        </p>
-      ) : diffResult.diff === '' ? (
-        <p className="my-4 text-sm text-gray-500">
-          The contents of {previousFile} and {currentFile} are identical.
-        </p>
-      ) : (
-        <>
-          <div className="flex items-center justify-between gap-4">
-            <p className="my-4 text-sm text-gray-500">
-              Shows the difference between the {previousFile} and the {currentFile} files.
-            </p>
-            <Toggle
-              variant="outline"
-              size="sm"
-              onPressedChange={(unified) => {
-                const newMode = unified ? 'unified' : 'split';
-                setMode(newMode);
-                window.localStorage.setItem('diff-mode', newMode);
-              }}
-              pressed={mode === 'unified'}
-              aria-label="Toggle unified"
-            >
-              Unified
-            </Toggle>
-          </div>
-          <div id="tree-diff-container" className="w-full overflow-x-auto" />
-        </>
-      )}
-    </div>
   );
 }
 
