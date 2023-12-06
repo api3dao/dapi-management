@@ -201,9 +201,10 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
                     dataFeedIdOrDapiName
                 ];
                 if (dataFeedDetails.length == 64) {
-                    address airnode = abi.decode(dataFeedDetails, (address));
                     signedApiUrls = new string[](1);
-                    signedApiUrls[0] = airnodeToSignedApiUrl[airnode];
+                    signedApiUrls[0] = airnodeToSignedApiUrl[
+                        abi.decode(dataFeedDetails, (address))
+                    ];
                 } else {
                     address[] memory airnodes = abi.decode(
                         dataFeedDetails,
