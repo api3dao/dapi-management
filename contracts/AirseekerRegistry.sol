@@ -18,8 +18,13 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
 
     event DeactivatedDataFeedIdOrDapiName(bytes32 indexed dataFeedIdOrDapiName);
 
-    event SetUpdateParameters(
-        bytes32 indexed dataFeedIdOrDapiName,
+    event SetUpdateParametersWithDataFeedId(
+        bytes32 indexed dataFeedId,
+        bytes updateParameters
+    );
+
+    event SetUpdateParametersWithDapiName(
+        bytes32 indexed dapiName,
         bytes updateParameters
     );
 
@@ -29,7 +34,7 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
 
     address public immutable api3ServerV1;
 
-    mapping(bytes32 => bytes) public dataFeedIdOrDapiNameToUpdateParameters;
+    mapping(bytes32 => bytes) public dataFeedIdOrDapiNameHashToUpdateParameters;
 
     mapping(address => string) public airnodeToSignedApiUrl;
 
@@ -66,20 +71,36 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
         emit DeactivatedDataFeedIdOrDapiName(dataFeedIdOrDapiName);
     }
 
-    function setUpdateParameters(
-        bytes32 dataFeedIdOrDapiName,
+    function setUpdateParametersWithDataFeedId(
+        bytes32 dataFeedId,
         bytes calldata updateParameters
-    ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dataFeedIdOrDapiName) {
+    ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dataFeedId) {
         if (
-            keccak256(
-                dataFeedIdOrDapiNameToUpdateParameters[dataFeedIdOrDapiName]
-            ) != keccak256(updateParameters)
+            keccak256(dataFeedIdOrDapiNameHashToUpdateParameters[dataFeedId]) !=
+            keccak256(updateParameters)
         ) {
-            dataFeedIdOrDapiNameToUpdateParameters[
-                dataFeedIdOrDapiName
+            dataFeedIdOrDapiNameHashToUpdateParameters[
+                dataFeedId
             ] = updateParameters;
         }
-        emit SetUpdateParameters(dataFeedIdOrDapiName, updateParameters);
+        emit SetUpdateParametersWithDataFeedId(dataFeedId, updateParameters);
+    }
+
+    function setUpdateParametersWithDapiName(
+        bytes32 dapiName,
+        bytes calldata updateParameters
+    ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dapiName) {
+        bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
+        if (
+            keccak256(
+                dataFeedIdOrDapiNameHashToUpdateParameters[dapiNameHash]
+            ) != keccak256(updateParameters)
+        ) {
+            dataFeedIdOrDapiNameHashToUpdateParameters[
+                dapiNameHash
+            ] = updateParameters;
+        }
+        emit SetUpdateParametersWithDapiName(dapiName, updateParameters);
     }
 
     function setSignedApiUrl(
@@ -203,9 +224,15 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
                     value: value,
                     timestamp: timestamp
                 });
-                updateParameters = dataFeedIdOrDapiNameToUpdateParameters[
-                    dataFeedIdOrDapiName
-                ];
+                if (dapiName == bytes32(0)) {
+                    updateParameters = dataFeedIdOrDapiNameHashToUpdateParameters[
+                        dataFeedIdOrDapiName
+                    ];
+                } else {
+                    updateParameters = dataFeedIdOrDapiNameHashToUpdateParameters[
+                        keccak256(abi.encodePacked(dataFeedIdOrDapiName))
+                    ];
+                }
                 if (dataFeedDetails.length == 64) {
                     signedApiUrls = new string[](1);
                     signedApiUrls[0] = airnodeToSignedApiUrl[
