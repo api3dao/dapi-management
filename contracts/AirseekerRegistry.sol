@@ -152,6 +152,12 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
         }
     }
 
+    // If the index exceeds the boundaries of the data feed enumeration, all
+    // return parameters will be zero/empty.
+    // If the respective data feed is not registered, all return parameters
+    // will be zero/empty.
+    // If the respective data feed is identified by a data feed ID and not a
+    // dAPI name, `dapiName` will be zero as an indication of that fact.
     function activeDataFeedWithIndex(
         uint256 index
     )
@@ -185,8 +191,8 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
                 dataFeedDetails = dataFeedIdToDetails[dataFeedId];
                 dataFeedDetailsLength = dataFeedDetails.length;
                 if (dataFeedDetailsLength != 0) {
-                    // `dataFeedIdOrDapiName` is the name of a dAPI that points
-                    // to a registered data feed
+                    // Confirmed that `dataFeedIdOrDapiName` is the name of a
+                    // dAPI that points to a registered data feed
                     dapiName = dataFeedIdOrDapiName;
                 }
             }
