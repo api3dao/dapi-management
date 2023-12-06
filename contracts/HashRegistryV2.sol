@@ -58,8 +58,9 @@ contract HashRegistryV2 is Ownable, SelfMulticall {
             timestamp > hashes[hashType].timestamp,
             "Timestamp not more recent"
         );
+        bytes32 signersHash = hashTypeToSignersHash[hashType];
+        require(signersHash != bytes32(0), "Signers not set");
         uint256 signaturesCount = signatures.length;
-        require(signaturesCount != 0, "Signatures empty");
         address[] memory signers = new address[](signaturesCount);
         for (uint256 ind = 0; ind < signaturesCount; ind++) {
             signers[ind] = (
@@ -68,8 +69,7 @@ contract HashRegistryV2 is Ownable, SelfMulticall {
             ).recover(signatures[ind]);
         }
         require(
-            hashTypeToSignersHash[hashType] ==
-                keccak256(abi.encodePacked(signers)),
+            signersHash == keccak256(abi.encodePacked(signers)),
             "Signature mismatch"
         );
         hashes[hashType] = Hash({value: hash, timestamp: timestamp});
