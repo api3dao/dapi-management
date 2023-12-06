@@ -76,6 +76,15 @@ contract HashRegistryV2 is Ownable, SelfMulticall {
         emit RegisteredHash(hashType, hash, timestamp);
     }
 
+    // External contracts can already read the hash `(value, timestamp)` by
+    // calling `hashes()`. However, this is not ideal because in most cases
+    // only the hash value will be needed, but the caller will have to pay the
+    // gas cost of reading both the value and timestamp. This function
+    // implements an alternative interface that does not suffer from this
+    // issue.
+    // We do not need this anywhere in this repo because Api3Market inherits
+    // HashRegistry. This function is implemented only for potential, future
+    // use-cases of this contract.
     function getHashValue(
         bytes32 hashType
     ) external view returns (bytes32 value) {
