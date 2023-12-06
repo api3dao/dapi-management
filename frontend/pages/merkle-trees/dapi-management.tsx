@@ -177,7 +177,7 @@ function VerifiedTableHead(props: VerifiedTableHeadProps) {
         </TooltipTrigger>
         <TooltipContent className="max-w-[33ch]">
           {props.tooltip}
-          <p className="my-2 inline-flex gap-1 rounded bg-slate-600 px-3 py-2">
+          <p className="my-2 rounded bg-slate-600 px-3 py-2">
             Please check the CI to make sure that the verification was a success
           </p>
         </TooltipContent>
