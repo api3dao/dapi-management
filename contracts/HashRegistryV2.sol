@@ -43,7 +43,7 @@ contract HashRegistryV2 is Ownable, SelfMulticall {
         for (uint256 ind1 = 0; ind1 < signersCount; ind1++) {
             address signer = signers[ind1];
             require(signer != address(0), "Signer address zero");
-            for (uint256 ind2 = ind1; ind2 < signersCount; ind2++) {
+            for (uint256 ind2 = ind1 + 1; ind2 < signersCount; ind2++) {
                 require(signer != signers[ind2], "Duplicate signer address");
             }
         }
