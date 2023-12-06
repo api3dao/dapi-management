@@ -2,7 +2,7 @@ import { ReactNode, useEffect } from 'react';
 import { z } from 'zod';
 import { ethers } from 'ethers';
 import { apisData } from '@api3/api-integrations';
-import { CheckIcon } from 'lucide-react';
+import { AlertTriangleIcon, InfoIcon } from 'lucide-react';
 import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
@@ -41,7 +41,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
       preProcess: !showRawValues,
       preProcessor: (values) => {
         const dapiName = ethers.utils.parseBytes32String(values[0]);
-        return [dapiName, getProviders(dapiName), values[2]];
+        return [dapiName, getProviders(dapiName)];
       },
     },
   });
@@ -105,9 +105,6 @@ export default function DapiManagementTree(props: Props) {
                 <TableRow>
                   <TableHead className="whitespace-nowrap">dAPI Name</TableHead>
                   <TableHead className="min-w-[30ch]">API Providers</TableHead>
-                  <VerifiedTableHead tooltip="The CI verifies the Sponsor Wallet Addresses for you">
-                    Sponsor Wallet Address
-                  </VerifiedTableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -117,7 +114,6 @@ export default function DapiManagementTree(props: Props) {
                     <TableRow key={i}>
                       <TableCell>{dapiName}</TableCell>
                       <TableCell>{getProviders(dapiName)}</TableCell>
-                      <TableCell>{rowValues[2]}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -175,11 +171,16 @@ function VerifiedTableHead(props: VerifiedTableHeadProps) {
       <Tooltip delayDuration={0} preventCloseOnClick>
         <TooltipTrigger asChild>
           <Button variant="ghost" className="group flex h-4 cursor-auto items-center gap-1.5 p-0">
-            <CheckIcon className="h-4 w-4 text-slate-400 group-hover:text-slate-500" />
+            <InfoIcon className="h-4 w-4 text-slate-400 group-hover:text-slate-500" />
             {props.children}
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{props.tooltip}</TooltipContent>
+        <TooltipContent className="max-w-[33ch]">
+          {props.tooltip}
+          <p className="my-2 inline-flex gap-1 rounded bg-slate-600 px-3 py-2">
+            Please check the CI to make sure that the verification was a success
+          </p>
+        </TooltipContent>
       </Tooltip>
     </TableHead>
   );
@@ -211,14 +212,14 @@ function useCIVerificationToast() {
         title: 'The CI verifies the following for you',
         description: (
           <div className="w-full">
-            <ul className="mb-6 mt-2 flex flex-col gap-1.5 pl-3 text-sm marker:text-teal-400">
-              <li className="inline-flex items-center">
-                <CheckIcon className="h-4 text-teal-400" /> Data Feed IDs
-              </li>
-              <li className="inline-flex items-center">
-                <CheckIcon className="h-4 text-teal-400" /> Sponsor Wallet Addresses
-              </li>
+            <ul className="mb-6 mt-1 flex list-disc flex-col gap-1.5 pl-8 text-sm marker:text-slate-400">
+              <li>Data Feed IDs</li>
+              <li>Sponsor Wallet Addresses</li>
             </ul>
+            <p className="mb-4 inline-flex gap-1.5 rounded-md bg-blue-100 py-3 pl-3 pr-4">
+              <AlertTriangleIcon className="mt-0.5 h-4 w-4 min-w-[1rem] text-blue-400" />
+              Please check the CI to make sure that the verification was a success
+            </p>
             <Button
               className="w-[10ch]"
               onClick={() => {
