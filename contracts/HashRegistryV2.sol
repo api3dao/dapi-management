@@ -25,14 +25,10 @@ contract HashRegistryV2 is Ownable, SelfMulticall {
 
     mapping(bytes32 => bytes32) public hashTypeToSignersHash;
 
-    /// @param owner_ Owner address
     constructor(address owner_) {
         transferOwnership(owner_);
     }
 
-    /// @notice Called by the owner to set the hash signers
-    /// @param hashType Hash representing a hash type
-    /// @param signers Hash signers
     function setSigners(
         bytes32 hashType,
         address[] calldata signers
@@ -51,11 +47,6 @@ contract HashRegistryV2 is Ownable, SelfMulticall {
         emit SetSigners(hashType, signers);
     }
 
-    /// @notice Called to register a new hash for a type
-    /// @param hashType Hash representing a hash type
-    /// @param hash Signed hash
-    /// @param timestamp Timestamp when the hash was signed
-    /// @param signatures Hash signatures
     function registerHash(
         bytes32 hashType,
         bytes32 hash,
