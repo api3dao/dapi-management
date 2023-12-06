@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getOisTitlesWithAirnodeAddress } from '@api3/api-integrations';
 import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
@@ -8,41 +9,44 @@ import {
   SignRootButton,
   SignatureTable,
   TreeDiff,
+  ViewOptionsMenu,
 } from '~/components/merkle-tree-elements';
-import { readTreeDataFrom, readSignerDataFrom, createFileDiff } from '~/lib/server/file-utils';
+import { getMerkleTreeServerSideProps } from '~/lib/server/page-props';
 import { createSignedApiUrlMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
-import { InferGetServerSidePropsType } from 'next';
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
+import { useDiffMode } from '~/components/merkle-tree-elements/use-diff-mode';
 
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
+  hash: z.string(),
   signatures: z.record(z.string()),
   merkleTreeValues: z.array(z.tuple([z.string(), z.string()])),
 });
 
-export async function getServerSideProps() {
-  const { path: currentTreePath, data: currentTree } = readTreeDataFrom({
-    subfolder: 'signed-api-url-merkle-tree-root',
-    file: 'current-hash.json',
-    schema: merkleTreeSchema,
-  });
-  const { path: previousTreePath, data: previousTree } = readTreeDataFrom({
-    subfolder: 'signed-api-url-merkle-tree-root',
-    file: 'previous-hash.json',
-    schema: merkleTreeSchema,
-  });
-  const { data: signers } = readSignerDataFrom('signed-api-url-merkle-tree-root');
+export async function getServerSideProps(context: GetServerSidePropsContext) {
+  const showRawValues = context.query.raw === 'true';
 
-  const diffResult = previousTree ? await createFileDiff(previousTreePath, currentTreePath) : null;
+  const { currentTree, signers, diffResult } = await getMerkleTreeServerSideProps({
+    subfolder: 'signed-api-url-merkle-tree-root',
+    schema: merkleTreeSchema,
+    diff: {
+      preProcess: !showRawValues,
+      preProcessor: (values) => {
+        return [getProviders(values[0]), values[1]];
+      },
+    },
+  });
+
   return {
-    props: { currentTree, signers, diffResult },
+    props: { currentTree, signers, diffResult, showRawValues },
   };
 }
 
 type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 
 export default function SignedApiUrlTree(props: Props) {
-  const { currentTree, signers } = props;
+  const { currentTree, signers, showRawValues } = props;
 
   const merkleTree = createSignedApiUrlMerkleTree(currentTree.merkleTreeValues);
 
@@ -55,6 +59,8 @@ export default function SignedApiUrlTree(props: Props) {
     currentTree.signatures,
     signers
   );
+
+  const [diffMode, setDiffMode] = useDiffMode();
 
   return (
     <RootLayout>
@@ -73,32 +79,68 @@ export default function SignedApiUrlTree(props: Props) {
       </div>
 
       <Tabs defaultValue="0">
-        <TabsList>
-          <TabsTrigger value="0">Tree Values</TabsTrigger>
-          <TabsTrigger value="1">Tree Diff</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="0">Tree Values</TabsTrigger>
+            <TabsTrigger value="1">Tree Diff</TabsTrigger>
+          </TabsList>
+          <ViewOptionsMenu diffMode={diffMode} onDiffModeChange={setDiffMode} />
+        </div>
         <TabsContent value="0">
-          <Table className="mt-4">
-            <TableHeader sticky>
-              <TableRow>
-                <TableHead>Airnode Address</TableHead>
-                <TableHead>Signed API URL</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentTree.merkleTreeValues.map((rowValues, i) => (
-                <TableRow key={i}>
-                  <TableCell>{rowValues[0]}</TableCell>
-                  <TableCell>{rowValues[1]}</TableCell>
+          {showRawValues ? (
+            <RawValuesTable values={currentTree.merkleTreeValues} />
+          ) : (
+            <Table className="mt-4 table-fixed">
+              <TableHeader sticky>
+                <TableRow>
+                  <TableHead>API Providers</TableHead>
+                  <TableHead>Signed API URL</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {currentTree.merkleTreeValues.map((rowValues, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{getProviders(rowValues[0])}</TableCell>
+                    <TableCell>{rowValues[1]}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </TabsContent>
         <TabsContent value="1" forceMount>
-          <TreeDiff diffResult={props.diffResult} />
+          <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={showRawValues} />
         </TabsContent>
       </Tabs>
     </RootLayout>
   );
+}
+
+interface RawValuesTableProps {
+  values: string[][];
+}
+
+function RawValuesTable(props: RawValuesTableProps) {
+  return (
+    <Table className="mt-4 table-fixed">
+      <TableHeader sticky>
+        <TableRow>
+          <TableHead>Airnode Address</TableHead>
+          <TableHead>Signed API URL</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {props.values.map((rowValues, i) => (
+          <TableRow key={i}>
+            <TableCell>{rowValues[0]}</TableCell>
+            <TableCell>{rowValues[1]}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+function getProviders(airnodeAddress: string) {
+  return getOisTitlesWithAirnodeAddress(airnodeAddress)?.join(', ') || 'unknown';
 }
