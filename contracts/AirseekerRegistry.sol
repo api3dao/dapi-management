@@ -9,11 +9,6 @@ import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3Serve
 contract AirseekerRegistry is Ownable, SelfMulticall {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
-    struct DataFeedReading {
-        int224 value;
-        uint32 timestamp;
-    }
-
     event ActivatedDataFeedIdOrDapiName(bytes32 indexed dataFeedIdOrDapiName);
 
     event DeactivatedDataFeedIdOrDapiName(bytes32 indexed dataFeedIdOrDapiName);
@@ -187,7 +182,8 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
         returns (
             bytes32 dapiName,
             bytes memory dataFeedDetails,
-            DataFeedReading memory dataFeedReading,
+            int224 dataFeedValue,
+            uint32 dataFeedTimestamp,
             bytes memory updateParameters,
             string[] memory signedApiUrls
         )
@@ -218,12 +214,8 @@ contract AirseekerRegistry is Ownable, SelfMulticall {
                 }
             }
             if (dataFeedDetailsLength != 0) {
-                (int224 value, uint32 timestamp) = IApi3ServerV1(api3ServerV1)
+                (dataFeedValue, dataFeedTimestamp) = IApi3ServerV1(api3ServerV1)
                     .dataFeeds(dataFeedId);
-                dataFeedReading = DataFeedReading({
-                    value: value,
-                    timestamp: timestamp
-                });
                 if (dapiName == bytes32(0)) {
                     updateParameters = dataFeedIdOrDapiNameHashToUpdateParameters[
                         dataFeedIdOrDapiName
