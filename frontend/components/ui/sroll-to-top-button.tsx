@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowUpIcon } from 'lucide-react';
 import { Button } from './button';
 
-function ScrollToTopButton(): React.ReactNode {
+export default function ScrollToTopButton(): React.ReactNode {
   const [showScrollButton, setShowScrollButton] = useState(false);
 
   useEffect(() => {
@@ -24,21 +24,19 @@ function ScrollToTopButton(): React.ReactNode {
     });
   };
 
+  if (!showScrollButton) {
+    return null;
+  }
+
   return (
-    <div>
-      {showScrollButton && (
-        <Button
-          variant="custom"
-          size="icon"
-          className="fixed bottom-5 right-5 rounded-full bg-slate-700 text-slate-200 shadow-md hover:bg-slate-600 hover:text-slate-100"
-          onClick={handleScrollToTop}
-        >
-          <ArrowUpIcon className="h-6 w-6" />
-          <span className="sr-only">Scroll to top</span>
-        </Button>
-      )}
-    </div>
+    <Button
+      variant="custom"
+      size="icon"
+      className="fixed bottom-5 right-5 rounded-full bg-slate-700 text-slate-200 shadow-md hover:bg-slate-600 hover:text-slate-100"
+      onClick={handleScrollToTop}
+    >
+      <ArrowUpIcon className="h-6 w-6" />
+      <span className="sr-only">Scroll to top</span>
+    </Button>
   );
 }
-
-export default ScrollToTopButton;
