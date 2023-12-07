@@ -4,6 +4,7 @@ const forEach = require('lodash/forEach');
 const currentHashData = require('../../data/dapi-pricing-merkle-tree-root/current-hash.json');
 const signerData = require('../../data/dapi-pricing-merkle-tree-root/hash-signers.json');
 const { createDapiPricingMerkleTree, deriveTreeHash, getDapiPricingHashType } = require('../utils');
+const { logSuccessMessage } = require('./utils');
 
 const SIGNATURE_KEYS_CHECK_ENABLED = false;
 
@@ -28,7 +29,7 @@ function verifyData() {
     assert.equal(address, ethers.utils.verifyMessage(hashToSign, signature), 'Expected all signatures to be valid');
   });
 
-  console.log('\x1b[32m%s\x1b[0m', 'Successfully verified');
+  logSuccessMessage('Successfully verified');
 }
 
 module.exports = {

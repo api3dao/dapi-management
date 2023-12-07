@@ -7,6 +7,7 @@ const { getOisTitlesWithAirnodeAddress } = require('@api3/api-integrations');
 const currentHashData = require('../../data/signed-api-url-merkle-tree-root/current-hash.json');
 const signerData = require('../../data/signed-api-url-merkle-tree-root/hash-signers.json');
 const { createSignedApiUrlMerkleTree, deriveTreeHash, getSignedApiUrlHashType } = require('../utils');
+const { logSuccessMessage } = require('./utils');
 
 const SIGNATURE_KEYS_CHECK_ENABLED = false;
 
@@ -48,7 +49,7 @@ function verifyData() {
     );
   });
 
-  console.info('\x1b[32m%s\x1b[0m', 'Successfully verified');
+  logSuccessMessage('Successfully verified');
 }
 
 module.exports = {

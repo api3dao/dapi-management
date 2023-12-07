@@ -13,6 +13,7 @@ const dapiPricingHashSigners = require('../data/dapi-pricing-merkle-tree-root/ha
 const dapiPricingCurrentHash = require('../data/dapi-pricing-merkle-tree-root/current-hash.json');
 const signedApiUrlHashSigners = require('../data/signed-api-url-merkle-tree-root/hash-signers.json');
 const signedApiUrlCurrentHash = require('../data/signed-api-url-merkle-tree-root/current-hash.json');
+const { logSuccessMessage } = require('./verification/utils');
 
 async function verify(hashRegistry, hashSigners, hashType, hash, timestamp, signatures) {
   const onChainHashSigners = await hashRegistry.getSigners(hashType);
@@ -42,7 +43,8 @@ async function main() {
   try {
     const hashRegistryDeployment = await hre.deployments.getOrNull('HashRegistry');
     if (!hashRegistryDeployment) {
-      throw new Error(`HashRegistry deployment not found on ${network}`);
+      console.log(`HashRegistry deployment not found on ${network}`);
+      return;
     }
 
     const hashRegistry = await hre.ethers.getContractAt('HashRegistry', hashRegistryDeployment.address);
@@ -90,7 +92,7 @@ async function main() {
     console.log(`HashRegistry verification on ${network} failed`);
     throw err;
   }
-  console.log(`HashRegistry verification on ${network} succeeded`);
+  logSuccessMessage(`HashRegistry verification on ${network} succeeded`);
 }
 
 main().catch((error) => {

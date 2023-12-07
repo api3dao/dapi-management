@@ -13,6 +13,7 @@ const {
   deriveDataFeedId,
   deriveSponsorWalletAddress,
 } = require('../utils');
+const { logSuccessMessage } = require('./utils');
 
 const SIGNATURE_KEYS_CHECK_ENABLED = false;
 
@@ -66,7 +67,7 @@ function verifyData() {
     );
   });
 
-  console.info('\x1b[32m%s\x1b[0m', 'Successfully verified');
+  logSuccessMessage('Successfully verified');
 }
 
 module.exports = {
