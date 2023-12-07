@@ -8,6 +8,7 @@ import { Popover, PopoverTrigger, PopoverContent } from './ui/popover';
 import { Button } from './ui/button';
 import { useWeb3Data } from '~/contexts/web3-data-context';
 import { cn } from '~/lib/utils';
+import ScrollToTopButton from './ui/sroll-to-top-button';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -38,6 +39,7 @@ export default function RootLayout(props: Props) {
       <main role="main" className="ml-[200px] bg-white px-5 py-4" style={{ width: 'calc(100% - 200px)' }}>
         {props.children}
       </main>
+      <ScrollToTopButton />
     </div>
   );
 }

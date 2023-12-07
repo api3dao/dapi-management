@@ -11,7 +11,7 @@ import {
   TreeDiff,
 } from '~/components/merkle-tree-elements';
 import { readTreeDataFrom, readSignerDataFrom, createFileDiff } from '~/lib/server/file-utils';
-import { createDapiFallbackMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
+import { validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
 import { useDiffMode } from '~/components/merkle-tree-elements/use-diff-mode';
@@ -47,13 +47,11 @@ type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 export default function DapiFallbackTree(props: Props) {
   const { currentTree, signers } = props;
 
-  const merkleTree = createDapiFallbackMerkleTree(currentTree.merkleTreeValues);
-
-  const { signRoot, isSigning } = useTreeSigner('dAPI fallback Merkle tree', merkleTree.root, currentTree.timestamp);
+  const { signRoot, isSigning } = useTreeSigner('dAPI fallback Merkle tree', currentTree.hash, currentTree.timestamp);
 
   const signatures = validateTreeRootSignatures(
     'dAPI fallback Merkle tree root',
-    merkleTree.root,
+    currentTree.hash,
     currentTree.timestamp,
     currentTree.signatures,
     signers
@@ -67,7 +65,7 @@ export default function DapiFallbackTree(props: Props) {
         <TreeStatusBadge signatures={signatures} />
       </div>
       <h1 className="mb-2 text-3xl font-bold">dAPI Fallback Merkle Tree</h1>
-      <TreeRootBadge className="mb-3" root={merkleTree.root} />
+      <TreeRootBadge className="mb-3" root={currentTree.hash} />
 
       <div className="mb-10">
         <SignRootButton signatures={signatures} signRoot={signRoot} isSigning={isSigning} />

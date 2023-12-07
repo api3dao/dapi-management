@@ -1,14 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { StandardMerkleTree } from '@openzeppelin/merkle-tree';
 import {
   DAPI_FALLBACK_MERKLE_TREE_TYPE,
   DAPI_MANAGEMENT_MERKLE_TREE_TYPE,
   DAPI_PRICING_MERKLE_TREE_TYPE,
   SIGNED_API_URL_MERKLE_TREE_TYPE,
-  createDapiManagementMerkleTree,
-  createDapiPricingMerkleTree,
-  createDapiFallbackMerkleTree,
-  createSignedApiUrlMerkleTree,
   validateTreeRootSignatures,
 } from '~/lib/merkle-tree-utils';
 import {
@@ -49,7 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { signature, address, treeType } = parseResult.data;
 
-  const [subfolder, createMerkleTree] = getTreeConfig(treeType);
+  const subfolder = getSubfolder(treeType);
   const { path: currentHashPath, data: currentHash } = readTreeDataFrom({ subfolder, file: 'current-hash.json' });
   const { data: hashSigners } = readSignerDataFrom(subfolder);
 
@@ -57,15 +52,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(403).send(`Address not part of hash signers for ${treeType}`);
   }
 
-  const merkleTree = createMerkleTree(currentHash.merkleTreeValues);
-
   // Set a new signature belonging to the signing address
   currentHash.signatures[address] = signature;
 
   // for every signer check if the signature is valid and if not replace it with "0x"
   const validatedRootSignatures = validateTreeRootSignatures(
     `${treeType} root`,
-    merkleTree.root,
+    currentHash.hash,
     currentHash.timestamp,
     currentHash.signatures,
     hashSigners
@@ -83,17 +76,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   return res.status(200).send('Successfully signed root');
 }
 
-type MerkleTreeCreator = (values: string[][]) => StandardMerkleTree<string[]>;
-
-function getTreeConfig(type: TreeType): [TreeSubFolder, MerkleTreeCreator] {
+function getSubfolder(type: TreeType): TreeSubFolder {
   switch (type) {
     case DAPI_FALLBACK_MERKLE_TREE_TYPE:
-      return ['dapi-fallback-merkle-tree-root', createDapiFallbackMerkleTree];
+      return 'dapi-fallback-merkle-tree-root';
     case DAPI_MANAGEMENT_MERKLE_TREE_TYPE:
-      return ['dapi-management-merkle-tree-root', createDapiManagementMerkleTree];
+      return 'dapi-management-merkle-tree-root';
     case DAPI_PRICING_MERKLE_TREE_TYPE:
-      return ['dapi-pricing-merkle-tree-root', createDapiPricingMerkleTree];
+      return 'dapi-pricing-merkle-tree-root';
     case SIGNED_API_URL_MERKLE_TREE_TYPE:
-      return ['signed-api-url-merkle-tree-root', createSignedApiUrlMerkleTree];
+      return 'signed-api-url-merkle-tree-root';
   }
 }

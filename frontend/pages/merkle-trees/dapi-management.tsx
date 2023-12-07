@@ -17,7 +17,7 @@ import {
   TreeDiff,
 } from '~/components/merkle-tree-elements';
 import { getMerkleTreeServerSideProps } from '~/lib/server/page-props';
-import { createDapiManagementMerkleTree, validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
+import { validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from 'next';
 import { useToast } from '~/components/ui/toast/use-toast';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
@@ -56,13 +56,11 @@ type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 export default function DapiManagementTree(props: Props) {
   const { currentTree, signers, showRawValues } = props;
 
-  const merkleTree = createDapiManagementMerkleTree(currentTree.merkleTreeValues);
-
-  const { signRoot, isSigning } = useTreeSigner('dAPI management Merkle tree', merkleTree.root, currentTree.timestamp);
+  const { signRoot, isSigning } = useTreeSigner('dAPI management Merkle tree', currentTree.hash, currentTree.timestamp);
 
   const signatures = validateTreeRootSignatures(
     'dAPI management Merkle tree root',
-    merkleTree.root,
+    currentTree.hash,
     currentTree.timestamp,
     currentTree.signatures,
     signers
@@ -78,7 +76,7 @@ export default function DapiManagementTree(props: Props) {
         <TreeStatusBadge signatures={signatures} />
       </div>
       <h1 className="mb-2 text-3xl font-bold">dAPI Management Merkle Tree</h1>
-      <TreeRootBadge className="mb-3" root={merkleTree.root} />
+      <TreeRootBadge className="mb-3" root={currentTree.hash} />
 
       <div className="mb-10">
         <SignRootButton signatures={signatures} signRoot={signRoot} isSigning={isSigning} />
