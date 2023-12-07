@@ -15,7 +15,6 @@ import { validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
 import { useDiffMode } from '~/components/merkle-tree-elements/use-diff-mode';
-import ScrollToTopWrapper from '~/components/ui/srollToTopWrapper';
 
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
@@ -81,31 +80,29 @@ export default function DapiFallbackTree(props: Props) {
           <TabsTrigger value="0">Tree Values</TabsTrigger>
           <TabsTrigger value="1">Tree Diff</TabsTrigger>
         </TabsList>
-        <ScrollToTopWrapper>
-          <TabsContent value="0">
-            <Table className="mt-4">
-              <TableHeader sticky>
-                <TableRow>
-                  <TableHead>dAPI Name</TableHead>
-                  <TableHead>Data Feed ID</TableHead>
-                  <TableHead>Sponsor Wallet Address</TableHead>
+        <TabsContent value="0">
+          <Table className="mt-4">
+            <TableHeader sticky>
+              <TableRow>
+                <TableHead>dAPI Name</TableHead>
+                <TableHead>Data Feed ID</TableHead>
+                <TableHead>Sponsor Wallet Address</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentTree.merkleTreeValues.map((rowValues, i) => (
+                <TableRow key={i}>
+                  <TableCell>{ethers.utils.parseBytes32String(rowValues[0])}</TableCell>
+                  <TableCell>{rowValues[1]}</TableCell>
+                  <TableCell>{rowValues[2]}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentTree.merkleTreeValues.map((rowValues, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{ethers.utils.parseBytes32String(rowValues[0])}</TableCell>
-                    <TableCell>{rowValues[1]}</TableCell>
-                    <TableCell>{rowValues[2]}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TabsContent>
-          <TabsContent value="1" forceMount>
-            <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={false} />
-          </TabsContent>
-        </ScrollToTopWrapper>
+              ))}
+            </TableBody>
+          </Table>
+        </TabsContent>
+        <TabsContent value="1" forceMount>
+          <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={false} />
+        </TabsContent>
       </Tabs>
     </RootLayout>
   );

@@ -23,7 +23,6 @@ import { useToast } from '~/components/ui/toast/use-toast';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
 import { useDiffMode } from '~/components/merkle-tree-elements/use-diff-mode';
 import dapis from '../../../data/dapis.json';
-import ScrollToTopWrapper from '~/components/ui/srollToTopWrapper';
 
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
@@ -95,36 +94,34 @@ export default function DapiManagementTree(props: Props) {
           </TabsList>
           <ViewOptionsMenu diffMode={diffMode} onDiffModeChange={setDiffMode} />
         </div>
-        <ScrollToTopWrapper>
-          <TabsContent value="0">
-            {showRawValues ? (
-              <RawValuesTable values={currentTree.merkleTreeValues} />
-            ) : (
-              <Table className="mt-4">
-                <TableHeader sticky>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">dAPI Name</TableHead>
-                    <TableHead className="min-w-[30ch]">API Providers</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentTree.merkleTreeValues.map((rowValues, i) => {
-                    const dapiName = ethers.utils.parseBytes32String(rowValues[0]);
-                    return (
-                      <TableRow key={i}>
-                        <TableCell>{dapiName}</TableCell>
-                        <TableCell>{getProviders(dapiName)}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </TabsContent>
-          <TabsContent value="1" forceMount>
-            <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={showRawValues} />
-          </TabsContent>
-        </ScrollToTopWrapper>
+        <TabsContent value="0">
+          {showRawValues ? (
+            <RawValuesTable values={currentTree.merkleTreeValues} />
+          ) : (
+            <Table className="mt-4">
+              <TableHeader sticky>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">dAPI Name</TableHead>
+                  <TableHead className="min-w-[30ch]">API Providers</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentTree.merkleTreeValues.map((rowValues, i) => {
+                  const dapiName = ethers.utils.parseBytes32String(rowValues[0]);
+                  return (
+                    <TableRow key={i}>
+                      <TableCell>{dapiName}</TableCell>
+                      <TableCell>{getProviders(dapiName)}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </TabsContent>
+        <TabsContent value="1" forceMount>
+          <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={showRawValues} />
+        </TabsContent>
       </Tabs>
     </RootLayout>
   );

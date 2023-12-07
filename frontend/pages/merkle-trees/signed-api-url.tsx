@@ -16,7 +16,6 @@ import { validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
 import { useDiffMode } from '~/components/merkle-tree-elements/use-diff-mode';
-import ScrollToTopWrapper from '~/components/ui/srollToTopWrapper';
 
 const merkleTreeSchema = z.object({
   timestamp: z.number(),
@@ -85,33 +84,31 @@ export default function SignedApiUrlTree(props: Props) {
           </TabsList>
           <ViewOptionsMenu diffMode={diffMode} onDiffModeChange={setDiffMode} />
         </div>
-        <ScrollToTopWrapper>
-          <TabsContent value="0">
-            {showRawValues ? (
-              <RawValuesTable values={currentTree.merkleTreeValues} />
-            ) : (
-              <Table className="mt-4 table-fixed">
-                <TableHeader sticky>
-                  <TableRow>
-                    <TableHead>API Providers</TableHead>
-                    <TableHead>Signed API URL</TableHead>
+        <TabsContent value="0">
+          {showRawValues ? (
+            <RawValuesTable values={currentTree.merkleTreeValues} />
+          ) : (
+            <Table className="mt-4 table-fixed">
+              <TableHeader sticky>
+                <TableRow>
+                  <TableHead>API Providers</TableHead>
+                  <TableHead>Signed API URL</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentTree.merkleTreeValues.map((rowValues, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{getProviders(rowValues[0])}</TableCell>
+                    <TableCell>{rowValues[1]}</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentTree.merkleTreeValues.map((rowValues, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{getProviders(rowValues[0])}</TableCell>
-                      <TableCell>{rowValues[1]}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </TabsContent>
-          <TabsContent value="1" forceMount>
-            <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={showRawValues} />
-          </TabsContent>
-        </ScrollToTopWrapper>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </TabsContent>
+        <TabsContent value="1" forceMount>
+          <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={showRawValues} />
+        </TabsContent>
       </Tabs>
     </RootLayout>
   );

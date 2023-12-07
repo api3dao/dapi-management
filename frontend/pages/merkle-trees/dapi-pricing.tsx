@@ -20,7 +20,6 @@ import { validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
 import { useDiffMode } from '~/components/merkle-tree-elements/use-diff-mode';
-import ScrollToTopWrapper from '~/components/ui/srollToTopWrapper';
 
 type Unit = 'wei' | 'ether';
 
@@ -102,50 +101,48 @@ export default function DapiPricingTree(props: Props) {
           </TabsList>
           <ViewOptionsMenu diffMode={diffMode} onDiffModeChange={setDiffMode} />
         </div>
-        <ScrollToTopWrapper>
-          <TabsContent value="0">
-            {showRawValues ? (
-              <RawValuesTable values={currentTree.merkleTreeValues} />
-            ) : (
-              <Table className="mt-4">
-                <TableHeader sticky>
-                  <TableRow>
-                    <TableHead>dAPI Name</TableHead>
-                    <TableHead>Chain</TableHead>
-                    <TableHead>dAPI Update Parameters</TableHead>
-                    <TableHead>Duration (Days)</TableHead>
-                    <TableHead>
-                      Price
-                      <Select value={priceUnit} onValueChange={(unit: Unit) => setPriceUnit(unit)}>
-                        <SelectTrigger className="ml-1 inline-flex h-8 w-[100px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ether">Ether</SelectItem>
-                          <SelectItem value="wei">Wei</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableHead>
+        <TabsContent value="0">
+          {showRawValues ? (
+            <RawValuesTable values={currentTree.merkleTreeValues} />
+          ) : (
+            <Table className="mt-4">
+              <TableHeader sticky>
+                <TableRow>
+                  <TableHead>dAPI Name</TableHead>
+                  <TableHead>Chain</TableHead>
+                  <TableHead>dAPI Update Parameters</TableHead>
+                  <TableHead>Duration (Days)</TableHead>
+                  <TableHead>
+                    Price
+                    <Select value={priceUnit} onValueChange={(unit: Unit) => setPriceUnit(unit)}>
+                      <SelectTrigger className="ml-1 inline-flex h-8 w-[100px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ether">Ether</SelectItem>
+                        <SelectItem value="wei">Wei</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentTree.merkleTreeValues.slice(0, 100).map((pricing, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{ethers.utils.parseBytes32String(pricing[0])}</TableCell>
+                    <TableCell>{getChainAlias(pricing[1])}</TableCell>
+                    <TableCell>{formatUpdateParams(pricing[2])}</TableCell>
+                    <TableCell>{formatDuration(pricing[3])}</TableCell>
+                    <TableCell>{convertPrice(pricing[4])}</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentTree.merkleTreeValues.slice(0, 100).map((pricing, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{ethers.utils.parseBytes32String(pricing[0])}</TableCell>
-                      <TableCell>{getChainAlias(pricing[1])}</TableCell>
-                      <TableCell>{formatUpdateParams(pricing[2])}</TableCell>
-                      <TableCell>{formatDuration(pricing[3])}</TableCell>
-                      <TableCell>{convertPrice(pricing[4])}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </TabsContent>
-          <TabsContent value="1" forceMount>
-            <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={showRawValues} />
-          </TabsContent>
-        </ScrollToTopWrapper>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </TabsContent>
+        <TabsContent value="1" forceMount>
+          <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={showRawValues} />
+        </TabsContent>
       </Tabs>
     </RootLayout>
   );
