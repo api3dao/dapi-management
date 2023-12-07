@@ -17,7 +17,7 @@ function runChildProcess(network) {
   return result.status; // Exit code of the child process
 }
 
-async function main() {
+function main() {
   // Verify merkle tree data locally
   verifyDapiManagementData();
   verifyDapiPricingData();

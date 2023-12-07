@@ -42,8 +42,7 @@ async function main() {
   try {
     const hashRegistryDeployment = await hre.deployments.getOrNull('HashRegistry');
     if (!hashRegistryDeployment) {
-      console.log(`HashRegistry deployment not found on ${network}`);
-      return;
+      throw new Error(`HashRegistry deployment not found on ${network}`);
     }
 
     const hashRegistry = await hre.ethers.getContractAt('HashRegistry', hashRegistryDeployment.address);
