@@ -23,7 +23,7 @@ async function main() {
   verifyDapiPricingData();
   verifySignedApiUrlData();
 
-  // Verify merkle tree data against HashRegistry contracts
+  // Verify merkle tree data against HashRegistry data
   for (const [chainId, exports] of Object.entries(references)) {
     const network = exports.find((e) => e.chainId === chainId).name;
 
@@ -37,7 +37,4 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main();

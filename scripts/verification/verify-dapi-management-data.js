@@ -14,7 +14,7 @@ const {
   deriveSponsorWalletAddress,
 } = require('../utils');
 
-const SIGNATURE_KEYS_CHECK_ENABLED = false;
+const SIGNATURE_KEYS_CHECK_ENABLED = true;
 
 function verifyData() {
   console.info('Verifying dAPI Management data locally...');
