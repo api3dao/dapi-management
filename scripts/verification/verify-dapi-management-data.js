@@ -18,7 +18,7 @@ const { logSuccessMessage } = require('./utils');
 const SIGNATURE_KEYS_CHECK_ENABLED = false;
 
 function verifyData() {
-  console.info('Verifying dAPI Management data locally...');
+  console.info('Verifying dAPI Management data (before HashRegistry checks)...');
 
   const tree = createDapiManagementMerkleTree(currentHashData.merkleTreeValues);
   assert.equal(currentHashData.hash, tree.root, 'Expected hash to match tree root (current-hash.json)');

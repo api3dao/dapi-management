@@ -9,7 +9,7 @@ const { logSuccessMessage } = require('./utils');
 const SIGNATURE_KEYS_CHECK_ENABLED = false;
 
 function verifyData() {
-  console.info('Verifying dAPI Pricing data locally...');
+  console.info('Verifying dAPI Pricing data (before HashRegistry checks)...');
 
   const tree = createDapiPricingMerkleTree(currentHashData.merkleTreeValues);
   assert.equal(currentHashData.hash, tree.root, 'Expected hash to match tree root (current-hash.json)');

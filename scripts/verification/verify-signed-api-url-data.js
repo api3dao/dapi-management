@@ -12,7 +12,7 @@ const { logSuccessMessage } = require('./utils');
 const SIGNATURE_KEYS_CHECK_ENABLED = false;
 
 function verifyData() {
-  console.info('Verifying Signed API URL data locally...');
+  console.info('Verifying Signed API URL data (before HashRegistry checks)...');
 
   const tree = createSignedApiUrlMerkleTree(currentHashData.merkleTreeValues);
   assert.equal(currentHashData.hash, tree.root, 'Expected hash to match tree root (current-hash.json)');

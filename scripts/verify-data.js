@@ -18,7 +18,7 @@ function runChildProcess(network) {
 }
 
 function main() {
-  // Verify merkle tree data locally
+  // Verify merkle tree data (before HashRegistry checks)
   verifyDapiManagementData();
   verifyDapiPricingData();
   verifySignedApiUrlData();
