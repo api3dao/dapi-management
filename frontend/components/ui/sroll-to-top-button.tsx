@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowUpIcon } from 'lucide-react';
 import { Button } from './button';
 
-export default function ScrollToTopButton(): React.ReactNode {
+export default function ScrollToTopButton() {
   const [showScrollButton, setShowScrollButton] = useState(false);
 
   useEffect(() => {
