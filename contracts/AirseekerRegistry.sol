@@ -37,7 +37,18 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
 
     EnumerableSet.Bytes32Set private activeDataFeedIdsAndDapiNames;
 
-    uint256 private constant MAXIMUM_BEACON_COUNT_IN_A_SET = 21;
+    // The length of abi.encode(address,bytes32)
+    uint256 private constant DATA_FEED_DETAILS_LENGTH_FOR_SINGLE_BEACON =
+        32 + 32;
+
+    uint256 private constant MAXIMUM_BEACON_COUNT_IN_SET = 21;
+
+    // The length of abi.encode(address[],bytes32[]), where each array has
+    // MAXIMUM_BEACON_COUNT_IN_SET items
+    uint256 private constant MAXIMUM_DATA_FEED_DETAILS_LENGTH =
+        (2 * 32) +
+            (32 + MAXIMUM_BEACON_COUNT_IN_SET * 32) +
+            (32 + MAXIMUM_BEACON_COUNT_IN_SET * 32);
 
     modifier onlyNonZeroDataFeedIdOrDapiName(bytes32 dataFeedIdOrDapiName) {
         require(
@@ -136,10 +147,7 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
         } else if (dataFeedDetailsLength >= 256) {
             // dataFeedId maps to a Beacon set with at least two Beacons.
             require(
-                dataFeedDetailsLength <=
-                    (2 * 32) +
-                        (32 + MAXIMUM_BEACON_COUNT_IN_A_SET * 32) +
-                        (32 + MAXIMUM_BEACON_COUNT_IN_A_SET * 32),
+                dataFeedDetailsLength <= MAXIMUM_DATA_FEED_DETAILS_LENGTH,
                 "Details data too long"
             );
             (address[] memory airnodes, bytes32[] memory templateIds) = abi
@@ -231,7 +239,10 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
                         keccak256(abi.encodePacked(dataFeedIdOrDapiName))
                     ];
                 }
-                if (dataFeedDetails.length == 64) {
+                if (
+                    dataFeedDetails.length ==
+                    DATA_FEED_DETAILS_LENGTH_FOR_SINGLE_BEACON
+                ) {
                     signedApiUrls = new string[](1);
                     signedApiUrls[0] = airnodeToSignedApiUrl[
                         abi.decode(dataFeedDetails, (address))
