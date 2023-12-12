@@ -39,7 +39,8 @@ export function readTreeDataFrom<T>(options: { subfolder: TreeSubFolder; file: T
 
 export function readTreeDataFrom(options: { subfolder: TreeSubFolder; file: TreeFile; schema?: z.ZodSchema }) {
   const { subfolder, file, schema = merkleTreeSchema } = options;
-  const path = join(process.cwd(), '../data', subfolder, file);
+  const treeDataFolder = process.env.E2E === 'true' ? `.e2e/${subfolder}` : subfolder;
+  const path = join(process.cwd(), '../data', treeDataFolder, file);
 
   // The previous hash file isn't required, so we return if it doesn't exist
   if (file === 'previous-hash.json' && !existsSync(path)) {
@@ -54,7 +55,8 @@ export function readTreeDataFrom(options: { subfolder: TreeSubFolder; file: Tree
 }
 
 export function readSignerDataFrom(subfolder: TreeSubFolder) {
-  const path = join(process.cwd(), `../data/${subfolder}/hash-signers.json`);
+  const treeDataFolder = process.env.E2E === 'true' ? `.e2e/${subfolder}` : subfolder;
+  const path = join(process.cwd(), `../data/${treeDataFolder}/hash-signers.json`);
   const data = JSON.parse(readFileSync(path, 'utf8'));
   return {
     path,

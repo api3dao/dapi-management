@@ -5,6 +5,7 @@ coverage.json
 typechain
 typechain-types
 data/.processed
+data/.e2e
 *.tgz
 
 # Hardhat files
