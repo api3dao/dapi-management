@@ -55,14 +55,20 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
     function activateDataFeedIdOrDapiName(
         bytes32 dataFeedIdOrDapiName
     ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dataFeedIdOrDapiName) {
-        activeDataFeedIdsAndDapiNames.add(dataFeedIdOrDapiName);
+        require(
+            activeDataFeedIdsAndDapiNames.add(dataFeedIdOrDapiName),
+            "Data feed already active"
+        );
         emit ActivatedDataFeedIdOrDapiName(dataFeedIdOrDapiName);
     }
 
     function deactivateDataFeedIdOrDapiName(
         bytes32 dataFeedIdOrDapiName
     ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dataFeedIdOrDapiName) {
-        activeDataFeedIdsAndDapiNames.remove(dataFeedIdOrDapiName);
+        require(
+            activeDataFeedIdsAndDapiNames.remove(dataFeedIdOrDapiName),
+            "Data feed not active"
+        );
         emit DeactivatedDataFeedIdOrDapiName(dataFeedIdOrDapiName);
     }
 
