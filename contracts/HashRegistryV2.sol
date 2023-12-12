@@ -36,12 +36,12 @@ contract HashRegistryV2 is Ownable, SelfMulticall {
         require(hashType != bytes32(0), "Hash type zero");
         uint256 signersCount = signers.length;
         require(signersCount != 0, "Signers empty");
-        for (uint256 ind1 = 0; ind1 < signersCount; ind1++) {
-            address signer = signers[ind1];
-            require(signer != address(0), "Signer address zero");
-            for (uint256 ind2 = ind1 + 1; ind2 < signersCount; ind2++) {
-                require(signer != signers[ind2], "Duplicate signer address");
-            }
+        require(signers[0] != address(0), "First signer address zero");
+        for (uint256 ind = 1; ind < signersCount; ind++) {
+            require(
+                signers[ind] > signers[ind - 1],
+                "Signers duplicated or misordered"
+            );
         }
         hashTypeToSignersHash[hashType] = keccak256(abi.encodePacked(signers));
         emit SetSigners(hashType, signers);
