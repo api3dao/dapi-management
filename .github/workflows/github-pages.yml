@@ -32,20 +32,23 @@ jobs:
 
     - name: Install dependencies
       run: |
-        if [ -n "$(git status data scripts/split-dapi-pricing.js --porcelain)" ]; then
-          yarn install --frozen-lockfile
-        fi
+        yarn install --frozen-lockfile
 
-    - name: Check if there are changes in gh-pages branch
+    - name: Run split script
       run: |
-        if [ -n "$(git status data scripts/split-dapi-pricing.js --porcelain)" ]; then
+        echo "Running dapi pricing split script"
+        node scripts/split-dapi-pricing.js
+
+    - name: Commit and push if changes detected
+      run: |
+        if [ -n "$(git status data --porcelain)" ]; then
           echo "Changes detected in gh-pages branch."
           git config user.name github-actions
           git config user.email github-actions@github.com
-          echo "Running dapi pricing split script"
-          node scripts/split-dapi-pricing.js
           git add data
+          echo "Commiting file"
           git commit -m "Update data file(s)"
+          echo "Pushing commit"
           git push
         else
           echo "No changes to commit and push."
