@@ -20,7 +20,7 @@ jobs:
 
     - name: Copy required files
       run: |
-        git checkout main -- data scripts package.json yarn.lock
+        git checkout main -- data scripts package.json yarn.lock .prettierrc.js
         echo "Unstage all files"
         git reset
 
@@ -31,19 +31,17 @@ jobs:
         cache: 'yarn'
 
     - name: Install dependencies
-      run: |
-        if [ -n "$(git status data scripts/split-dapi-pricing.js --porcelain)" ]; then
-          yarn install --frozen-lockfile
-        fi
+      run: yarn install --frozen-lockfile
 
-    - name: Check if there are changes in gh-pages branch
+    - name: Run dapi pricing split script
+      run: node scripts/split-dapi-pricing.js
+
+    - name: Commit and push if changes are detected
       run: |
-        if [ -n "$(git status data scripts/split-dapi-pricing.js --porcelain)" ]; then
+        if [ -n "$(git status data --porcelain)" ]; then
           echo "Changes detected in gh-pages branch."
           git config user.name github-actions
           git config user.email github-actions@github.com
-          echo "Running dapi pricing split script"
-          node scripts/split-dapi-pricing.js
           git add data
           git commit -m "Update data file(s)"
           git push
