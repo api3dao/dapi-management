@@ -2,11 +2,11 @@
 pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@api3/airnode-protocol-v1/contracts/utils/SelfMulticall.sol";
+import "@api3/airnode-protocol-v1/contracts/utils/ExtendedSelfMulticall.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3ServerV1.sol";
 
-contract AirseekerRegistry is Ownable, SelfMulticall {
+contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     event ActivatedDataFeedIdOrDapiName(bytes32 indexed dataFeedIdOrDapiName);
