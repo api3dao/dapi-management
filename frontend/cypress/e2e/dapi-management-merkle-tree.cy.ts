@@ -2,6 +2,7 @@ const subfolder = 'dapi-management-merkle-tree-root';
 
 describe('dAPI Management Merkle tree', () => {
   beforeEach(() => {
+    cy.viewport(1630, 1000);
     cy.mockConnectedMetaMaskWallet();
 
     cy.task('seedTreeData', {
@@ -58,7 +59,7 @@ describe('dAPI Management Merkle tree', () => {
 
     cy.findByRole('region', { name: 'Notifications (F8)' })
       .should('contain.text', 'The CI verifies the following for you')
-      .findByRole('button', { name: 'Got it' })
+      .findByRole('button', { name: 'Gots it' })
       .click();
 
     // The toast should not show again
