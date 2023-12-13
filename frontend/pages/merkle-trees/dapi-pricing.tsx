@@ -57,6 +57,8 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 
 type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
 
+const SHOW_DAPI_PRICING_DATA = false;
+
 export default function DapiPricingTree(props: Props) {
   const { currentTree, signers, showRawValues } = props;
   const [priceUnit, setPriceUnit] = useState<Unit>('ether');
@@ -93,57 +95,63 @@ export default function DapiPricingTree(props: Props) {
         <SignatureTable signers={signers} signatures={signatures} />
       </div>
 
-      <Tabs defaultValue="0">
-        <div className="flex items-center justify-between">
-          <TabsList>
-            <TabsTrigger value="0">Tree Values</TabsTrigger>
-            <TabsTrigger value="1">Tree Diff</TabsTrigger>
-          </TabsList>
-          <ViewOptionsMenu diffMode={diffMode} onDiffModeChange={setDiffMode} />
-        </div>
-        <TabsContent value="0">
-          {showRawValues ? (
-            <RawValuesTable values={currentTree.merkleTreeValues} />
-          ) : (
-            <Table className="mt-4">
-              <TableHeader sticky>
-                <TableRow>
-                  <TableHead>dAPI Name</TableHead>
-                  <TableHead>Chain</TableHead>
-                  <TableHead>dAPI Update Parameters</TableHead>
-                  <TableHead>Duration (Days)</TableHead>
-                  <TableHead>
-                    Price
-                    <Select value={priceUnit} onValueChange={(unit: Unit) => setPriceUnit(unit)}>
-                      <SelectTrigger className="ml-1 inline-flex h-8 w-[100px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ether">Ether</SelectItem>
-                        <SelectItem value="wei">Wei</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentTree.merkleTreeValues.slice(0, 100).map((pricing, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{ethers.utils.parseBytes32String(pricing[0])}</TableCell>
-                    <TableCell>{getChainAlias(pricing[1])}</TableCell>
-                    <TableCell>{formatUpdateParams(pricing[2])}</TableCell>
-                    <TableCell>{formatDuration(pricing[3])}</TableCell>
-                    <TableCell>{convertPrice(pricing[4])}</TableCell>
+      {SHOW_DAPI_PRICING_DATA ? (
+        <Tabs defaultValue="0">
+          <div className="flex items-center justify-between">
+            <TabsList>
+              <TabsTrigger value="0">Tree Values</TabsTrigger>
+              <TabsTrigger value="1">Tree Diff</TabsTrigger>
+            </TabsList>
+            <ViewOptionsMenu diffMode={diffMode} onDiffModeChange={setDiffMode} />
+          </div>
+          <TabsContent value="0">
+            {showRawValues ? (
+              <RawValuesTable values={currentTree.merkleTreeValues} />
+            ) : (
+              <Table className="mt-4">
+                <TableHeader sticky>
+                  <TableRow>
+                    <TableHead>dAPI Name</TableHead>
+                    <TableHead>Chain</TableHead>
+                    <TableHead>dAPI Update Parameters</TableHead>
+                    <TableHead>Duration (Days)</TableHead>
+                    <TableHead>
+                      Price
+                      <Select value={priceUnit} onValueChange={(unit: Unit) => setPriceUnit(unit)}>
+                        <SelectTrigger className="ml-1 inline-flex h-8 w-[100px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ether">Ether</SelectItem>
+                          <SelectItem value="wei">Wei</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </TabsContent>
-        <TabsContent value="1" forceMount>
-          <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={showRawValues} />
-        </TabsContent>
-      </Tabs>
+                </TableHeader>
+                <TableBody>
+                  {currentTree.merkleTreeValues.slice(0, 100).map((pricing, i) => (
+                    <TableRow key={i}>
+                      <TableCell>{ethers.utils.parseBytes32String(pricing[0])}</TableCell>
+                      <TableCell>{getChainAlias(pricing[1])}</TableCell>
+                      <TableCell>{formatUpdateParams(pricing[2])}</TableCell>
+                      <TableCell>{formatDuration(pricing[3])}</TableCell>
+                      <TableCell>{convertPrice(pricing[4])}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </TabsContent>
+          <TabsContent value="1" forceMount>
+            <TreeDiff diffResult={props.diffResult} diffMode={diffMode} raw={showRawValues} />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <div className="mt-36 flex w-full justify-center text-lg text-gray-400">
+          dAPI Pricing merkle tree data has been hidden due to its size
+        </div>
+      )}
     </RootLayout>
   );
 }
