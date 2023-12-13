@@ -65,7 +65,8 @@ function deriveBeaconSetId(dataFeedName, apiProviders) {
 
 const PROTOCOL_ID_AIRSEEKER = '5';
 function deriveSponsorWalletAddress(dapiNameInBytes32) {
-  const sponsorAddress = ethers.utils.getAddress(dapiNameInBytes32.slice(0, 42));
+  const hashedDapiName = ethers.utils.keccak256(dapiNameInBytes32);
+  const sponsorAddress = ethers.utils.getAddress(hashedDapiName.slice(0, 42));
   const airnodeHdNode = ethers.utils.HDNode.fromExtendedKey(airseekerXPub);
   return airnodeHdNode.derivePath(deriveWalletPathFromSponsorAddress(sponsorAddress, PROTOCOL_ID_AIRSEEKER)).address;
 }
