@@ -23,5 +23,5 @@ jobs:
         if: failure()
         with:
           name: cypress-screenshots
-          path: cypress/screenshots
+          path: frontend/cypress/screenshots
           if-no-files-found: ignore
