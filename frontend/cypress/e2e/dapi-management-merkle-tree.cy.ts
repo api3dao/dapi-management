@@ -59,7 +59,7 @@ describe('dAPI Management Merkle tree', () => {
 
     cy.findByRole('region', { name: 'Notifications (F8)' })
       .should('contain.text', 'The CI verifies the following for you')
-      .findByRole('button', { name: 'Gots it' })
+      .findByRole('button', { name: 'Got it' })
       .click();
 
     // The toast should not show again

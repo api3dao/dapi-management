@@ -34,9 +34,14 @@
     "frontend:dev": "cd frontend && next dev",
     "frontend:build": "cd frontend && next build",
     "frontend:start": "cd frontend && next start",
+    "frontend:prod": "yarn frontend:build && yarn frontend:start",
     "frontend:type-check": "yarn tsc --project ./frontend/tsconfig.json",
     "frontend:test": "jest --config frontend/jest.config.js",
-    "frontend:add-component": "npx shadcn-ui@latest add --cwd frontend"
+    "frontend:add-component": "npx shadcn-ui@latest add --cwd frontend",
+    "cypress:frontend:dev": "E2E=true yarn frontend:dev",
+    "cypress:frontend:prod": "yarn frontend:build && E2E=true yarn frontend:start",
+    "cypress:open": "node scripts/print-cypress-help.js && yarn cypress open --project frontend",
+    "cypress:run": "node scripts/print-cypress-help.js && yarn cypress run --project frontend"
   },
   "devDependencies": {
     "@api3/chains": "^3.5.1",
@@ -60,6 +65,7 @@
     "@typescript-eslint/parser": "^6.8.0",
     "autoprefixer": "^10.4.16",
     "chai": "^4.2.0",
+    "chalk": "^4.0.0",
     "cypress": "^13.6.1",
     "dotenv": "^16.3.1",
     "eslint": "^8.44.0",
