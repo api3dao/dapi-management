@@ -14,5 +14,6 @@ jobs:
         env:
           E2E: true
         with:
+          project: ./frontend
           build: yarn frontend:build
           start: yarn run node && yarn frontend:start
