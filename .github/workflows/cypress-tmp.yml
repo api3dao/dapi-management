@@ -16,4 +16,6 @@ jobs:
         with:
           project: ./frontend
           build: yarn frontend:build
-          start: yarn run node && yarn frontend:start
+          start: |
+            yarn run node
+            yarn frontend:start
