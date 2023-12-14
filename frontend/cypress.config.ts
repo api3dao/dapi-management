@@ -1,5 +1,5 @@
 import { defineConfig } from 'cypress';
-import { writeFileSync, existsSync, mkdirSync, rmSync } from 'fs';
+import { writeFileSync, existsSync, mkdirSync, rmSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { spawnSync } from 'child_process';
 import { MerkleTreeData } from './lib/server/file-utils';
@@ -28,6 +28,7 @@ module.exports = defineConfig({
   video: false,
 
   e2e: {
+    baseUrl: 'http://localhost:3000',
     setupNodeEvents(on) {
       on('task', {
         seedTreeData(options: {
@@ -50,12 +51,18 @@ module.exports = defineConfig({
 
           if (currentHashData) {
             const currentHashPath = join(treeDirPath, 'current-hash.json');
-            writeFileSync(currentHashPath, JSON.stringify(currentHashData, null, 2));
+            const existingData = existsSync(currentHashPath)
+              ? JSON.parse(readFileSync(currentHashPath, 'utf8'))
+              : undefined;
+            writeFileSync(currentHashPath, JSON.stringify({ ...existingData, ...currentHashData }, null, 2));
           }
 
           if (previousHashData) {
             const previousHashPath = join(treeDirPath, 'previous-hash.json');
-            writeFileSync(previousHashPath, JSON.stringify(previousHashData, null, 2));
+            const existingData = existsSync(previousHashPath)
+              ? JSON.parse(readFileSync(previousHashPath, 'utf8'))
+              : undefined;
+            writeFileSync(previousHashPath, JSON.stringify({ ...existingData, ...previousHashData }, null, 2));
           }
 
           spawnSync(`yarn prettier --write ${treeDirPath}`);
