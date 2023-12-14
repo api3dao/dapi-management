@@ -57,7 +57,7 @@ export default function DapiPricingTree(props: Props) {
       <div className="mb-10">
         <SignatureTable signers={signers} signatures={signatures} />
       </div>
-      <div className="flex justify-center text-lg text-gray-400">
+      <div className="flex justify-center text-gray-400">
         dAPI Pricing merkle tree data has been hidden due to its size
       </div>
     </RootLayout>
