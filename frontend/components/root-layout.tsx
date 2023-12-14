@@ -108,7 +108,7 @@ function Account() {
     case 'connected':
       return (
         <div>
-          <div className="flex items-center gap-2">
+          <div data-testid="connected-wallet-address" className="flex items-center gap-2">
             <span className="h-4 w-4 rounded-full bg-gradient-to-br from-green-400 to-green-600" />
             <div className="text-sm">{shortenAddress(address)}</div>
           </div>
