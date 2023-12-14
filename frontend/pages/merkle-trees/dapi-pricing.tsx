@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import RootLayout from '~/components/root-layout';
 import { TreeStatusBadge, TreeRootBadge, SignatureTable, SignRootButton } from '~/components/merkle-tree-elements';
 import { validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
@@ -6,19 +5,12 @@ import { InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
 import { readSignerDataFrom, readTreeDataFrom } from '~/lib/server/file-utils';
 
-const merkleTreeSchema = z.object({
-  timestamp: z.number(),
-  hash: z.string(),
-  signatures: z.record(z.string()),
-});
-
 export async function getServerSideProps() {
   const subfolder = 'dapi-pricing-merkle-tree-root';
 
   const { data: currentTree } = readTreeDataFrom({
     subfolder,
     file: 'current-hash.json',
-    schema: merkleTreeSchema,
   });
 
   const { data: signers } = readSignerDataFrom(subfolder);
