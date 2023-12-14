@@ -19,3 +19,6 @@ deployments/localhost
 # Misc
 .DS_Store
 tmp
+
+# Data files
+dapi-pricing-mt-input.json
