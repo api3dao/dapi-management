@@ -172,7 +172,7 @@ async function calculateChainSingleUpdateGasCost(chainId, chainGasOptionsById, r
   }
 }
 
-async function generateDapiPricingMT() {
+async function generateDapiPricingInputs() {
   // Connect to the database
   await client.connect();
 
@@ -316,4 +316,4 @@ async function generateDapiPricingMT() {
   execSync('yarn format');
 }
 
-generateDapiPricingMT();
+generateDapiPricingInputs();
