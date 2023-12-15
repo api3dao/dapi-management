@@ -4,9 +4,13 @@ const { CHAINS } = require('@api3/chains');
 const { keyBy } = require('lodash');
 const { ethers } = require('ethers');
 const { go } = require('@api3/promise-utils');
+const {
+  getAirnodeAddressByAlias,
+  deriveDataFeedId: deriveDataFeedIdWithAirnodeAddress,
+} = require('@api3/api-integrations');
 const { client } = require('../src/database/database');
-const { deriveDataFeedId } = require('./utils');
 const dapis = require('../data/dapis.json');
+const { deriveBeaconSetId } = require('./utils');
 
 const MT_INPUT_PATH = './scripts/dapi-pricing-mt-input.json';
 const DEFAULT_SINGLE_UPDATE_GAS_COST = 173000;
@@ -52,14 +56,45 @@ const chainSingleUpdateGasCosts = {
   5001: { fixedGasCost: DEFAULT_SINGLE_UPDATE_GAS_COST, l1FixedGasCost: 1850 }, // mantle-testnet
 };
 
+function deriveDataFeedId(dapiName, apiProviders) {
+  if (apiProviders.length === 1) {
+    const airnodeAddress = getAirnodeAddressByAlias(apiProviders[0]);
+    return deriveDataFeedIdWithAirnodeAddress(dapiName, airnodeAddress);
+  }
+
+  return deriveBeaconSetId(dapiName, apiProviders);
+}
+
 // Derive dataFeedIds and create a mapping for names
-const dataFeedNamesByDataFeedId = dapis.reduce(
-  (acc, { name, providers }) => ({
+const dataFeedNamesByDataFeedId = dapis.reduce((acc, { name, providers }) => {
+  const individualBeaconNamesById = providers.reduce(
+    (acc, provider) => (
+      {
+        ...acc,
+        [deriveDataFeedId(name, [provider])]: name,
+      },
+      {}
+    )
+  );
+
+  return {
     ...acc,
+    ...individualBeaconNamesById,
     [deriveDataFeedId(name, providers)]: name,
-  }),
-  {}
-);
+  };
+}, {});
+
+const beaconSetsById = dapis.reduce((acc, { name, providers }) => {
+  const beacons = providers.map((provider) => deriveDataFeedId(name, [provider]));
+
+  return {
+    ...acc,
+    [deriveDataFeedId(name, providers)]: { name, beacons },
+  };
+}, {});
+
+console.log('dataFeedNamesByDataFeedId', dataFeedNamesByDataFeedId);
+console.log('beaconSetsById', beaconSetsById);
 
 async function calculateChainSingleUpdateGasCost(chainId, chainGasOptionsById, rpcUrl) {
   const chainGasOptions = chainGasOptionsById[chainId];
@@ -172,73 +207,85 @@ async function calculateChainSingleUpdateGasCost(chainId, chainGasOptionsById, r
   }
 }
 
+const arrayToSqlList = (input) => `'${input.join(`','`)}'`;
+
 async function generateDapiPricingInputs() {
   // Connect to the database
   await client.connect();
 
   // Calculate average daily update counts for each datafeed
-  const dataFeedUpdateCounts = await client.query(`
-  WITH "DataComparison" AS (
+  const dataFeedUpdateCounts = await Promise.all(
+    Object.entries(beaconSetsById).map(async ([beaconSetId, { beacons, name }]) => ({
+      beaconSetId,
+      name,
+      result: await client.query(`
+      WITH "DataComparison" AS (
+        SELECT
+            "id",
+            "airnode",
+            "templateId",
+            "timestamp",
+            "decodedValue",
+            "dataFeedId",
+            LEAD("decodedValue") OVER (PARTITION BY "airnode", "templateId" ORDER BY "timestamp") AS "nextDecodedValue"
+        FROM
+            "SignedData" sd
+        WHERE
+            EXISTS (
+                SELECT 1
+                FROM "SignedData" sd2
+                WHERE sd2."dataFeedId" = sd."dataFeedId"
+                    AND sd2."timestamp" = sd."timestamp"
+                    AND sd."timestamp" >= NOW() - INTERVAL '1 month'
+            )
+    ),
+    "Counts" AS (
+        SELECT
+            "dataFeedId",
+            COUNT(*) FILTER (WHERE "decodedValue" > 1.0025 * COALESCE("nextDecodedValue", "decodedValue")
+                OR "decodedValue" < 0.9975 * COALESCE("nextDecodedValue", "decodedValue")) AS "count_0.25_120",
+            COUNT(*) FILTER (WHERE "decodedValue" > 1.0025 * COALESCE("nextDecodedValue", "decodedValue")
+                OR "decodedValue" < 0.9975 * COALESCE("nextDecodedValue", "decodedValue")) AS "count_0.25_86400",
+            COUNT(*) FILTER (WHERE "decodedValue" > 1.005 * COALESCE("nextDecodedValue", "decodedValue")
+                OR "decodedValue" < 0.995 * COALESCE("nextDecodedValue", "decodedValue")) AS "count_0.5_86400",
+            COUNT(*) FILTER (WHERE "decodedValue" > 1.01 * COALESCE("nextDecodedValue", "decodedValue")
+                OR "decodedValue" < 0.99 * COALESCE("nextDecodedValue", "decodedValue")) AS "count_1_86400"
+        FROM
+            "DataComparison"
+        GROUP BY
+            "dataFeedId"
+    )
     SELECT
-      "id",
-      "airnode",
-      "templateId",
-      "timestamp",
-      "decodedValue",
-      "dataFeedId",
-      LEAD("decodedValue") OVER (PARTITION BY "airnode", "templateId" ORDER BY "timestamp") AS "nextDecodedValue"
+        "dataFeedId",
+        GREATEST(750, COALESCE("count_0.25_120", 0)) AS "updateCount_0.25_120",
+        GREATEST(1, COALESCE("count_0.25_86400", 0)) AS "updateCount_0.25_86400",
+        GREATEST(1, COALESCE("count_0.5_86400", 0)) AS "updateCount_0.5_86400",
+        GREATEST(1, COALESCE("count_1_86400", 0)) AS "updateCount_1_86400"
     FROM
-      "SignedData"
+        "Counts"
     WHERE
-      "timestamp" >= NOW() - INTERVAL '1 month'
-  ),
-  "DailyUpdateCounts" AS (
-    SELECT
-      "dataFeedId",
-      CAST(GREATEST(750, COUNT(*) FILTER (WHERE ("decodedValue" > 1.0025 * COALESCE("nextDecodedValue", "decodedValue")
-        OR "decodedValue" < 0.9975 * COALESCE("nextDecodedValue", "decodedValue"))
-        AND "nextDecodedValue" IS NOT NULL)) AS INTEGER) AS "updateCount_0.25_120",
-      CAST(GREATEST(1, COUNT(*) FILTER (WHERE ("decodedValue" > 1.0025 * COALESCE("nextDecodedValue", "decodedValue")
-        OR "decodedValue" < 0.9975 * COALESCE("nextDecodedValue", "decodedValue"))
-        AND "nextDecodedValue" IS NOT NULL)) AS INTEGER) AS "updateCount_0.25_86400",
-      CAST(GREATEST(1, COUNT(*) FILTER (WHERE ("decodedValue" > 1.005 * COALESCE("nextDecodedValue", "decodedValue")
-        OR "decodedValue" < 0.995 * COALESCE("nextDecodedValue", "decodedValue"))
-        AND "nextDecodedValue" IS NOT NULL)) AS INTEGER) AS "updateCount_0.5_86400",
-      CAST(GREATEST(1, COUNT(*) FILTER (WHERE ("decodedValue" > 1.01 * COALESCE("nextDecodedValue", "decodedValue")
-        OR "decodedValue" < 0.99 * COALESCE("nextDecodedValue", "decodedValue"))
-        AND "nextDecodedValue" IS NOT NULL)) AS INTEGER) AS "updateCount_1_86400"
-    FROM
-      "DataComparison"
-    GROUP BY
-      "dataFeedId"
-  )
-  SELECT
-    "dataFeedId",
-    CAST(CEIL(AVG("updateCount_0.25_120")) AS INTEGER) AS "avgUpdateCount_0.25_120",
-    CAST(CEIL(AVG("updateCount_0.25_86400")) AS INTEGER) AS "avgUpdateCount_0.25_86400",
-    CAST(CEIL(AVG("updateCount_0.5_86400")) AS INTEGER) AS "avgUpdateCount_0.5_86400",
-    CAST(CEIL(AVG("updateCount_1_86400")) AS INTEGER) AS "avgUpdateCount_1_86400"
-  FROM
-    "DailyUpdateCounts"
-  GROUP BY
-    "dataFeedId"
-  ORDER BY
-    "dataFeedId";
-  `);
+        "dataFeedId" IN (${arrayToSqlList(beacons)})
+    ORDER BY
+        "dataFeedId";
+    `),
+    }))
+  );
 
-  const dataFeedUpdateCountsWithOptions = dataFeedUpdateCounts.rows.map(({ dataFeedId, ...updateCountFields }) => {
-    const updateCounts = Object.entries(updateCountFields).map(([key, updateCount]) => {
-      const [, deviationThreshold, heartbeatInterval] = key.split('_');
+  const dataFeedUpdateCountsWithOptions = dataFeedUpdateCounts
+    .flatMap((df) => df.result.rows)
+    .map(({ dataFeedId, ...updateCountFields }) => {
+      const updateCounts = Object.entries(updateCountFields).map(([key, updateCount]) => {
+        const [, deviationThreshold, heartbeatInterval] = key.split('_');
 
-      return {
-        deviationThreshold: Number.parseFloat(deviationThreshold),
-        heartbeatInterval: Number.parseInt(heartbeatInterval, 10),
-        updateCount,
-      };
+        return {
+          deviationThreshold: Number.parseFloat(deviationThreshold),
+          heartbeatInterval: Number.parseInt(heartbeatInterval, 10),
+          updateCount,
+        };
+      });
+
+      return { dataFeedName: dataFeedNamesByDataFeedId[dataFeedId] ?? 'test', updateCounts };
     });
-
-    return { dataFeedName: dataFeedNamesByDataFeedId[dataFeedId] ?? 'test', updateCounts };
-  });
   // Filter results where a dataFeedName match is not found
   // .filter(({ dataFeedName }) => dataFeedName);
 
