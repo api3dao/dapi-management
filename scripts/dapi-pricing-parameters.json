@@ -23,8 +23,12 @@
   "defaultSingleUpdateGasCost": 173000,
   "defaultGasMultiplier": 1.5,
   "defaultSubscriptionDuration": 183,
-  "chainSubscriptionDurations": {},
-  "chainGasMultipliers": {},
+  "chainSubscriptionDurations": {
+    "11155111": 7
+  },
+  "chainGasMultipliers": {
+    "11155111": 1.5
+  },
   "chainSingleUpdateGasCosts": {
     "10": { "fixedGasCost": 130000, "l1FixedGasCost": 25000 },
     "420": { "fixedGasCost": 130000, "l1FixedGasCost": 25000 },
