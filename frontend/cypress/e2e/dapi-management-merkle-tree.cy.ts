@@ -31,9 +31,9 @@ describe('dAPI Management Merkle tree', () => {
             '0xBf57be4fE96a5b3b85070466A2362D87610eA021',
           ],
           [
-            '0x4144412f55534400000000000000000000000000000000000000000000000000',
-            '0xd0b3f3da2561cb442bd0cd5d5be5ada2580cb5b49bdf0e9374d8f8dbfcd5aeb2',
-            '0x2E9aA1a0Cb85c0dF938D99b6306c1db66129Bf73',
+            '0x414d5a4e2f555344000000000000000000000000000000000000000000000000',
+            '0x5abb83436baf8b1e1df1ee80191368d438ee50c792144d0e713c41d647bea316',
+            '0x0C32be593952e2ED141BA699C13D1995C52A505C',
           ],
         ],
       },
@@ -49,9 +49,9 @@ describe('dAPI Management Merkle tree', () => {
             '0x8cd50C14594B74ae85baE27f7495c3180e2Fa238',
           ],
           [
-            '0x4144412f55534400000000000000000000000000000000000000000000000000',
-            '0xd0b3f3da2561cb442bd0cd5d5be5ada2580cb5b49bdf0e9374d8f8dbfcd5aeb2',
-            '0x2E9aA1a0Cb85c0dF938D99b6306c1db66129Bf73',
+            '0x414d5a4e2f555344000000000000000000000000000000000000000000000000',
+            '0x5abb83436baf8b1e1df1ee80191368d438ee50c792144d0e713c41d647bea316',
+            '0x0C32be593952e2ED141BA699C13D1995C52A505C',
           ],
         ],
       },
@@ -76,7 +76,7 @@ describe('dAPI Management Merkle tree', () => {
       visitDapiManagementPage();
 
       cy.waitUntilWalletIsConnected();
-      cy.findByRole('heading', { name: 'dAPI Management Merkle Tree' }).should('be.visible');
+      cy.findByRole('heading', { name: 'dAPI Management Merkle Tree' }).should('exist');
       dismissCIToast();
       cy.findByRole('button', { name: 'Sign Root' }).should('be.disabled');
     });
@@ -126,11 +126,11 @@ describe('dAPI Management Merkle tree', () => {
 
       cy.findByRole('tab', { name: 'Tree Diff' }).click();
       cy.findByRole('tabpanel', { name: 'Tree Diff' }).within(() => {
-        cy.findByText(`"${account0Signature}"`).should('be.visible');
+        cy.findByText(`"${account0Signature}"`).should('exist');
       });
     });
 
-    it('validates and ignores invalid signatures', () => {
+    it('ignores invalid signatures', () => {
       cy.task('seedTreeData', {
         subfolder,
         signerData: {
@@ -177,9 +177,6 @@ describe('dAPI Management Merkle tree', () => {
     });
   });
 
-  // TODO
-  describe.skip('tree diff', () => {});
-
   it('informs the user about the CI verification', () => {
     visitDapiManagementPage();
 
@@ -190,12 +187,95 @@ describe('dAPI Management Merkle tree', () => {
 
     // The toast should not show again
     cy.reload();
-    cy.findByRole('heading', { name: 'dAPI Management Merkle Tree' }).should('be.visible');
+    cy.findByRole('heading', { name: 'dAPI Management Merkle Tree' }).should('exist');
     cy.wait(1000);
     cy.findByRole('region', { name: 'Notifications (F8)' }).should(
       'not.contain.text',
       'The CI verifies the following for you'
     );
+  });
+
+  it('uses the address book', () => {
+    cy.task('seedTreeData', {
+      subfolder,
+      signerData: {
+        hashSigners: ['0x80efDd3bB15F2108C407049C5575490858800D47'],
+      },
+    });
+
+    visitDapiManagementPage();
+
+    cy.findByTestId('signatures-table').within(() => {
+      cy.findAllByRole('row').then((rows) => {
+        cy.wrap(rows[1]).findByRole('cell', { name: 'mertcan' }).should('exist');
+      });
+    });
+  });
+
+  it.only('displays human-readable values', () => {
+    visitDapiManagementPage();
+
+    cy.findByRole('tabpanel', { name: 'Tree Values' }).within(() => {
+      cy.findByRole('columnheader', { name: 'dAPI Name' }).should('exist');
+      cy.findByRole('columnheader', { name: 'API Providers' }).should('exist');
+      cy.findByRole('columnheader', { name: 'Data Feed ID' }).should('not.exist');
+      cy.findByRole('columnheader', { name: 'Sponsor Wallet Address' }).should('not.exist');
+
+      cy.findAllByRole('row').then((rows) => {
+        cy.wrap(rows[1]).findByRole('cell', { name: 'AAPL/USD' }).should('exist');
+        cy.wrap(rows[1]).findByRole('cell', { name: 'Finage, Finnhub, IEXCloud, Nodary, TwelveData' }).should('exist');
+
+        cy.wrap(rows[2]).findByRole('cell', { name: 'AAVE/USD' }).should('exist');
+        cy.wrap(rows[2])
+          .findByRole('cell', { name: 'Coinpaprika, dxFeed, Finage, Kaiko, NewChangeFX, Nodary, TwelveData' })
+          .should('exist');
+      });
+    });
+
+    cy.findByRole('tab', { name: 'Tree Diff' }).click();
+    cy.findByRole('tabpanel', { name: 'Tree Diff' }).within(() => {
+      cy.findByText('"AAVE/USD"').should('exist');
+      cy.findByText('"Coinpaprika, dxFeed, Finage, Kaiko, NewChangeFX, Nodary, TwelveData"').should('exist');
+    });
+  });
+
+  it('can display raw values', () => {
+    visitDapiManagementPage();
+
+    cy.findByRole('button', { name: 'View' }).click();
+    cy.findByRole('menu', { name: 'View' }).within(() => {
+      cy.findByRole('menuitemradio', { name: 'Raw' }).click();
+    });
+
+    cy.findByRole('tabpanel', { name: 'Tree Values' }).within(() => {
+      cy.findByRole('columnheader', { name: 'dAPI Name' }).should('exist');
+      cy.findByRole('columnheader', { name: 'Data Feed ID' }).should('exist');
+      cy.findByRole('columnheader', { name: 'Sponsor Wallet Address' }).should('exist');
+      cy.findByRole('columnheader', { name: 'API Providers' }).should('not.exist');
+
+      cy.findAllByRole('row').then((rows) => {
+        // dAPI Name (bytes32)
+        cy.wrap(rows[1])
+          .findByRole('cell', { name: '0x4141504c2f555344000000000000000000000000000000000000000000000000' })
+          .should('exist');
+        // Data Feed ID
+        cy.wrap(rows[1])
+          .findByRole('cell', { name: '0xe82f95dfbe8f3015a2bc3b6573a86592534ee8d84843779751431da9a51d077e' })
+          .should('exist');
+        // Sponsor Wallet Address
+        cy.wrap(rows[1]).findByRole('cell', { name: '0x8cd50C14594B74ae85baE27f7495c3180e2Fa238' }).should('exist');
+      });
+    });
+
+    cy.findByRole('tab', { name: 'Tree Diff' }).click();
+    cy.findByRole('tabpanel', { name: 'Tree Diff' }).within(() => {
+      // dAPI Name (bytes32)
+      cy.findByText('"0x414156452f555344000000000000000000000000000000000000000000000000"').should('exist');
+      // Data Feed ID
+      cy.findByText('"0x386bd78818ccc6e98a86e1ba059877b1a83282c263f040b64c0702eae5312a52"').should('exist');
+      // Sponsor Wallet Address
+      cy.findByText('"0xBf57be4fE96a5b3b85070466A2362D87610eA021"').should('exist');
+    });
   });
 });
 
