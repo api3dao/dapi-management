@@ -291,12 +291,8 @@ async function generateDapiPricingMT() {
   // Disconnect from the database
   await client.end();
 
-  // TODO remove this filter for production use
-  const filteredAverageChainGasPrices = averageChainGasPrices.rows.filter((r) =>
-    CHAINS.map((c) => c.id).includes(r.chainId)
-  );
 
-  const chainGasOptionsById = keyBy(filteredAverageChainGasPrices, 'chainId');
+  const chainGasOptionsById = keyBy(averageChainGasPrices, 'chainId');
 
   const chainDefaultProviders = keyBy(
     CHAINS.map((c) => ({
