@@ -1,12 +1,9 @@
 const hre = require('hardhat');
 const {
-  getDapiFallbackHashType,
   getDapiManagementHashType,
   getDapiPricingHashType,
   getSignedApiUrlHashType,
 } = require('../scripts/utils');
-const dapiFallbackHashSigners = require('../data/dapi-fallback-merkle-tree-root/hash-signers.json');
-const dapiFallbackCurrentHash = require('../data/dapi-fallback-merkle-tree-root/current-hash.json');
 const dapiManagementHashSigners = require('../data/dapi-management-merkle-tree-root/hash-signers.json');
 const dapiManagementCurrentHash = require('../data/dapi-management-merkle-tree-root/current-hash.json');
 const dapiPricingHashSigners = require('../data/dapi-pricing-merkle-tree-root/hash-signers.json');
@@ -48,16 +45,6 @@ async function main() {
     }
 
     const hashRegistry = await hre.ethers.getContractAt('HashRegistry', hashRegistryDeployment.address);
-
-    console.log(`Verifying dAPI fallback...`);
-    await verify(
-      hashRegistry,
-      dapiFallbackHashSigners.hashSigners,
-      getDapiFallbackHashType(),
-      dapiFallbackCurrentHash.hash,
-      dapiFallbackCurrentHash.timestamp,
-      dapiFallbackCurrentHash.signatures
-    );
 
     console.log(`Verifying dAPI management...`);
     await verify(

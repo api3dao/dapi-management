@@ -22,13 +22,6 @@
   - **Data Feed ID (bytes32)**: Identifier for the data feed.
   - **dAPI Sponsor Wallet Address (address)**: Wallet address of the dAPI sponsor wallet.
 
-### 3. dAPI fallback Merkle Tree
-
-- **Values**:
-  - **dAPI Name (bytes32)**: dAPI name string formatted as bytes32.
-  - **Data Feed ID (bytes32)**: Identifier for the data feed.
-  - **Sponsor Wallet Address (address)**: Address of the sponsor wallet.
-
 ### 4. Signed API URL Merkle Tree
 
 - **Values**:
@@ -44,16 +37,3 @@ The following code snippet shows how we derive the type of Signed API URL Merkle
 ```js
 keccak256(abi.encodePacked('Signed API URL Merkle tree root'));
 ```
-
-## How to update the dAPI Fallback Merkle Tree
-
-1. Update the @nodary/utilities package to the desired version.
-
-2. Run the `sync-dapi-fallback-values` script as follows:
-
-```bash
-yarn sync-dapi-fallback-values
-```
-
-This command checks the values in `current-hash.json` and compares it with what `@nodary/utilities` has. If they are not equal
-it saves the `current-hash.json` to `previous-hash.json` and updates `current-hash.json` with the new values.

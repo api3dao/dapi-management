@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import {
-  DAPI_FALLBACK_MERKLE_TREE_TYPE,
   DAPI_MANAGEMENT_MERKLE_TREE_TYPE,
   DAPI_PRICING_MERKLE_TREE_TYPE,
   SIGNED_API_URL_MERKLE_TREE_TYPE,
@@ -16,7 +15,6 @@ import {
 import { z } from 'zod';
 
 const treeTypeSchema = z.union([
-  z.literal(DAPI_FALLBACK_MERKLE_TREE_TYPE),
   z.literal(DAPI_MANAGEMENT_MERKLE_TREE_TYPE),
   z.literal(DAPI_PRICING_MERKLE_TREE_TYPE),
   z.literal(SIGNED_API_URL_MERKLE_TREE_TYPE),
@@ -78,8 +76,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 function getSubfolder(type: TreeType): TreeSubFolder {
   switch (type) {
-    case DAPI_FALLBACK_MERKLE_TREE_TYPE:
-      return 'dapi-fallback-merkle-tree-root';
     case DAPI_MANAGEMENT_MERKLE_TREE_TYPE:
       return 'dapi-management-merkle-tree-root';
     case DAPI_PRICING_MERKLE_TREE_TYPE:
