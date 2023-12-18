@@ -291,7 +291,6 @@ async function generateDapiPricingMT() {
   // Disconnect from the database
   await client.end();
 
-
   const chainGasOptionsById = keyBy(averageChainGasPrices, 'chainId');
 
   const chainDefaultProviders = keyBy(
@@ -303,7 +302,7 @@ async function generateDapiPricingMT() {
   );
 
   const chainSingleUpdateGasCosts = await Promise.all(
-    filteredAverageChainGasPrices.map(async (r) => {
+    averageChainGasPrices.map(async (r) => {
       const updateGasCost = await calculateChainSingleUpdateGasCost(
         r.chainId,
         chainGasOptionsById,
