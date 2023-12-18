@@ -22,7 +22,7 @@ export default function RootLayout(props: Props) {
       <aside className="fixed bottom-0 left-0 top-0 z-10 h-screen w-[200px] overflow-auto border-r border-gray-200 bg-gray-100">
         <nav className="flex min-h-screen flex-col p-4 text-gray-500">
           <Link href="/" className="mb-5">
-            <Image src="/logo.png" alt="Home" width={60} height={60} priority />
+            <Image src="/logo.png" alt="Home" width={60} height={60} priority className="rounded-md" />
           </Link>
           <h3 className="mb-2 font-medium">Merkle Trees</h3>
           <div className="flex flex-col gap-2 text-sm">

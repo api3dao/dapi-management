@@ -1,11 +1,11 @@
 import { ACCOUNTS } from '../support/constants';
 
-const subfolder = 'dapi-management-merkle-tree-root';
+const subfolder = 'signed-api-url-merkle-tree-root';
 
 // Hardhat accounts
 const [account0Address, account1Address] = ACCOUNTS;
 
-describe('dAPI Management Merkle tree', () => {
+describe('Signed API URL Merkle tree', () => {
   beforeEach(() => {
     cy.viewport(1630, 1000);
     cy.mockConnectedMetaMaskWallet();
@@ -18,42 +18,22 @@ describe('dAPI Management Merkle tree', () => {
 
       currentHashData: {
         timestamp: 1701689882,
-        hash: '0xb1f092e5529d289caa4421bce90d92b0250198941328111147d6be4beb06b207',
+        hash: '0x390d436d0960ea57fa940a5afa16d96e61ff78e83d726662d847440cdb10498d',
         signatures: {},
         merkleTreeValues: [
-          [
-            '0x4141504c2f555344000000000000000000000000000000000000000000000000',
-            '0xe82f95dfbe8f3015a2bc3b6573a86592534ee8d84843779751431da9a51d077e',
-            '0x8cd50C14594B74ae85baE27f7495c3180e2Fa238',
-          ],
-          [
-            '0x414156452f555344000000000000000000000000000000000000000000000000',
-            '0x386bd78818ccc6e98a86e1ba059877b1a83282c263f040b64c0702eae5312a52',
-            '0xBf57be4fE96a5b3b85070466A2362D87610eA021',
-          ],
-          [
-            '0x414d5a4e2f555344000000000000000000000000000000000000000000000000',
-            '0x5abb83436baf8b1e1df1ee80191368d438ee50c792144d0e713c41d647bea316',
-            '0x0C32be593952e2ED141BA699C13D1995C52A505C',
-          ],
+          ['0xc52EeA00154B4fF1EbbF8Ba39FDe37F1AC3B9Fd4', 'https://signed1.api-url.dev'],
+          ['0xbC6471E88d8aFe936A45bEB8bd20a210EBEF6822', 'https://signed2.api-url.dev'],
+          ['0x8676eA8B6Ebe5b8FBbc25FF55192bADf39D7D61b', 'https://signed3.api-url.dev'],
         ],
       },
 
       previousHashData: {
-        timestamp: 1701689882,
-        hash: '0xb1f092e5529d289caa4421bce90d92b0250198941328111147d6be4beb06b205',
+        timestamp: 1676940000,
+        hash: '0x390d436d0960ea57fa940a5afa16d96e61ff78e83d726662d847440cdb10498d',
         signatures: {},
         merkleTreeValues: [
-          [
-            '0x4141504c2f555344000000000000000000000000000000000000000000000000',
-            '0xe82f95dfbe8f3015a2bc3b6573a86592534ee8d84843779751431da9a51d077e',
-            '0x8cd50C14594B74ae85baE27f7495c3180e2Fa238',
-          ],
-          [
-            '0x414d5a4e2f555344000000000000000000000000000000000000000000000000',
-            '0x5abb83436baf8b1e1df1ee80191368d438ee50c792144d0e713c41d647bea316',
-            '0x0C32be593952e2ED141BA699C13D1995C52A505C',
-          ],
+          ['0xc52EeA00154B4fF1EbbF8Ba39FDe37F1AC3B9Fd4', 'https://signed1.api-url.dev'],
+          ['0x8676eA8B6Ebe5b8FBbc25FF55192bADf39D7D61b', 'https://signed3.api-url.dev'],
         ],
       },
     });
@@ -72,17 +52,16 @@ describe('dAPI Management Merkle tree', () => {
         },
       });
 
-      visitDapiManagementPage();
+      visitSignedApiUrlPage();
 
       cy.waitUntilWalletIsConnected();
-      cy.findByRole('heading', { name: 'dAPI Management Merkle Tree' }).should('exist');
-      dismissCIToast();
+      cy.findByRole('heading', { name: 'Signed API URL Merkle Tree' }).should('exist');
       cy.findByRole('button', { name: 'Sign Root' }).should('be.disabled');
     });
 
     it('allows a signer to sign the merkle root and updates the ui accordingly on success', () => {
       const existingAccount1Signature =
-        '0x5f4117bfe765a81ce3a25a84566eeffb245302f29cb2909b3f1b87991bed11833e0209b9063bf477d7fb542af82b41aafce940ff9d2d89ff589957b5ecc68ade1c';
+        '0x5953843978fe8504c168e2fe17df225bea084c7df15c6063556aafaa4edd2a845470ad4c90647a2db724be8c48ffabc9e11d7d2eee8f6e97c190dccdc802ba8f1b';
       cy.task('seedTreeData', {
         subfolder,
         currentHashData: {
@@ -93,8 +72,7 @@ describe('dAPI Management Merkle tree', () => {
         },
       });
 
-      visitDapiManagementPage();
-      dismissCIToast();
+      visitSignedApiUrlPage();
 
       cy.findByTestId('tree-status-badge').should('have.text', 'Pending Signature(s)');
       cy.findByTestId('signatures-table').within(() => {
@@ -113,7 +91,7 @@ describe('dAPI Management Merkle tree', () => {
       cy.findByRole('button', { name: 'Sign Root' }).should('be.disabled');
 
       const account0Signature =
-        '0xcfc54e2180159f0570b9f51eda42a282140cb97b07d28d80d588362def45a9da44d0236955c7f7bde37d6dd614abc637ca83992df6e9c38686402139d7293ebd1b';
+        '0xf5d3bfb91495e641170b86312b41742fa71980af20770a579df3660fd550223b1e16ed386b1ec44be13d8212c77391353e5a7549b34e6fbe1a25315f25b15e1c1b';
 
       cy.findByTestId('tree-status-badge').should('have.text', 'Signed');
       cy.findByTestId('signatures-table').within(() => {
@@ -143,8 +121,7 @@ describe('dAPI Management Merkle tree', () => {
         },
       });
 
-      visitDapiManagementPage();
-      dismissCIToast();
+      visitSignedApiUrlPage();
 
       cy.findByTestId('tree-status-badge').should('have.text', 'Pending Signature(s)');
       cy.findByTestId('signatures-table').within(() => {
@@ -160,8 +137,7 @@ describe('dAPI Management Merkle tree', () => {
     describe('sign endpoint', () => {
       it('should return an error if the user somehow manages to call it without being a signer', () => {
         // We first visit the page, and then update the signer data behind the scenes to remove the connected wallet
-        visitDapiManagementPage();
-        dismissCIToast();
+        visitSignedApiUrlPage();
 
         cy.task('seedTreeData', {
           subfolder,
@@ -176,24 +152,6 @@ describe('dAPI Management Merkle tree', () => {
     });
   });
 
-  it('informs the user about the CI verification', () => {
-    visitDapiManagementPage();
-
-    cy.findByRole('region', { name: 'Notifications (F8)' })
-      .should('contain.text', 'The CI verifies the following for you')
-      .findByRole('button', { name: 'Got it' })
-      .click();
-
-    // The toast should not show again
-    cy.reload();
-    cy.findByRole('heading', { name: 'dAPI Management Merkle Tree' }).should('exist');
-    cy.wait(1000);
-    cy.findByRole('region', { name: 'Notifications (F8)' }).should(
-      'not.contain.text',
-      'The CI verifies the following for you'
-    );
-  });
-
   it('uses the address book', () => {
     cy.task('seedTreeData', {
       subfolder,
@@ -202,7 +160,7 @@ describe('dAPI Management Merkle tree', () => {
       },
     });
 
-    visitDapiManagementPage();
+    visitSignedApiUrlPage();
 
     cy.findByTestId('signatures-table').within(() => {
       cy.findAllByRole('row').then((rows) => {
@@ -212,34 +170,31 @@ describe('dAPI Management Merkle tree', () => {
   });
 
   it('displays human-readable values', () => {
-    visitDapiManagementPage();
+    visitSignedApiUrlPage();
 
     cy.findByRole('tabpanel', { name: 'Tree Values' }).within(() => {
-      cy.findByRole('columnheader', { name: 'dAPI Name' }).should('exist');
       cy.findByRole('columnheader', { name: 'API Providers' }).should('exist');
-      cy.findByRole('columnheader', { name: 'Data Feed ID' }).should('not.exist');
-      cy.findByRole('columnheader', { name: 'Sponsor Wallet Address' }).should('not.exist');
+      cy.findByRole('columnheader', { name: 'Signed API URL' }).should('exist');
+      cy.findByRole('columnheader', { name: 'Airnode Address' }).should('not.exist');
 
       cy.findAllByRole('row').then((rows) => {
-        cy.wrap(rows[1]).findByRole('cell', { name: 'AAPL/USD' }).should('exist');
-        cy.wrap(rows[1]).findByRole('cell', { name: 'Finage, Finnhub, IEXCloud, Nodary, TwelveData' }).should('exist');
+        cy.wrap(rows[1]).findByRole('cell', { name: 'Nodary' }).should('exist');
+        cy.wrap(rows[1]).findByRole('cell', { name: 'https://signed1.api-url.dev' }).should('exist');
 
-        cy.wrap(rows[2]).findByRole('cell', { name: 'AAVE/USD' }).should('exist');
-        cy.wrap(rows[2])
-          .findByRole('cell', { name: 'Coinpaprika, dxFeed, Finage, Kaiko, NewChangeFX, Nodary, TwelveData' })
-          .should('exist');
+        cy.wrap(rows[2]).findByRole('cell', { name: 'NewChangeFX-Crypto, NewChangeFX-Forex' }).should('exist');
+        cy.wrap(rows[2]).findByRole('cell', { name: 'https://signed2.api-url.dev' }).should('exist');
       });
     });
 
     cy.findByRole('tab', { name: 'Tree Diff' }).click();
     cy.findByRole('tabpanel', { name: 'Tree Diff' }).within(() => {
-      cy.findByText('"AAVE/USD"').should('exist');
-      cy.findByText('"Coinpaprika, dxFeed, Finage, Kaiko, NewChangeFX, Nodary, TwelveData"').should('exist');
+      cy.findByText('"NewChangeFX-Crypto, NewChangeFX-Forex"').should('exist');
+      cy.findByText('"https://signed2.api-url.dev"').should('exist');
     });
   });
 
   it('can display raw values', () => {
-    visitDapiManagementPage();
+    visitSignedApiUrlPage();
 
     cy.findByRole('button', { name: 'View' }).click();
     cy.findByRole('menu', { name: 'View' }).within(() => {
@@ -247,41 +202,26 @@ describe('dAPI Management Merkle tree', () => {
     });
 
     cy.findByRole('tabpanel', { name: 'Tree Values' }).within(() => {
-      cy.findByRole('columnheader', { name: 'dAPI Name' }).should('exist');
-      cy.findByRole('columnheader', { name: 'Data Feed ID' }).should('exist');
-      cy.findByRole('columnheader', { name: 'Sponsor Wallet Address' }).should('exist');
+      cy.findByRole('columnheader', { name: 'Airnode Address' }).should('exist');
+      cy.findByRole('columnheader', { name: 'Signed API URL' }).should('exist');
       cy.findByRole('columnheader', { name: 'API Providers' }).should('not.exist');
 
       cy.findAllByRole('row').then((rows) => {
-        // dAPI Name (AAVE/USD in bytes32)
-        cy.wrap(rows[1])
-          .findByRole('cell', { name: '0x4141504c2f555344000000000000000000000000000000000000000000000000' })
-          .should('exist');
-        // Data Feed ID
-        cy.wrap(rows[1])
-          .findByRole('cell', { name: '0xe82f95dfbe8f3015a2bc3b6573a86592534ee8d84843779751431da9a51d077e' })
-          .should('exist');
-        // Sponsor Wallet Address
-        cy.wrap(rows[1]).findByRole('cell', { name: '0x8cd50C14594B74ae85baE27f7495c3180e2Fa238' }).should('exist');
+        // Airnode Address
+        cy.wrap(rows[1]).findByRole('cell', { name: '0xc52EeA00154B4fF1EbbF8Ba39FDe37F1AC3B9Fd4' }).should('exist');
+        cy.wrap(rows[1]).findByRole('cell', { name: 'https://signed1.api-url.dev' }).should('exist');
       });
     });
 
     cy.findByRole('tab', { name: 'Tree Diff' }).click();
     cy.findByRole('tabpanel', { name: 'Tree Diff' }).within(() => {
-      // dAPI Name (bytes32)
-      cy.findByText('"0x414156452f555344000000000000000000000000000000000000000000000000"').should('exist');
-      // Data Feed ID
-      cy.findByText('"0x386bd78818ccc6e98a86e1ba059877b1a83282c263f040b64c0702eae5312a52"').should('exist');
-      // Sponsor Wallet Address
-      cy.findByText('"0xBf57be4fE96a5b3b85070466A2362D87610eA021"').should('exist');
+      // Airnode Address
+      cy.findByText('"0xbC6471E88d8aFe936A45bEB8bd20a210EBEF6822"').should('exist');
+      cy.findByText('"https://signed2.api-url.dev"').should('exist');
     });
   });
 });
 
-function visitDapiManagementPage() {
-  cy.visit('/merkle-trees/dapi-management');
-}
-
-function dismissCIToast() {
-  cy.findByRole('button', { name: 'Got it' }).click();
+function visitSignedApiUrlPage() {
+  cy.visit('/merkle-trees/signed-api-url');
 }
