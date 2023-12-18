@@ -93,13 +93,6 @@ contract Api3MarketV2 is HashRegistryV2 {
             dapiPricingMerkleData
         );
         validateDataFeedReadiness(dataFeedId);
-        require(
-            IProxyFactory(proxyFactory)
-                .computeDapiProxyAddress(dapiName, "")
-                .code
-                .length != 0,
-            "dAPI proxy not deployed"
-        );
         Subscription storage subscription = dapiNameToSubscription[dapiName];
         uint256 requiredSponsorWalletBalance;
         if (subscription.currentEndTimestamp <= block.timestamp) {
