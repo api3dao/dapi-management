@@ -22,7 +22,7 @@
   - **Data Feed ID (bytes32)**: Identifier for the data feed.
   - **dAPI Sponsor Wallet Address (address)**: Wallet address of the dAPI sponsor wallet.
 
-### 4. Signed API URL Merkle Tree
+### 3. Signed API URL Merkle Tree
 
 - **Values**:
   - **Airnode Address (address)**: The contract address of the Airnode.
