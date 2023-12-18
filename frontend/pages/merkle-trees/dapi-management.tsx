@@ -191,7 +191,7 @@ function getProviders(dapiName: string) {
       .map((alias) => {
         return apisData[alias as keyof typeof apisData]?.name || alias;
       })
-      .join(', ') || 'unknown'
+      .join(', ') || 'Unknown'
   );
 }
 

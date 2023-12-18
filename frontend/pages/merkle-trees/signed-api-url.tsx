@@ -140,5 +140,5 @@ function RawValuesTable(props: RawValuesTableProps) {
 }
 
 function getProviders(airnodeAddress: string) {
-  return getOisTitlesWithAirnodeAddress(airnodeAddress)?.join(', ') || 'unknown';
+  return getOisTitlesWithAirnodeAddress(airnodeAddress)?.join(', ') || 'Unknown';
 }

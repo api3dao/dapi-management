@@ -1,4 +1,5 @@
 import { ACCOUNTS } from '../support/constants';
+import { ethers } from 'ethers';
 
 const subfolder = 'dapi-management-merkle-tree-root';
 
@@ -22,17 +23,17 @@ describe('dAPI Management Merkle tree', () => {
         signatures: {},
         merkleTreeValues: [
           [
-            '0x4141504c2f555344000000000000000000000000000000000000000000000000',
+            ethers.utils.formatBytes32String('AAPL/USD'),
             '0xe82f95dfbe8f3015a2bc3b6573a86592534ee8d84843779751431da9a51d077e',
             '0x8cd50C14594B74ae85baE27f7495c3180e2Fa238',
           ],
           [
-            '0x414156452f555344000000000000000000000000000000000000000000000000',
+            ethers.utils.formatBytes32String('AAVE/USD'),
             '0x386bd78818ccc6e98a86e1ba059877b1a83282c263f040b64c0702eae5312a52',
             '0xBf57be4fE96a5b3b85070466A2362D87610eA021',
           ],
           [
-            '0x414d5a4e2f555344000000000000000000000000000000000000000000000000',
+            ethers.utils.formatBytes32String('AMZN/USD'),
             '0x5abb83436baf8b1e1df1ee80191368d438ee50c792144d0e713c41d647bea316',
             '0x0C32be593952e2ED141BA699C13D1995C52A505C',
           ],
@@ -45,12 +46,12 @@ describe('dAPI Management Merkle tree', () => {
         signatures: {},
         merkleTreeValues: [
           [
-            '0x4141504c2f555344000000000000000000000000000000000000000000000000',
+            ethers.utils.formatBytes32String('AAPL/USD'),
             '0xe82f95dfbe8f3015a2bc3b6573a86592534ee8d84843779751431da9a51d077e',
             '0x8cd50C14594B74ae85baE27f7495c3180e2Fa238',
           ],
           [
-            '0x414d5a4e2f555344000000000000000000000000000000000000000000000000',
+            ethers.utils.formatBytes32String('AMZN/USD'),
             '0x5abb83436baf8b1e1df1ee80191368d438ee50c792144d0e713c41d647bea316',
             '0x0C32be593952e2ED141BA699C13D1995C52A505C',
           ],
@@ -144,7 +145,6 @@ describe('dAPI Management Merkle tree', () => {
       });
 
       visitDapiManagementPage();
-      dismissCIToast();
 
       cy.findByTestId('tree-status-badge').should('have.text', 'Pending Signature(s)');
       cy.findByTestId('signatures-table').within(() => {
@@ -253,7 +253,7 @@ describe('dAPI Management Merkle tree', () => {
       cy.findByRole('columnheader', { name: 'API Providers' }).should('not.exist');
 
       cy.findAllByRole('row').then((rows) => {
-        // dAPI Name (AAVE/USD in bytes32)
+        // dAPI Name (bytes32)
         cy.wrap(rows[1])
           .findByRole('cell', { name: '0x4141504c2f555344000000000000000000000000000000000000000000000000' })
           .should('exist');
@@ -274,6 +274,30 @@ describe('dAPI Management Merkle tree', () => {
       cy.findByText('"0x386bd78818ccc6e98a86e1ba059877b1a83282c263f040b64c0702eae5312a52"').should('exist');
       // Sponsor Wallet Address
       cy.findByText('"0xBf57be4fE96a5b3b85070466A2362D87610eA021"').should('exist');
+    });
+  });
+
+  it('handles unknown dAPI Names', () => {
+    cy.task('seedTreeData', {
+      subfolder,
+      currentHashData: {
+        merkleTreeValues: [
+          [
+            ethers.utils.formatBytes32String('FOO/BAR'),
+            '0xe82f95dfbe8f3015a2bc3b6573a86592534ee8d84843779751431da9a51d077e',
+            '0x8cd50C14594B74ae85baE27f7495c3180e2Fa238',
+          ],
+        ],
+      },
+    });
+
+    visitDapiManagementPage();
+
+    cy.findByRole('tabpanel', { name: 'Tree Values' }).within(() => {
+      cy.findAllByRole('row').then((rows) => {
+        cy.wrap(rows[1]).findByRole('cell', { name: 'FOO/BAR' }).should('exist');
+        cy.wrap(rows[1]).findByRole('cell', { name: 'Unknown' }).should('exist');
+      });
     });
   });
 });
