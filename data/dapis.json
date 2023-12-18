@@ -176,14 +176,6 @@
     "providers": ["coinpaprika", "dxfeed", "finage", "kaiko", "ncfx", "nodary", "twelvedata"]
   },
   {
-    "name": "BUSD/USD",
-    "metadata": {
-      "prefix": "$",
-      "category": "Stablecoin"
-    },
-    "providers": ["coinpaprika", "dxfeed", "finage", "kaiko", "ncfx", "nodary", "twelvedata"]
-  },
-  {
     "name": "CAD/USD",
     "metadata": {
       "prefix": "$",
