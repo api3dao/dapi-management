@@ -7,7 +7,6 @@ const {
 const { deriveWalletPathFromSponsorAddress } = require('@api3/airnode-node/dist/src/evm');
 const { airseekerXPub } = require('../data/airseeker.json');
 
-
 function createDapiManagementMerkleTree(values) {
   return StandardMerkleTree.of(values, ['bytes32', 'bytes32', 'address']);
 }
