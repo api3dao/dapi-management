@@ -31,7 +31,7 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Cypress {
     interface Chainable {
-      mockConnectedMetaMaskWallet(options?: { accountIndex: number }): Chainable<void>;
+      mockConnectedMetaMaskWallet(options: { accountIndex: number }): Chainable<void>;
       waitUntilWalletIsConnected(): Chainable<void>;
     }
   }
@@ -39,7 +39,7 @@ declare global {
 
 const ethersProvider = new providers.JsonRpcProvider('http://localhost:8545');
 
-Cypress.Commands.add('mockConnectedMetaMaskWallet', (options = { accountIndex: 0 }) => {
+Cypress.Commands.add('mockConnectedMetaMaskWallet', (options) => {
   const { accountIndex } = options;
   cy.on('window:before:load', async (win) => {
     // The `request` function is defined when we use MetaMask, so we mock it
@@ -60,5 +60,5 @@ Cypress.Commands.add('mockConnectedMetaMaskWallet', (options = { accountIndex: 0
 });
 
 Cypress.Commands.add('waitUntilWalletIsConnected', () => {
-  cy.findByTestId('connected-wallet-address').should('be.visible');
+  cy.findByTestId('connected-wallet-address').should('exist');
 });

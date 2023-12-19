@@ -9,7 +9,7 @@ const [account0Address, account1Address] = ACCOUNTS;
 describe('dAPI Management Merkle tree', () => {
   beforeEach(() => {
     cy.viewport(1630, 1000);
-    cy.mockConnectedMetaMaskWallet();
+    cy.mockConnectedMetaMaskWallet({ accountIndex: 0 });
 
     cy.task('seedTreeData', {
       subfolder,
@@ -69,7 +69,7 @@ describe('dAPI Management Merkle tree', () => {
       cy.task('seedTreeData', {
         subfolder,
         signerData: {
-          hashSigners: ['0x80efDd3bB15F2108C407049C5575490858800D47'],
+          hashSigners: [account1Address],
         },
       });
 
