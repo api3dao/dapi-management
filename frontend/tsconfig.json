@@ -20,7 +20,6 @@
   "include": ["next-env.d.ts", "global.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "cypress"],
 
-  // Required by Cypress
   "ts-node": {
     "compilerOptions": {
       "moduleResolution": "node"
