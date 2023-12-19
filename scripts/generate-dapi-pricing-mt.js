@@ -272,26 +272,28 @@ async function generateDapiPricingMT() {
   );
 
   // Calculate the average monthly gas price for each chain
-  const averageChainGasPrices = await client.query(`
+  const averageChainGasPrices = await client.query(`  
     SELECT
-      "chainName",
-      "chainId",
-      CEIL(AVG("gasPrice")) AS "averageGasPrice",
-      MIN("when") AS "startDate",
-      MAX("when") AS "endDate"
+      provider."chainName",
+      provider."chainId",
+      CEIL(AVG(gas."gasPrice")) AS "averageGasPrice",
+      MIN(gas."when") AS "startDate",
+      MAX(gas."when") AS "endDate"
     FROM
-      Public."ProviderGasPrice"
+      Public."ProviderGasPrice" gas
+    JOIN
+      Public."Provider" provider ON gas."providerId" = provider."id"
     WHERE
       "when" >= '${calculationStartDate.toISOString()}'
       AND "when" <= '${calculationEndDate.toISOString()}'
     GROUP BY
-      "chainName", "chainId";
+      provider."chainName", provider."chainId";
   `);
 
   // Disconnect from the database
   await client.end();
 
-  const chainGasOptionsById = keyBy(averageChainGasPrices, 'chainId');
+  const chainGasOptionsById = keyBy(averageChainGasPrices.rows, 'chainId');
 
   const chainDefaultProviders = keyBy(
     CHAINS.map((c) => ({
@@ -302,7 +304,7 @@ async function generateDapiPricingMT() {
   );
 
   const chainSingleUpdateGasCosts = await Promise.all(
-    averageChainGasPrices.map(async (r) => {
+    averageChainGasPrices.rows.map(async (r) => {
       const updateGasCost = await calculateChainSingleUpdateGasCost(
         r.chainId,
         chainGasOptionsById,
