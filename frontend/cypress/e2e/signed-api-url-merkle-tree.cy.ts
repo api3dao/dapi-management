@@ -220,6 +220,24 @@ describe('Signed API URL Merkle tree', () => {
       cy.findByText('"https://signed2.api-url.dev"').should('exist');
     });
   });
+
+  it('handles unknown Airnode Addresses', () => {
+    cy.task('seedTreeData', {
+      subfolder,
+      currentHashData: {
+        merkleTreeValues: [['0x90F79bf6EB2c4f870365E785982E1f101E93b906', 'https://signed1.api-url.dev']],
+      },
+    });
+
+    visitSignedApiUrlPage();
+
+    cy.findByRole('tabpanel', { name: 'Tree Values' }).within(() => {
+      cy.findAllByRole('row').then((rows) => {
+        cy.wrap(rows[1]).findByRole('cell', { name: 'Unknown' }).should('exist');
+        cy.wrap(rows[1]).findByRole('cell', { name: 'https://signed1.api-url.dev' }).should('exist');
+      });
+    });
+  });
 });
 
 function visitSignedApiUrlPage() {
