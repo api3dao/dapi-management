@@ -8,7 +8,6 @@ import isObject from 'lodash/isObject';
 export const execute = promisify(exec);
 
 export type TreeSubFolder =
-  | 'dapi-fallback-merkle-tree-root'
   | 'dapi-management-merkle-tree-root'
   | 'dapi-pricing-merkle-tree-root'
   | 'signed-api-url-merkle-tree-root';

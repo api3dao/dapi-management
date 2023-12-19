@@ -2,7 +2,7 @@
 
 Tools and contracts that enable running managed dAPIs where most of the data needed to accomplish this is stored on-chain.
 
-In order to be able to make this possible, there needs to be different groups of "data owners" that will provide, review and sign specific sets of data. For example, Nodary must provide signed fallback data feed IDs that can later be used to temporarily switch to them in case of an emergency where a more decentralized data feed is undergoing a catastrophic failure. Other accounts need to provide and sign dAPI prices for different chains and so on.
+In order to be able to make this possible, there needs to be different groups of "data owners" that will provide, review and sign specific sets of data. Other accounts need to provide and sign dAPI prices for different chains and so on.
 
 These signed data sets (Merkle trees) will be stored in JSON files in this repo and can later be used by people with the right roles or permits to use it when calling functions on the contracts datailed below. This repo also provides a frontend app that can be used as interface between the mentioned JSON files and the contracts.
 
@@ -15,16 +15,6 @@ This contract is intended to be used as a generic hash registry. Users of this c
 The signers list for a hash type is managed by an owner account but anyone can register a new hash for a hash type, provided all signatures are valid and up-to-date. One thing to keep in mind is that signatures must be sent in the same order as the signers list stored in the contract. This requires that off-chain signing workflow keeps up-to-date with signers removal calls made to the contract since this type of calls might change the order of the signers.
 
 This contract is specially useful for use cases where other contracts need to make sure a set of data is valid and it is up-to-date. For example, in the case of a Airnode Signed API URLs, there will be a Merkle tree containing all the Airnode address and URL pairs. Then a group of trusted signers could verify that this data is correct and sign the root of this Merkle tree. Then this root can be registered in the HashRegistry. Any other contract can then receive a Signed API URL for an Airnode and check that it is valid and that it is the most up-to-date one by retrieving the hash and timestamp from the registry.
-
-### DapiFallbackV2
-
-This contract can be used to point a dAPI name (i.e. "ETH/USD") to a fallback data feed ID under certain conditions. This data feed must be up-to-date and fully functional.
-
-The idea is that during an emergency or a complete failure of the more decentralized data feed ID, a group of trusted accounts can switch the dAPI to this fallback data feeds that are maintained by a different group of signers. Data about these fallback data feeds can be found as a Merkle tree in a JSON file in this repo.
-
-Information about these fallback data feeds must be previously signed by the group of accounts that run these data feeds and the root of the Merkle tree must be kept up-to-date in the HashRegistry.
-
-When executing the fallback for a dAPI, the contract will also top-up the target sponsor wallet to make sure it is able to perform updates for as long as 1 day based on the pricing provided. This pricing data will also come from a signed Merkle tree. For this reason this contract must be kept funded at all times.
 
 ### DapiDataRegistry
 
