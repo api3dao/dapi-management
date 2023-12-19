@@ -12,9 +12,9 @@ declare global {
         event: 'seedTreeData',
         arg: {
           subfolder: string;
-          signerData: unknown;
-          currentHashData: MerkleTreeData;
-          previousHashData: MerkleTreeData;
+          signerData?: { hashSigners: string[] };
+          currentHashData?: Partial<MerkleTreeData>;
+          previousHashData?: Partial<MerkleTreeData>;
         }
       ): Chainable<void>;
 
@@ -31,11 +31,16 @@ module.exports = defineConfig({
     baseUrl: 'http://localhost:3000',
     setupNodeEvents(on) {
       on('task', {
+        /*
+         * Creates the files with provided the data in the data/.e2e directory and handles providing a subset. Additionally,
+         * partial data can be provided for currentHashData and previousHashData, where it gets merged in with the
+         * existing data.
+         */
         seedTreeData(options: {
           subfolder: string;
-          signerData?: unknown;
-          currentHashData?: MerkleTreeData;
-          previousHashData?: MerkleTreeData;
+          signerData?: { hashSigners: string[] };
+          currentHashData?: Partial<MerkleTreeData>;
+          previousHashData?: Partial<MerkleTreeData>;
         }) {
           const { subfolder, signerData, currentHashData, previousHashData } = options;
 

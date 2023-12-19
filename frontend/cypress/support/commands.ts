@@ -49,6 +49,8 @@ Cypress.Commands.add('mockConnectedMetaMaskWallet', (options) => {
       }
       return ethersProvider.send(method, params).then((res) => {
         if (method === 'eth_accounts' && accountIndex > 0) {
+          // The first address in the response is used as the connected address, so we slice the array of addresses
+          // to start with the one we want to be connected
           return res.slice(accountIndex, res.length);
         }
         return res;
