@@ -1,7 +1,7 @@
 import { ComponentPropsWithoutRef } from 'react';
 import some from 'lodash/some';
 import { InfoIcon, ShieldCheckIcon, ShieldEllipsisIcon } from 'lucide-react';
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
 import { Button } from '~/components/ui/button';
 import { cn } from '~/lib/utils';
@@ -102,7 +102,6 @@ export function SignatureTable(props: SignatureTableProps) {
   return (
     // We use a fixed table so that the signatures wrap onto new lines when they don't fit
     <Table className="min-w-[40ch] table-fixed" data-testid="signatures-table">
-      <TableCaption className="sr-only">Signatures</TableCaption>
       <TableHeader>
         <TableRow>
           <TableHead className={isMissingName ? 'lg:w-[46ch]' : 'md:w-[20ch]'}>Signer</TableHead>
