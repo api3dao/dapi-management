@@ -32,7 +32,7 @@ module.exports = defineConfig({
     setupNodeEvents(on) {
       on('task', {
         /*
-         * Creates the files with provided the data in the data/.e2e directory and handles providing a subset. Additionally,
+         * Creates the files with provided data in the data/.e2e directory and handles providing a subset. Additionally,
          * partial data can be provided for currentHashData and previousHashData, where it gets merged in with the
          * existing data.
          */
