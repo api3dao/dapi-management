@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Inter } from 'next/font/google';
@@ -19,6 +19,7 @@ interface Props {
 export default function RootLayout(props: Props) {
   return (
     <div className={`flex ${inter.className}`}>
+      <LoadingIndicator />
       <aside className="bg-muted text-muted-foreground fixed bottom-0 left-0 top-0 z-10 h-screen w-[200px] overflow-auto border-r border-slate-200">
         <nav className="flex min-h-screen flex-col p-4">
           <Link href="/" className="mb-5">
@@ -43,6 +44,25 @@ export default function RootLayout(props: Props) {
   );
 }
 
+function LoadingIndicator() {
+  const [isLoading, setIsLoading] = useState(false);
+
+  useRouterEvents({
+    onStart: () => setIsLoading(true),
+    onComplete: () => setIsLoading(false),
+  });
+
+  if (!isLoading) {
+    return null;
+  }
+
+  return (
+    <div className="animate-delayed-fade-in fixed left-1/2 top-0 z-10 inline-block -translate-x-1/2 rounded-bl rounded-br border border-yellow-100 bg-yellow-100 px-3 py-1 text-xs text-slate-700 shadow">
+      Loading...
+    </div>
+  );
+}
+
 interface NavLinkProps {
   href: string;
   children: ReactNode;
@@ -52,31 +72,16 @@ function NavLink(props: NavLinkProps) {
   const { href } = props;
   const router = useRouter();
   const isActive = router.pathname === href;
-  const [showLoader, setShowLoader] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const handleStart = (path: string) => {
+  useRouterEvents({
+    onStart: (path) => {
       if (path === href) {
-        setShowLoader(true);
+        setIsLoading(true);
       }
-    };
-
-    const handleComplete = (path: string) => {
-      if (path === href) {
-        setShowLoader(false);
-      }
-    };
-
-    router.events.on('routeChangeStart', handleStart);
-    router.events.on('routeChangeComplete', handleComplete);
-    router.events.on('routeChangeError', handleComplete);
-
-    return () => {
-      router.events.off('routeChangeStart', handleStart);
-      router.events.off('routeChangeComplete', handleComplete);
-      router.events.off('routeChangeError', handleComplete);
-    };
-  }, [router, href]);
+    },
+    onComplete: () => setIsLoading(false),
+  });
 
   return (
     <Link
@@ -90,7 +95,7 @@ function NavLink(props: NavLinkProps) {
       <LoaderIcon
         className={cn(
           'absolute right-[5px] top-[6px] h-4 w-4 animate-spin text-slate-400 transition-opacity duration-300',
-          showLoader ? 'opacity-100' : 'opacity-0'
+          isLoading ? 'opacity-100' : 'opacity-0'
         )}
       />
     </Link>
@@ -131,6 +136,30 @@ function Account() {
         </Button>
       );
   }
+}
+
+function useRouterEvents(options: { onStart: (path?: string) => void; onComplete: (path?: string) => void }) {
+  const optionsRef = useRef(options);
+
+  useEffect(() => {
+    optionsRef.current = options;
+  });
+
+  const router = useRouter();
+  useEffect(() => {
+    const handleStart = (path: string) => optionsRef.current.onStart(path);
+    const handleComplete = (path: string) => optionsRef.current.onComplete(path);
+
+    router.events.on('routeChangeStart', handleStart);
+    router.events.on('routeChangeComplete', handleComplete);
+    router.events.on('routeChangeError', handleComplete);
+
+    return () => {
+      router.events.off('routeChangeStart', handleStart);
+      router.events.off('routeChangeComplete', handleComplete);
+      router.events.off('routeChangeError', handleComplete);
+    };
+  }, [router]);
 }
 
 function shortenAddress(address: string, options?: { startLength?: number; endLength?: number }) {
