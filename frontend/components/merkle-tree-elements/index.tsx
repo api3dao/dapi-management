@@ -1,3 +1,4 @@
+import { ComponentPropsWithoutRef } from 'react';
 import some from 'lodash/some';
 import { InfoIcon, ShieldCheckIcon, ShieldEllipsisIcon } from 'lucide-react';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
@@ -11,6 +12,11 @@ import 'diff2html/bundles/css/diff2html.min.css';
 export { ViewOptionsMenu } from './view-options-menu';
 export { TreeDiff } from './tree-diff';
 
+export function PageHeading(props: ComponentPropsWithoutRef<'h1'>) {
+  const { className, ...rest } = props;
+  return <h1 className={cn('-mt-0.5 mb-2 text-3xl font-bold', className)} {...rest} />;
+}
+
 interface TreeStatusBadgeProps {
   signatures: Record<string, string>;
 }
@@ -19,19 +25,13 @@ export function TreeStatusBadge(props: TreeStatusBadgeProps) {
   const isPendingSignature = some(props.signatures, (sig) => sig === '0x');
 
   return isPendingSignature ? (
-    <span
-      data-testid="tree-status-badge"
-      className="inline-flex items-center rounded-full bg-amber-50 px-3 py-0.5 text-xs text-amber-600"
-    >
-      <ShieldEllipsisIcon className="mr-1 w-4 text-amber-400" />
+    <span data-testid="tree-status-badge" className="inline-flex items-center text-sm text-amber-600">
+      <ShieldEllipsisIcon className="mr-1 h-5 w-5 text-amber-400" />
       Pending Signature(s)
     </span>
   ) : (
-    <span
-      data-testid="tree-status-badge"
-      className="inline-flex items-center rounded-full bg-green-50 px-3 py-0.5 text-xs text-green-600"
-    >
-      <ShieldCheckIcon className="mr-1 w-4 text-green-400" />
+    <span data-testid="tree-status-badge" className="inline-flex items-center text-sm text-green-600">
+      <ShieldCheckIcon className="mr-1 h-5 w-5 text-green-400" />
       Signed
     </span>
   );
@@ -113,14 +113,15 @@ export function SignatureTable(props: SignatureTableProps) {
         {signers.map((signerAddress) => {
           const signature = signatures[signerAddress];
           const signerName = getNameForAddress(signerAddress);
+          const isPending = signature === '0x';
           return (
             <TableRow key={signerAddress} className="text-sm">
               <TableCell className="break-words align-top text-gray-500">
                 {signerName ? <SignerInfo name={signerName} address={signerAddress} /> : signerAddress}
               </TableCell>
-              {signature === '0x' ? (
+              {isPending ? (
                 <TableCell className="bg-amber-0 border-amber-100 text-amber-600">
-                  <ShieldEllipsisIcon className="relative top-[-1px] mr-1 inline w-5 text-amber-400" />
+                  <ShieldEllipsisIcon className="relative top-[-1px] mr-1 inline h-5 w-5 text-amber-400" />
                   Pending
                 </TableCell>
               ) : (
@@ -146,8 +147,8 @@ function SignerInfo(props: SignerInfoProps) {
   return (
     <Tooltip delayDuration={0} preventCloseOnClick>
       <TooltipTrigger asChild>
-        <Button variant="ghost" className="group inline-flex h-4 cursor-auto items-center gap-1.5 p-0">
-          <InfoIcon className="h-4 w-4 text-gray-300 group-hover:text-gray-400" />
+        <Button variant="ghost" className="group inline h-4 cursor-auto gap-1.5 p-0">
+          <InfoIcon className="relative top-[-1px] mr-1 inline h-4 w-4 text-gray-300 group-hover:text-gray-400" />
           {props.name}
         </Button>
       </TooltipTrigger>

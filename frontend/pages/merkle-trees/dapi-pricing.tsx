@@ -1,5 +1,11 @@
 import RootLayout from '~/components/root-layout';
-import { TreeStatusBadge, TreeRootBadge, SignatureTable, SignRootButton } from '~/components/merkle-tree-elements';
+import {
+  PageHeading,
+  TreeStatusBadge,
+  TreeRootBadge,
+  SignatureTable,
+  SignRootButton,
+} from '~/components/merkle-tree-elements';
 import { validateTreeRootSignatures } from '~/lib/merkle-tree-utils';
 import { InferGetServerSidePropsType } from 'next';
 import { useTreeSigner } from '~/components/merkle-tree-elements/use-tree-signer';
@@ -36,11 +42,9 @@ export default function DapiPricingTree(props: Props) {
 
   return (
     <RootLayout>
-      <div>
-        <TreeStatusBadge signatures={signatures} />
-      </div>
-      <h1 className="mb-2 text-3xl font-bold">dAPI Pricing Merkle Tree</h1>
-      <TreeRootBadge className="mb-3" root={currentTree.hash} />
+      <TreeStatusBadge signatures={signatures} />
+      <PageHeading>dAPI Pricing Merkle Tree</PageHeading>
+      <TreeRootBadge className="mb-5" root={currentTree.hash} />
 
       <div className="mb-10">
         <SignRootButton signatures={signatures} signRoot={signRoot} isSigning={isSigning} />

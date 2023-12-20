@@ -18,14 +18,14 @@ interface Props {
 
 export default function RootLayout(props: Props) {
   return (
-    <div className={`flex text-gray-800 ${inter.className}`}>
-      <aside className="fixed bottom-0 left-0 top-0 z-10 h-screen w-[200px] overflow-auto border-r border-gray-200 bg-gray-100">
-        <nav className="flex min-h-screen flex-col p-4 text-gray-500">
+    <div className={`flex ${inter.className}`}>
+      <aside className="bg-muted text-muted-foreground fixed bottom-0 left-0 top-0 z-10 h-screen w-[200px] overflow-auto border-r border-slate-200">
+        <nav className="flex min-h-screen flex-col p-4">
           <Link href="/" className="mb-5">
-            <Image src="/logo.png" alt="Home" width={60} height={60} priority className="rounded-md" />
+            <Image src="/logo.png" alt="Home" width={60} height={60} priority className="rounded" />
           </Link>
-          <h3 className="mb-2 font-medium">Merkle Trees</h3>
-          <div className="flex flex-col gap-2 text-sm">
+          <h3 className="mb-2.5 font-medium">Merkle Trees</h3>
+          <div className="flex flex-col gap-2.5 text-sm">
             <NavLink href="/merkle-trees/dapi-management">dAPI Management</NavLink>
             <NavLink href="/merkle-trees/dapi-pricing">dAPI Pricing</NavLink>
             <NavLink href="/merkle-trees/signed-api-url">Signed API URL</NavLink>
@@ -83,13 +83,13 @@ function NavLink(props: NavLinkProps) {
       href={href}
       className={cn(
         'relative -mx-2 -my-1 rounded px-2 py-1 transition-colors',
-        isActive ? 'bg-gray-200 text-gray-800' : 'hover:text-gray-800'
+        isActive ? 'bg-slate-200 text-slate-800' : 'hover:text-slate-800'
       )}
     >
       {props.children}
       <LoaderIcon
         className={cn(
-          'absolute right-[5px] top-[6px] h-4 w-4 animate-spin text-gray-400 transition-opacity duration-300',
+          'absolute right-[5px] top-[6px] h-4 w-4 animate-spin text-slate-400 transition-opacity duration-300',
           showLoader ? 'opacity-100' : 'opacity-0'
         )}
       />

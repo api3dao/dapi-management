@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '~/components/ui/tooltip';
 import { Button } from '~/components/ui/button';
 import {
+  PageHeading,
   TreeStatusBadge,
   TreeRootBadge,
   SignatureTable,
@@ -72,11 +73,9 @@ export default function DapiManagementTree(props: Props) {
 
   return (
     <RootLayout>
-      <div>
-        <TreeStatusBadge signatures={signatures} />
-      </div>
-      <h1 className="mb-2 text-3xl font-bold">dAPI Management Merkle Tree</h1>
-      <TreeRootBadge className="mb-3" root={currentTree.hash} />
+      <TreeStatusBadge signatures={signatures} />
+      <PageHeading>dAPI Management Merkle Tree</PageHeading>
+      <TreeRootBadge className="mb-5" root={currentTree.hash} />
 
       <div className="mb-10">
         <SignRootButton signatures={signatures} signRoot={signRoot} isSigning={isSigning} />
