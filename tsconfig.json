@@ -14,8 +14,8 @@
     "noUncheckedIndexedAccess": false,
     "noImplicitReturns": true,
     "resolveJsonModule": true,
-    "outDir": "dist",
+    "outDir": "dist"
   },
   "exclude": [],
-  "include": ["src/**/*"],
+  "include": ["src/**/*"]
 }
