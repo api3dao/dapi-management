@@ -6,6 +6,7 @@ typechain
 typechain-types
 data/.processed
 *.tgz
+dist
 
 # Hardhat files
 cache

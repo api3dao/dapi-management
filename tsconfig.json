@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "sourceMap": true,
+    "lib": ["ESNext"],
+    "module": "CommonJS",
+    "esModuleInterop": true,
+    "moduleResolution": "Node",
+    "strict": false,
+    "target": "ESNext",
+    "skipLibCheck": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitReturns": true,
+    "resolveJsonModule": true,
+    "outDir": "dist",
+  },
+  "exclude": [],
+  "include": ["src/**/*"],
+}
