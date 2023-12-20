@@ -32,9 +32,14 @@
     "frontend:dev": "cd frontend && next dev",
     "frontend:build": "cd frontend && next build",
     "frontend:start": "cd frontend && next start",
+    "frontend:prod": "yarn && yarn frontend:build && yarn frontend:start",
     "frontend:type-check": "yarn tsc --project ./frontend/tsconfig.json",
     "frontend:test": "jest --config frontend/jest.config.js",
-    "frontend:add-component": "npx shadcn-ui@latest add --cwd frontend"
+    "frontend:add-component": "npx shadcn-ui@latest add --cwd frontend",
+    "cypress:frontend:dev": "E2E=true yarn frontend:dev",
+    "cypress:frontend:prod": "yarn && yarn frontend:build && E2E=true yarn frontend:start",
+    "cypress:open": "node scripts/print-cypress-help.js && yarn cypress open --project frontend",
+    "cypress:run": "node scripts/print-cypress-help.js && yarn cypress run --project frontend"
   },
   "devDependencies": {
     "@api3/chains": "^3.5.1",
@@ -44,6 +49,7 @@
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@nomiclabs/hardhat-ethers": "^2.0.3",
     "@nomiclabs/hardhat-etherscan": "^3.0.0",
+    "@testing-library/cypress": "^10.0.1",
     "@typechain/ethers-v5": "^10.1.0",
     "@typechain/hardhat": "^6.1.2",
     "@types/chai": "^4.2.0",
@@ -57,6 +63,8 @@
     "@typescript-eslint/parser": "^6.8.0",
     "autoprefixer": "^10.4.16",
     "chai": "^4.2.0",
+    "chalk": "^4.0.0",
+    "cypress": "^13.6.1",
     "dotenv": "^16.3.1",
     "eslint": "^8.44.0",
     "eslint-config-next": "13.5.6",
