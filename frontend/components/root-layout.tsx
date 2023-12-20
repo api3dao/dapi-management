@@ -57,7 +57,7 @@ function LoadingIndicator() {
   }
 
   return (
-    <div className="animate-delayed-fade-in fixed left-1/2 top-0 z-10 inline-block -translate-x-1/2 rounded-bl rounded-br border border-yellow-100 bg-yellow-100 px-3 py-1 text-xs text-slate-700 shadow">
+    <div className="animate-delayed-fade-in fixed left-1/2 top-0 z-10 inline-block -translate-x-1/2 rounded-bl rounded-br border border-slate-800 bg-slate-800 px-3 py-1 text-xs text-slate-200 shadow-md">
       Loading...
     </div>
   );
