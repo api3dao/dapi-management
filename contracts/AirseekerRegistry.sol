@@ -13,17 +13,17 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
 
     event DeactivatedDataFeedIdOrDapiName(bytes32 indexed dataFeedIdOrDapiName);
 
-    event SetUpdateParametersWithDataFeedId(
+    event UpdatedUpdateParametersWithDataFeedId(
         bytes32 indexed dataFeedId,
         bytes updateParameters
     );
 
-    event SetUpdateParametersWithDapiName(
+    event UpdatedUpdateParametersWithDapiName(
         bytes32 indexed dapiName,
         bytes updateParameters
     );
 
-    event SetSignedApiUrl(address indexed airnode, string signedApiUrl);
+    event UpdatedSignedApiUrl(address indexed airnode, string signedApiUrl);
 
     event RegisteredDataFeed(bytes32 indexed dataFeedId, bytes dataFeedDetails);
 
@@ -63,24 +63,20 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
         api3ServerV1 = api3ServerV1_;
     }
 
-    function activateDataFeedIdOrDapiName(
+    function setDataFeedIdOrDapiNameToBeActivated(
         bytes32 dataFeedIdOrDapiName
     ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dataFeedIdOrDapiName) {
-        require(
-            activeDataFeedIdsAndDapiNames.add(dataFeedIdOrDapiName),
-            "Data feed already active"
-        );
-        emit ActivatedDataFeedIdOrDapiName(dataFeedIdOrDapiName);
+        if (activeDataFeedIdsAndDapiNames.add(dataFeedIdOrDapiName)) {
+            emit ActivatedDataFeedIdOrDapiName(dataFeedIdOrDapiName);
+        }
     }
 
-    function deactivateDataFeedIdOrDapiName(
+    function setDataFeedIdOrDapiNameToBeDeactivated(
         bytes32 dataFeedIdOrDapiName
     ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dataFeedIdOrDapiName) {
-        require(
-            activeDataFeedIdsAndDapiNames.remove(dataFeedIdOrDapiName),
-            "Data feed not active"
-        );
-        emit DeactivatedDataFeedIdOrDapiName(dataFeedIdOrDapiName);
+        if (activeDataFeedIdsAndDapiNames.remove(dataFeedIdOrDapiName)) {
+            emit DeactivatedDataFeedIdOrDapiName(dataFeedIdOrDapiName);
+        }
     }
 
     function setUpdateParametersWithDataFeedId(
@@ -94,8 +90,11 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
             dataFeedIdOrDapiNameHashToUpdateParameters[
                 dataFeedId
             ] = updateParameters;
+            emit UpdatedUpdateParametersWithDataFeedId(
+                dataFeedId,
+                updateParameters
+            );
         }
-        emit SetUpdateParametersWithDataFeedId(dataFeedId, updateParameters);
     }
 
     function setUpdateParametersWithDapiName(
@@ -111,8 +110,11 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
             dataFeedIdOrDapiNameHashToUpdateParameters[
                 dapiNameHash
             ] = updateParameters;
+            emit UpdatedUpdateParametersWithDapiName(
+                dapiName,
+                updateParameters
+            );
         }
-        emit SetUpdateParametersWithDapiName(dapiName, updateParameters);
     }
 
     function setSignedApiUrl(
@@ -129,8 +131,8 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
             keccak256(bytes(signedApiUrl))
         ) {
             airnodeToSignedApiUrl[airnode] = signedApiUrl;
+            emit UpdatedSignedApiUrl(airnode, signedApiUrl);
         }
-        emit SetSignedApiUrl(airnode, signedApiUrl);
     }
 
     function registerDataFeed(
@@ -266,6 +268,12 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
 
     function activeDataFeedCount() external view returns (uint256) {
         return activeDataFeedIdsAndDapiNames.length();
+    }
+
+    function dataFeedIsRegistered(
+        bytes32 dataFeedId
+    ) external view returns (bool) {
+        return dataFeedIdToDetails[dataFeedId].length != 0;
     }
 
     // `activeDataFeed()` does not return data when the data feed is not
