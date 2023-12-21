@@ -37,3 +37,7 @@ The following code snippet shows how we derive the type of Signed API URL Merkle
 ```js
 keccak256(abi.encodePacked('Signed API URL Merkle tree root'));
 ```
+
+## Data Verification
+
+See [documentation](verification/README.md)
