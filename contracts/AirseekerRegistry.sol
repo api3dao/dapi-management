@@ -29,11 +29,14 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
 
     address public immutable api3ServerV1;
 
-    mapping(bytes32 => bytes) public dataFeedIdOrDapiNameHashToUpdateParameters;
-
     mapping(address => string) public airnodeToSignedApiUrl;
 
     mapping(bytes32 => bytes) public dataFeedIdToDetails;
+
+    mapping(bytes32 => bytes32)
+        private dataFeedIdOrDapiNameHashToUpdateParametersHash;
+
+    mapping(bytes32 => bytes) private updateParametersHashToValue;
 
     EnumerableSet.Bytes32Set private activeDataFeedIdsAndDapiNames;
 
@@ -83,13 +86,22 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
         bytes32 dataFeedId,
         bytes calldata updateParameters
     ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dataFeedId) {
+        bytes32 updateParametersHash = keccak256(updateParameters);
         if (
-            keccak256(dataFeedIdOrDapiNameHashToUpdateParameters[dataFeedId]) !=
-            keccak256(updateParameters)
+            dataFeedIdOrDapiNameHashToUpdateParametersHash[dataFeedId] !=
+            updateParametersHash
         ) {
-            dataFeedIdOrDapiNameHashToUpdateParameters[
+            dataFeedIdOrDapiNameHashToUpdateParametersHash[
                 dataFeedId
-            ] = updateParameters;
+            ] = updateParametersHash;
+            if (
+                keccak256(updateParametersHashToValue[updateParametersHash]) !=
+                updateParametersHash
+            ) {
+                updateParametersHashToValue[
+                    updateParametersHash
+                ] = updateParameters;
+            }
             emit UpdatedUpdateParametersWithDataFeedId(
                 dataFeedId,
                 updateParameters
@@ -102,14 +114,22 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
         bytes calldata updateParameters
     ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dapiName) {
         bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
+        bytes32 updateParametersHash = keccak256(updateParameters);
         if (
-            keccak256(
-                dataFeedIdOrDapiNameHashToUpdateParameters[dapiNameHash]
-            ) != keccak256(updateParameters)
+            dataFeedIdOrDapiNameHashToUpdateParametersHash[dapiNameHash] !=
+            updateParametersHash
         ) {
-            dataFeedIdOrDapiNameHashToUpdateParameters[
+            dataFeedIdOrDapiNameHashToUpdateParametersHash[
                 dapiNameHash
-            ] = updateParameters;
+            ] = updateParametersHash;
+            if (
+                keccak256(updateParametersHashToValue[updateParametersHash]) !=
+                updateParametersHash
+            ) {
+                updateParametersHashToValue[
+                    updateParametersHash
+                ] = updateParameters;
+            }
             emit UpdatedUpdateParametersWithDapiName(
                 dapiName,
                 updateParameters
@@ -233,12 +253,16 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
                 (dataFeedValue, dataFeedTimestamp) = IApi3ServerV1(api3ServerV1)
                     .dataFeeds(dataFeedId);
                 if (dapiName == bytes32(0)) {
-                    updateParameters = dataFeedIdOrDapiNameHashToUpdateParameters[
-                        dataFeedIdOrDapiName
+                    updateParameters = updateParametersHashToValue[
+                        dataFeedIdOrDapiNameHashToUpdateParametersHash[
+                            dataFeedIdOrDapiName
+                        ]
                     ];
                 } else {
-                    updateParameters = dataFeedIdOrDapiNameHashToUpdateParameters[
-                        keccak256(abi.encodePacked(dataFeedIdOrDapiName))
+                    updateParameters = updateParametersHashToValue[
+                        dataFeedIdOrDapiNameHashToUpdateParametersHash[
+                            keccak256(abi.encodePacked(dataFeedIdOrDapiName))
+                        ]
                     ];
                 }
                 if (
@@ -268,6 +292,16 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
 
     function activeDataFeedCount() external view returns (uint256) {
         return activeDataFeedIdsAndDapiNames.length();
+    }
+
+    function dataFeedIdOrDapiNameHashToUpdateParameters(
+        bytes32 dataFeedIdOrDapiNameHash
+    ) external view returns (bytes memory updateParameters) {
+        updateParameters = updateParametersHashToValue[
+            dataFeedIdOrDapiNameHashToUpdateParametersHash[
+                dataFeedIdOrDapiNameHash
+            ]
+        ];
     }
 
     function dataFeedIsRegistered(
