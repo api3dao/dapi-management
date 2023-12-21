@@ -8,16 +8,25 @@ import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3Serve
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/proxies/interfaces/IProxyFactory.sol";
 import "./AirseekerRegistry.sol";
 
-// ~~~~~~~~~~~~~~~~~~~~~ IN DRAFT FORM ~~~~~~~~~~~~~~~~~~~~~
 contract Api3MarketV2 is HashRegistryV2 {
-    struct Subscription {
-        uint32 currentEndTimestamp;
-        uint32 nextEndTimestamp;
-        uint256 currentDailyPrice;
-        uint256 nextDailyPrice;
-        bytes currentUpdateParameters;
-        bytes nextUpdateParameters;
+    enum UpdateParametersComparisonResult {
+        EqualToQueued,
+        BetterThanQueued,
+        WorseThanQueued
     }
+
+    struct Subscription {
+        bytes32 updateParametersHash;
+        uint32 endTimestamp;
+        uint224 dailyPrice;
+        bytes32 nextSubscriptionId;
+    }
+
+    // We allow a subscription queue of 5. We only need as many as the number
+    // of tiers we have (currently 3: 1%, 0.5%, 0.25%).
+    // As a note, there may be an off-by-one error here (in that the maximum
+    // queue length is actually 4 or 6).
+    uint256 public constant MAXIMUM_SUBSCRIPTION_QUEUE_LENGTH = 5;
 
     address public immutable api3ServerV1;
 
@@ -25,7 +34,15 @@ contract Api3MarketV2 is HashRegistryV2 {
 
     address public immutable airseekerRegistry;
 
-    mapping(bytes32 => Subscription) public dapiNameToSubscription;
+    // Keeping the subscriptions as a linked list
+    mapping(bytes32 => Subscription) public subscriptions;
+
+    // Where the subscription queue starts per dAPI name
+    mapping(bytes32 => bytes32) public dapiNameToCurrentSubscriptionId;
+
+    // There will be a very limited variety of update parameters so using their
+    // hashes as a shorthand is a good optimization
+    mapping(bytes32 => bytes) public updateParametersHashToValue;
 
     bytes32 private constant DAPI_MANAGEMENT_MERKLE_ROOT_HASH_TYPE =
         keccak256(abi.encodePacked("dAPI management Merkle root"));
@@ -58,18 +75,7 @@ contract Api3MarketV2 is HashRegistryV2 {
         airseekerRegistry = airseekerRegistry_;
     }
 
-    // Options:
-    // 1. Buy when there is no active subscription (overwrites)
-    // 2. Upgrade both duration and update parameters (overwrites)
-    // 3. Upgrade the duration and keep the update parameters the same (overwrites)
-    // 4. Upgrade the update parameters and keep the duration the same (overwrites)
-    // 5. Upgrade the duration while downgrading the update parameters while there
-    // is no queue (appends)
-    // 6. Upgrade the duration while upgrading the queue (overwrites the queue)
-
-    // TODO: Do not allow ultra short downgrades
-
-    function buyDapiSubscription(
+    function buySubscription(
         bytes32 dapiName,
         bytes32 dataFeedId,
         address payable sponsorWallet,
@@ -92,132 +98,76 @@ contract Api3MarketV2 is HashRegistryV2 {
             price,
             dapiPricingMerkleData
         );
-        validateDataFeedReadiness(dataFeedId);
-        Subscription storage subscription = dapiNameToSubscription[dapiName];
-        uint256 requiredSponsorWalletBalance;
-        if (subscription.currentEndTimestamp <= block.timestamp) {
-            // Activating an inactive dAPI
-            require(
-                subscription.nextEndTimestamp <= block.timestamp,
-                "Subscription needs update"
-            );
-            dapiNameToSubscription[dapiName] = Subscription({
-                currentEndTimestamp: uint32(block.timestamp + duration),
-                nextEndTimestamp: 0,
-                currentDailyPrice: (price * duration) / 1 days,
-                nextDailyPrice: 0,
-                currentUpdateParameters: updateParameters,
-                nextUpdateParameters: bytes("")
-            });
-            AirseekerRegistry(airseekerRegistry)
-                .setUpdateParametersWithDapiName(dapiName, updateParameters);
-            requiredSponsorWalletBalance = price;
-            IApi3ServerV1(api3ServerV1).setDapiName(dapiName, dataFeedId);
-        } else if (
-            upgradesSubscription(
-                updateParameters,
-                subscription.currentUpdateParameters,
-                subscription.currentEndTimestamp,
-                uint32(block.timestamp + duration)
-            )
-        ) {
-            // Upgrading the current subscription
-            dapiNameToSubscription[dapiName] = Subscription({
-                currentEndTimestamp: uint32(block.timestamp + duration),
-                nextEndTimestamp: subscription.nextEndTimestamp,
-                currentDailyPrice: (price * duration) / 1 days,
-                nextDailyPrice: subscription.nextDailyPrice,
-                currentUpdateParameters: updateParameters,
-                nextUpdateParameters: subscription.nextUpdateParameters
-            });
-            AirseekerRegistry(airseekerRegistry)
-                .setUpdateParametersWithDapiName(dapiName, updateParameters);
-            requiredSponsorWalletBalance = price;
-            if (
-                subscription.nextEndTimestamp > subscription.currentEndTimestamp
-            ) {
-                requiredSponsorWalletBalance +=
-                    ((subscription.nextEndTimestamp -
-                        subscription.currentEndTimestamp) *
-                        subscription.nextDailyPrice) /
-                    1 days;
-            }
-        } else if (
-            upgradesSubscription(
-                updateParameters,
-                subscription.nextUpdateParameters,
-                subscription.nextEndTimestamp,
-                uint32(subscription.currentEndTimestamp + duration)
-            )
-        ) {
-            // Upgrading the next subscription
-            dapiNameToSubscription[dapiName] = Subscription({
-                currentEndTimestamp: subscription.currentEndTimestamp,
-                nextEndTimestamp: uint32(
-                    subscription.currentEndTimestamp + duration
-                ),
-                currentDailyPrice: subscription.currentDailyPrice,
-                nextDailyPrice: (price * duration) / 1 days,
-                currentUpdateParameters: subscription.currentUpdateParameters,
-                nextUpdateParameters: updateParameters
-            });
-            requiredSponsorWalletBalance =
-                (subscription.currentEndTimestamp - block.timestamp) *
-                subscription.currentDailyPrice +
-                price; // wrong
-        } else {
-            revert("Does not upgrade subscriptions");
-        }
-        uint256 sponsorWalletBalance = sponsorWallet.balance;
+        addSubscriptionToQueue(
+            dapiName,
+            dataFeedId,
+            updateParameters,
+            duration,
+            price
+        );
         require(
-            sponsorWalletBalance + msg.value >= requiredSponsorWalletBalance,
+            sponsorWallet.balance + msg.value >=
+                computeExpectedSponsorWalletBalance(dapiName),
             "Insufficient payment"
         );
+        // Emit event
         Address.sendValue(sponsorWallet, msg.value);
     }
 
-    function updateSubscription(bytes32 dapiName) public {
-        Subscription storage subscription = dapiNameToSubscription[dapiName];
+    // For all active dAPIs, our bot should call this whenever it won't revert
+    function flushSubscriptionQueue(
+        bytes32 dapiName
+    ) public returns (bytes32 currentSubscriptionId) {
+        currentSubscriptionId = dapiNameToCurrentSubscriptionId[dapiName];
+        require(currentSubscriptionId != bytes32(0), "dAPI inactive");
         require(
-            subscription.currentEndTimestamp <= block.timestamp,
-            "Cannot update subscription yet"
+            subscriptions[currentSubscriptionId].endTimestamp <=
+                block.timestamp,
+            "Subscription has not ended"
         );
-        require(
-            subscription.nextEndTimestamp > block.timestamp,
-            "Update not available"
-        );
-        AirseekerRegistry(airseekerRegistry).setUpdateParametersWithDapiName(
-            dapiName,
-            subscription.nextUpdateParameters
-        );
-        dapiNameToSubscription[dapiName] = Subscription({
-            currentEndTimestamp: subscription.nextEndTimestamp,
-            nextEndTimestamp: 0,
-            currentDailyPrice: subscription.nextDailyPrice,
-            nextDailyPrice: 0,
-            currentUpdateParameters: subscription.nextUpdateParameters,
-            nextUpdateParameters: bytes("")
-        });
+        // We flush the queue all the way until we have a subscription that has
+        // not ended or the queue is empty. This is safe to do as the queue
+        // length is bounded by `MAXIMUM_SUBSCRIPTION_QUEUE_LENGTH`.
+        while (true) {
+            currentSubscriptionId = subscriptions[currentSubscriptionId]
+                .nextSubscriptionId;
+            if (
+                currentSubscriptionId == bytes32(0) ||
+                subscriptions[currentSubscriptionId].endTimestamp >
+                block.timestamp
+            ) {
+                break;
+            }
+        }
+        dapiNameToCurrentSubscriptionId[dapiName] = currentSubscriptionId;
+        // Emit event
+        if (currentSubscriptionId == bytes32(0)) {
+            // Not reseting the dAPI name based on some discussions, though we
+            // may want to change this later
+            AirseekerRegistry(airseekerRegistry)
+                .setDataFeedIdOrDapiNameToBeDeactivated(dapiName);
+            // Also not resetting update parameters with dAPI name, mostly
+            // because an all-zero update parameters means "update at every
+            // block", which feels dangerous
+        } else {
+            AirseekerRegistry(airseekerRegistry)
+                .setUpdateParametersWithDapiName(
+                    dapiName,
+                    updateParametersHashToValue[
+                        subscriptions[currentSubscriptionId]
+                            .updateParametersHash
+                    ]
+                );
+        }
     }
 
-    function endSubscription(bytes32 dapiName) public {
-        Subscription storage subscription = dapiNameToSubscription[dapiName];
-        require(
-            subscription.currentEndTimestamp <= block.timestamp,
-            "Cannot end subscription yet"
-        );
-        require(
-            subscription.nextEndTimestamp <= block.timestamp,
-            "Subscription needs update"
-        );
-        AirseekerRegistry(airseekerRegistry).deactivateDataFeedIdOrDapiName(
-            dapiName
-        );
-        IApi3ServerV1(api3ServerV1).setDapiName(dapiName, bytes32(0));
-        delete dapiNameToSubscription[dapiName];
-    }
-
-    function updateSetDapiName(
+    // For all active dAPIs, our bot should call this whenever it won't revert.
+    // It will have to multicall this with the respective
+    // `updateBeaconWithSignedData()`, `updateBeaconSetWithBeacons()` and
+    // `registerDataFeed()` calls.
+    // Allowing this to be called even when the dAPI is not active, though we
+    // may want to change this later.
+    function updateDapiName(
         bytes32 dapiName,
         bytes32 dataFeedId,
         address sponsorWallet,
@@ -231,7 +181,6 @@ contract Api3MarketV2 is HashRegistryV2 {
         );
         bytes32 currentDataFeedId = IApi3ServerV1(api3ServerV1)
             .dapiNameHashToDataFeedId(keccak256(abi.encodePacked(dapiName)));
-        require(currentDataFeedId != bytes32(0), "dAPI name not set");
         require(currentDataFeedId != dataFeedId, "Does not update dAPI name");
         validateDataFeedReadiness(dataFeedId);
         IApi3ServerV1(api3ServerV1).setDapiName(dapiName, dataFeedId);
@@ -294,6 +243,36 @@ contract Api3MarketV2 is HashRegistryV2 {
         );
     }
 
+    // This exposed for monitoring
+    function computeExpectedSponsorWalletBalance(
+        bytes32 dapiName
+    ) public view returns (uint256 expectedSponsorWalletBalance) {
+        bytes32 queuedSubscriptionId = dapiNameToCurrentSubscriptionId[
+            dapiName
+        ];
+        uint32 startTimestamp = uint32(block.timestamp);
+        while (true) {
+            if (queuedSubscriptionId == bytes32(0)) {
+                break;
+            }
+            Subscription storage queuedSubscription = subscriptions[
+                queuedSubscriptionId
+            ];
+            // Skip if the queued subscription has ended
+            if (queuedSubscription.endTimestamp > block.timestamp) {
+                // `queuedSubscription.endTimestamp` is guaranteed to be larger
+                // than `startTimestamp`
+                expectedSponsorWalletBalance +=
+                    ((queuedSubscription.endTimestamp - startTimestamp) *
+                        queuedSubscription.dailyPrice) /
+                    1 days;
+            }
+            startTimestamp = queuedSubscription.endTimestamp;
+            queuedSubscriptionId = subscriptions[queuedSubscriptionId]
+                .nextSubscriptionId;
+        }
+    }
+
     function validateDataFeedReadiness(bytes32 dataFeedId) private view {
         (, uint32 timestamp) = IApi3ServerV1(api3ServerV1).dataFeeds(
             dataFeedId
@@ -303,9 +282,9 @@ contract Api3MarketV2 is HashRegistryV2 {
             "dAPI value stale"
         );
         require(
-            AirseekerRegistry(airseekerRegistry)
-                .dataFeedIdToDetails(dataFeedId)
-                .length != 0,
+            AirseekerRegistry(airseekerRegistry).dataFeedIsRegistered(
+                dataFeedId
+            ),
             "Data feed not registered"
         );
     }
@@ -423,51 +402,221 @@ contract Api3MarketV2 is HashRegistryV2 {
         );
     }
 
-    function upgradesSubscription(
-        bytes calldata newUpdateParameters,
-        bytes memory updateParameters,
-        uint32 newEndTimestamp,
-        uint32 endTimestamp
-    ) private view returns (bool) {
+    function addSubscriptionToQueue(
+        bytes32 dapiName,
+        bytes32 dataFeedId,
+        bytes calldata updateParameters,
+        uint256 duration,
+        uint256 price
+    ) private {
         (
-            uint256 newDeviationThresholdInPercentage,
-            int224 newDeviationReference,
-            uint256 newHeartbeatInterval
-        ) = abi.decode(newUpdateParameters, (uint256, int224, uint256));
+            bytes32 subscriptionId,
+            uint32 endTimestamp,
+            bytes32 previousSubscriptionId,
+            bytes32 nextSubscriptionId
+        ) = prospectSubscriptionPositionInQueue(
+                dapiName,
+                updateParameters,
+                duration
+            );
+        bytes32 updateParametersHash = keccak256(updateParameters);
+        if (updateParametersHashToValue[updateParametersHash].length == 0) {
+            updateParametersHashToValue[
+                updateParametersHash
+            ] = updateParameters;
+        }
+        subscriptions[subscriptionId] = Subscription({
+            updateParametersHash: updateParametersHash,
+            endTimestamp: endTimestamp,
+            dailyPrice: uint224((price * duration) / 1 days),
+            nextSubscriptionId: nextSubscriptionId
+        });
+        if (previousSubscriptionId == bytes32(0)) {
+            dapiNameToCurrentSubscriptionId[dapiName] = subscriptionId;
+            AirseekerRegistry(airseekerRegistry)
+                .setUpdateParametersWithDapiName(dapiName, updateParameters);
+            AirseekerRegistry(airseekerRegistry)
+                .setDataFeedIdOrDapiNameToBeActivated(dapiName);
+            // Let's not emit SetDapiName events for no reason
+            bytes32 currentDataFeedId = IApi3ServerV1(api3ServerV1)
+                .dapiNameHashToDataFeedId(
+                    keccak256(abi.encodePacked(dapiName))
+                );
+            if (currentDataFeedId != dataFeedId) {
+                validateDataFeedReadiness(dataFeedId);
+                IApi3ServerV1(api3ServerV1).setDapiName(dapiName, dataFeedId);
+            }
+        } else {
+            subscriptions[previousSubscriptionId]
+                .nextSubscriptionId = subscriptionId;
+            // This next bit is optional but I don't see why not
+            if (
+                subscriptions[dapiNameToCurrentSubscriptionId[dapiName]]
+                    .endTimestamp <= block.timestamp
+            ) {
+                flushSubscriptionQueue(dapiName);
+            }
+        }
+    }
+
+    function prospectSubscriptionPositionInQueue(
+        bytes32 dapiName,
+        bytes calldata updateParameters,
+        uint256 duration
+    )
+        private
+        view
+        returns (
+            bytes32 subscriptionId,
+            uint32 endTimestamp,
+            bytes32 previousSubscriptionId,
+            bytes32 nextSubscriptionId
+        )
+    {
+        subscriptionId = keccak256(
+            abi.encodePacked(dapiName, keccak256(updateParameters))
+        );
+        endTimestamp = uint32(block.timestamp + duration);
+        require(
+            updateParameters.length == 96,
+            "Invalid update parameters length"
+        );
         (
             uint256 deviationThresholdInPercentage,
             int224 deviationReference,
             uint256 heartbeatInterval
         ) = abi.decode(updateParameters, (uint256, int224, uint256));
+        bytes32 queuedSubscriptionId = dapiNameToCurrentSubscriptionId[
+            dapiName
+        ];
+        // This function works correctly even when there are ended
+        // subscriptions in the queue that need to be flushed. Its output
+        // implicitly flushes them (only!) if the new subscription will be the
+        // current one.
+        uint256 ind = 0;
+        for (; ind < MAXIMUM_SUBSCRIPTION_QUEUE_LENGTH; ind++) {
+            if (queuedSubscriptionId == bytes32(0)) {
+                // If the queue was empty, we immediately exit here, which
+                // implies a single item queue consisting of the new
+                // subscription.
+                // Alternatively, we may have reached the end of the queue
+                // before being able to find the `nextSubscriptionId`. This
+                // means `nextSubscriptionId` will be `bytes32(0)`, i.e., the
+                // new subscription gets appended to the end of the queue.
+                break;
+            }
+            Subscription storage queuedSubscription = subscriptions[
+                queuedSubscriptionId
+            ];
+            UpdateParametersComparisonResult updateParametersComparisonResult = compareUpdateParametersWithQueued(
+                    deviationThresholdInPercentage,
+                    deviationReference,
+                    heartbeatInterval,
+                    queuedSubscription.updateParametersHash
+                );
+            // The new subscription should be superior to every element in the
+            // queue in one of the ways: It should have superior update
+            // parameters, or it should have superior end timestamp. If it does
+            // not, its addition to the queue does not improve it, which should
+            // not be allowed.
+            require(
+                updateParametersComparisonResult ==
+                    UpdateParametersComparisonResult.BetterThanQueued ||
+                    endTimestamp > queuedSubscription.endTimestamp,
+                "Subscription does not upgrade"
+            );
+            if (
+                updateParametersComparisonResult ==
+                UpdateParametersComparisonResult.WorseThanQueued &&
+                queuedSubscription.endTimestamp > block.timestamp
+            ) {
+                // We do not check if the end timestamp is better than the
+                // queued one because that is guaranteed (otherwise we would
+                // have already reverted).
+                // The previous subscription is one that is superior to the new
+                // one. However, an ended subscription is always inferior to
+                // one that has not ended. Therefore, we require the queued
+                // subscription to not have ended to treat it as the previous
+                // subscription. This effectively flushes the queue if the new
+                // subscription turns out to be the current one.
+                previousSubscriptionId = queuedSubscriptionId;
+                // We keep updating `previousSubscriptionId` at each step, and
+                // will stop being able to do that once we hit a subscription
+                // that has equal to or worse update parameters. We can stop
+                // looking for `previousSubscriptionId` after that point, but
+                // doing so explicitly is unnecessarily complex, and this if
+                // condition is cheap enough to evaluate redundantly.
+            }
+            if (
+                updateParametersComparisonResult ==
+                UpdateParametersComparisonResult.BetterThanQueued &&
+                endTimestamp < queuedSubscription.endTimestamp
+            ) {
+                // In the queue, `previousSubscriptionId` comes before
+                // `nextSubscriptionId`. Therefore, as soon as we find
+                // `nextSubscriptionId`, we can break, as we know that we have
+                // already found `previousSubscriptionId`.
+                // This implicitly removes multiple sequential items from the
+                // queue if they have inferior update parameters and end
+                // timestamps than the new subscription, somewhat similar to
+                // the implicit flushing mentioned above.
+                nextSubscriptionId = queuedSubscriptionId;
+                break;
+            }
+            queuedSubscriptionId = queuedSubscription.nextSubscriptionId;
+        }
+        // If we exited the loop before hitting any breaks, our
+        // `nextSubscriptionId` is potentially wrong and we should revert. If
+        // the queue is congested by ended subscriptions, flushing them
+        // beforehand would have helped here.
+        require(
+            ind != MAXIMUM_SUBSCRIPTION_QUEUE_LENGTH,
+            "Subscription queue full"
+        );
+    }
+
+    function compareUpdateParametersWithQueued(
+        uint256 deviationThresholdInPercentage,
+        int224 deviationReference,
+        uint256 heartbeatInterval,
+        bytes32 queuedUpdateParametersHash
+    ) private view returns (UpdateParametersComparisonResult) {
+        // If update parameters are already queued, they are guaranteed to have
+        // been stored in `updateParametersHashToValue`
+        (
+            uint256 queuedDeviationThresholdInPercentage,
+            int224 queuedDeviationReference,
+            uint256 queuedHeartbeatInterval
+        ) = abi.decode(
+                updateParametersHashToValue[queuedUpdateParametersHash],
+                (uint256, int224, uint256)
+            );
+        require(
+            deviationReference == queuedDeviationReference,
+            "Deviation references not equal"
+        );
         if (
-            endTimestamp <= block.timestamp && newEndTimestamp > block.timestamp
+            (deviationThresholdInPercentage ==
+                queuedDeviationThresholdInPercentage) &&
+            (heartbeatInterval == queuedHeartbeatInterval)
         ) {
-            // A non-expired subscription is always an upgrade over an expired
-            // subscription
-            return true;
-        }
-        if (newDeviationReference != deviationReference) {
-            // Two sets of parameters are incomparable, and thus we cannot call
-            // this an upgrade
-            return false;
-        }
-        if (
-            newDeviationThresholdInPercentage > deviationThresholdInPercentage
+            return UpdateParametersComparisonResult.EqualToQueued;
+        } else if (
+            (deviationThresholdInPercentage <=
+                queuedDeviationThresholdInPercentage) &&
+            (heartbeatInterval <= queuedHeartbeatInterval)
         ) {
-            return
-                newHeartbeatInterval <= heartbeatInterval &&
-                newEndTimestamp >= endTimestamp;
-        } else if (newHeartbeatInterval < heartbeatInterval) {
-            return
-                newDeviationThresholdInPercentage <=
-                deviationThresholdInPercentage &&
-                newEndTimestamp >= endTimestamp;
-        } else if (newEndTimestamp > endTimestamp) {
-            return
-                newDeviationThresholdInPercentage <=
-                deviationThresholdInPercentage &&
-                newHeartbeatInterval <= heartbeatInterval;
+            return UpdateParametersComparisonResult.BetterThanQueued;
+        } else if (
+            (deviationThresholdInPercentage >=
+                queuedDeviationThresholdInPercentage) &&
+            (heartbeatInterval >= queuedHeartbeatInterval)
+        ) {
+            return UpdateParametersComparisonResult.WorseThanQueued;
+        } else {
+            // This is hit when one set of parameters have better deviation
+            // threshold and the other has better heartbeat interval
+            revert("Update parameters incomparable");
         }
-        return false;
     }
 }
