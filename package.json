@@ -14,7 +14,8 @@
   ],
   "scripts": {
     "build": "hardhat compile",
-    "build:package": "rm -rf ./dist && node scripts/build-package.js && tsc",
+    "build:package": "rm -rf ./dist && node scripts/generate-supported-chains.js && tsc --project tsconfig.build.json",
+    "prepublishOnly": "yarn build:package",
     "lint": "yarn run format:check && yarn run lint:eslint && yarn run lint:solhint",
     "lint:solhint": "solhint ./contracts/**/*.sol",
     "lint:eslint": "eslint . --ext .js,.ts,.tsx",
