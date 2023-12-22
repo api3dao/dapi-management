@@ -200,11 +200,11 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
                     dataFeedDetailsLength,
                 "Feed details data trail"
             );
+            uint256 beaconCount = airnodes.length;
             require(
-                airnodes.length == templateIds.length,
+                beaconCount == templateIds.length,
                 "Parameter length mismatch"
             );
-            uint256 beaconCount = airnodes.length;
             bytes32[] memory beaconIds = new bytes32[](beaconCount);
             for (uint256 ind = 0; ind < beaconCount; ind++) {
                 beaconIds[ind] = deriveBeaconId(
