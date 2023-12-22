@@ -185,7 +185,8 @@ contract Api3MarketV2 is HashRegistryV2 {
         IApi3ServerV1(api3ServerV1).setDapiName(dapiName, dataFeedId);
     }
 
-    function setSignedApiUrl(
+    // For all active dAPIs, our bot should call this whenever it won't revert
+    function updateSignedApiUrl(
         address airnode,
         string calldata signedApiUrl,
         bytes calldata signedApiUrlMerkleData
@@ -194,6 +195,16 @@ contract Api3MarketV2 is HashRegistryV2 {
             airnode,
             signedApiUrl,
             signedApiUrlMerkleData
+        );
+        require(
+            keccak256(abi.encodePacked(signedApiUrl)) !=
+                keccak256(
+                    abi.encodePacked(
+                        AirseekerRegistry(airseekerRegistry)
+                            .airnodeToSignedApiUrl
+                    )
+                ),
+            "Does not update signed API URL"
         );
         AirseekerRegistry(airseekerRegistry).setSignedApiUrl(
             airnode,
