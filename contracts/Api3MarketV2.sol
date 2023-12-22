@@ -2,13 +2,14 @@
 pragma solidity 0.8.18;
 
 import "./HashRegistryV2.sol";
+import "@api3/airnode-protocol-v1/contracts/utils/ExtendedSelfMulticall.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3ServerV1.sol";
 import "@api3/airnode-protocol-v1/contracts/api3-server-v1/proxies/interfaces/IProxyFactory.sol";
 import "./AirseekerRegistry.sol";
 
-contract Api3MarketV2 is HashRegistryV2 {
+contract Api3MarketV2 is HashRegistryV2, ExtendedSelfMulticall {
     enum UpdateParametersComparisonResult {
         EqualToQueued,
         BetterThanQueued,

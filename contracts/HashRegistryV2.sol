@@ -2,10 +2,9 @@
 pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@api3/airnode-protocol-v1/contracts/utils/SelfMulticall.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract HashRegistryV2 is Ownable, SelfMulticall {
+contract HashRegistryV2 is Ownable {
     using ECDSA for bytes32;
 
     event SetSigners(bytes32 indexed hashType, address[] signers);
