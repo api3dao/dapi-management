@@ -111,7 +111,9 @@ contract Api3MarketV2 is HashRegistryV2 {
             "Insufficient payment"
         );
         // Emit event
-        Address.sendValue(sponsorWallet, msg.value);
+        if (msg.value > 0) {
+            Address.sendValue(sponsorWallet, msg.value);
+        }
     }
 
     // For all active dAPIs, our bot should call this whenever it won't revert
