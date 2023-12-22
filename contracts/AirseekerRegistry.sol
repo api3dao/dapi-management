@@ -313,6 +313,8 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
         ];
     }
 
+    // This is cheaper to use than fetching the entire details and checking its
+    // length
     function dataFeedIsRegistered(
         bytes32 dataFeedId
     ) external view returns (bool) {
