@@ -56,6 +56,9 @@ contract Api3MarketV2 is HashRegistryV2, ExtendedSelfMulticall {
 
     uint256 private constant MAXIMUM_DAPI_UPDATE_AGE = 1 days;
 
+    uint256 private constant DATA_FEED_DETAILS_LENGTH_FOR_SINGLE_BEACON =
+        32 + 32;
+
     constructor(
         address owner_,
         address proxyFactory_,
@@ -345,19 +348,55 @@ contract Api3MarketV2 is HashRegistryV2, ExtendedSelfMulticall {
         }
     }
 
-    // This also returns the unflushed section. The user should ignore these if
-    // they want to.
-    function getSubscriptionQueue(
+    // This is a convenience function for the market.
+    // This also returns the unflushed section of the queue. The user should
+    // ignore these if they want to.
+    function getDapiData(
         bytes32 dapiName
     )
         external
         view
         returns (
+            int224 dapiValue,
+            uint32 dapiTimestamp,
+            bytes memory dataFeedDetails,
+            int224[] memory beaconValues,
+            uint32[] memory beaconTimestamps,
             bytes[] memory updateParameters,
             uint32[] memory endTimestamps,
             uint224[] memory dailyPrices
         )
     {
+        bytes32 currentDataFeedId = IApi3ServerV1(api3ServerV1)
+            .dapiNameHashToDataFeedId(keccak256(abi.encodePacked(dapiName)));
+        (dapiValue, dapiTimestamp) = IApi3ServerV1(api3ServerV1).dataFeeds(
+            currentDataFeedId
+        );
+        dataFeedDetails = AirseekerRegistry(airseekerRegistry)
+            .dataFeedIdToDetails(currentDataFeedId);
+        if (
+            dataFeedDetails.length == DATA_FEED_DETAILS_LENGTH_FOR_SINGLE_BEACON
+        ) {
+            beaconValues = new int224[](1);
+            beaconTimestamps = new uint32[](1);
+            (address airnode, bytes32 templateId) = abi.decode(
+                dataFeedDetails,
+                (address, bytes32)
+            );
+            (beaconValues[0], beaconTimestamps[0]) = IApi3ServerV1(api3ServerV1)
+                .dataFeeds(deriveBeaconId(airnode, templateId));
+        } else {
+            (address[] memory airnodes, bytes32[] memory templateIds) = abi
+                .decode(dataFeedDetails, (address[], bytes32[]));
+            uint256 beaconCount = airnodes.length;
+            beaconValues = new int224[](beaconCount);
+            beaconTimestamps = new uint32[](beaconCount);
+            for (uint256 ind = 0; ind < beaconCount; ind++) {
+                (beaconValues[ind], beaconTimestamps[ind]) = IApi3ServerV1(
+                    api3ServerV1
+                ).dataFeeds(deriveBeaconId(airnodes[ind], templateIds[ind]));
+            }
+        }
         uint256 queueLength = 0;
         bytes32 queuedSubscriptionId = dapiNameToCurrentSubscriptionId[
             dapiName
@@ -733,5 +772,12 @@ contract Api3MarketV2 is HashRegistryV2, ExtendedSelfMulticall {
             ),
             "Invalid proof"
         );
+    }
+
+    function deriveBeaconId(
+        address airnode,
+        bytes32 templateId
+    ) private pure returns (bytes32 beaconId) {
+        beaconId = keccak256(abi.encodePacked(airnode, templateId));
     }
 }
