@@ -294,135 +294,6 @@ contract Api3MarketV2 is HashRegistryV2 {
         }
     }
 
-    function validateDataFeedReadiness(bytes32 dataFeedId) private view {
-        (, uint32 timestamp) = IApi3ServerV1(api3ServerV1).dataFeeds(
-            dataFeedId
-        );
-        require(
-            block.timestamp + MAXIMUM_DAPI_UPDATE_AGE >= timestamp,
-            "dAPI value stale"
-        );
-        require(
-            AirseekerRegistry(airseekerRegistry).dataFeedIsRegistered(
-                dataFeedId
-            ),
-            "Data feed not registered"
-        );
-    }
-
-    function verifyDapiManagementMerkleProof(
-        bytes32 dapiName,
-        bytes32 dataFeedId,
-        address sponsorWallet,
-        bytes calldata dapiManagementMerkleData
-    ) private view {
-        require(dapiName != bytes32(0), "dAPI name zero");
-        if (dataFeedId != bytes32(0)) {
-            require(sponsorWallet != address(0), "Sponsor wallet address zero");
-        } else {
-            // A zero `dataFeedId` is used to disable a dAPI. In that case, the
-            // sponsor wallet address is also expected to be zero.
-            require(
-                sponsorWallet == address(0),
-                "Sponsor wallet address not zero"
-            );
-        }
-        (
-            bytes32 dapiManagementMerkleRoot,
-            bytes32[] memory dapiManagementMerkleProof
-        ) = abi.decode(dapiManagementMerkleData, (bytes32, bytes32[]));
-        require(
-            hashes[DAPI_MANAGEMENT_MERKLE_ROOT_HASH_TYPE].value ==
-                dapiManagementMerkleRoot,
-            "Invalid root"
-        );
-        require(
-            MerkleProof.verify(
-                dapiManagementMerkleProof,
-                dapiManagementMerkleRoot,
-                keccak256(
-                    bytes.concat(
-                        keccak256(
-                            abi.encode(dapiName, dataFeedId, sponsorWallet)
-                        )
-                    )
-                )
-            ),
-            "Invalid proof"
-        );
-    }
-
-    function verifyDapiPricingMerkleProof(
-        bytes32 dapiName,
-        bytes calldata updateParameters,
-        uint256 duration,
-        uint256 price,
-        bytes calldata dapiPricingMerkleData
-    ) private view {
-        require(dapiName != bytes32(0), "dAPI name zero");
-        require(
-            updateParameters.length == 96,
-            "Update parameters length invalid"
-        );
-        require(duration != 0, "Duration zero");
-        require(price != 0, "Price zero");
-        (
-            bytes32 dapiPricingMerkleRoot,
-            bytes32[] memory dapiPricingMerkleProof
-        ) = abi.decode(dapiPricingMerkleData, (bytes32, bytes32[]));
-        require(
-            hashes[DAPI_PRICING_MERKLE_ROOT_HASH_TYPE].value ==
-                dapiPricingMerkleRoot,
-            "Invalid root"
-        );
-        require(
-            MerkleProof.verify(
-                dapiPricingMerkleProof,
-                dapiPricingMerkleRoot,
-                keccak256(
-                    bytes.concat(
-                        keccak256(
-                            abi.encode(
-                                dapiName,
-                                block.chainid,
-                                updateParameters,
-                                duration,
-                                price
-                            )
-                        )
-                    )
-                )
-            ),
-            "Invalid proof"
-        );
-    }
-
-    function verifySignedApiUrlMerkleProof(
-        address airnode,
-        string calldata signedApiUrl,
-        bytes calldata signedApiUrlMerkleData
-    ) private view {
-        (
-            bytes32 signedApiUrlMerkleRoot,
-            bytes32[] memory signedApiUrlMerkleProof
-        ) = abi.decode(signedApiUrlMerkleData, (bytes32, bytes32[]));
-        require(
-            hashes[SIGNED_API_URL_MERKLE_ROOT_HASH_TYPE].value ==
-                signedApiUrlMerkleRoot,
-            "Invalid root"
-        );
-        require(
-            MerkleProof.verify(
-                signedApiUrlMerkleProof,
-                signedApiUrlMerkleRoot,
-                keccak256(
-                    bytes.concat(keccak256(abi.encode(airnode, signedApiUrl)))
-                )
-            ),
-            "Invalid proof"
-        );
-    }
-
     function addSubscriptionToQueue(
         bytes32 dapiName,
         bytes32 dataFeedId,
@@ -639,5 +510,134 @@ contract Api3MarketV2 is HashRegistryV2 {
             // threshold and the other has better heartbeat interval
             revert("Update parameters incomparable");
         }
+    }
+
+    function validateDataFeedReadiness(bytes32 dataFeedId) private view {
+        (, uint32 timestamp) = IApi3ServerV1(api3ServerV1).dataFeeds(
+            dataFeedId
+        );
+        require(
+            block.timestamp + MAXIMUM_DAPI_UPDATE_AGE >= timestamp,
+            "dAPI value stale"
+        );
+        require(
+            AirseekerRegistry(airseekerRegistry).dataFeedIsRegistered(
+                dataFeedId
+            ),
+            "Data feed not registered"
+        );
+    }
+
+    function verifyDapiManagementMerkleProof(
+        bytes32 dapiName,
+        bytes32 dataFeedId,
+        address sponsorWallet,
+        bytes calldata dapiManagementMerkleData
+    ) private view {
+        require(dapiName != bytes32(0), "dAPI name zero");
+        if (dataFeedId != bytes32(0)) {
+            require(sponsorWallet != address(0), "Sponsor wallet address zero");
+        } else {
+            // A zero `dataFeedId` is used to disable a dAPI. In that case, the
+            // sponsor wallet address is also expected to be zero.
+            require(
+                sponsorWallet == address(0),
+                "Sponsor wallet address not zero"
+            );
+        }
+        (
+            bytes32 dapiManagementMerkleRoot,
+            bytes32[] memory dapiManagementMerkleProof
+        ) = abi.decode(dapiManagementMerkleData, (bytes32, bytes32[]));
+        require(
+            hashes[DAPI_MANAGEMENT_MERKLE_ROOT_HASH_TYPE].value ==
+                dapiManagementMerkleRoot,
+            "Invalid root"
+        );
+        require(
+            MerkleProof.verify(
+                dapiManagementMerkleProof,
+                dapiManagementMerkleRoot,
+                keccak256(
+                    bytes.concat(
+                        keccak256(
+                            abi.encode(dapiName, dataFeedId, sponsorWallet)
+                        )
+                    )
+                )
+            ),
+            "Invalid proof"
+        );
+    }
+
+    function verifyDapiPricingMerkleProof(
+        bytes32 dapiName,
+        bytes calldata updateParameters,
+        uint256 duration,
+        uint256 price,
+        bytes calldata dapiPricingMerkleData
+    ) private view {
+        require(dapiName != bytes32(0), "dAPI name zero");
+        require(
+            updateParameters.length == 96,
+            "Update parameters length invalid"
+        );
+        require(duration != 0, "Duration zero");
+        require(price != 0, "Price zero");
+        (
+            bytes32 dapiPricingMerkleRoot,
+            bytes32[] memory dapiPricingMerkleProof
+        ) = abi.decode(dapiPricingMerkleData, (bytes32, bytes32[]));
+        require(
+            hashes[DAPI_PRICING_MERKLE_ROOT_HASH_TYPE].value ==
+                dapiPricingMerkleRoot,
+            "Invalid root"
+        );
+        require(
+            MerkleProof.verify(
+                dapiPricingMerkleProof,
+                dapiPricingMerkleRoot,
+                keccak256(
+                    bytes.concat(
+                        keccak256(
+                            abi.encode(
+                                dapiName,
+                                block.chainid,
+                                updateParameters,
+                                duration,
+                                price
+                            )
+                        )
+                    )
+                )
+            ),
+            "Invalid proof"
+        );
+    }
+
+    function verifySignedApiUrlMerkleProof(
+        address airnode,
+        string calldata signedApiUrl,
+        bytes calldata signedApiUrlMerkleData
+    ) private view {
+        (
+            bytes32 signedApiUrlMerkleRoot,
+            bytes32[] memory signedApiUrlMerkleProof
+        ) = abi.decode(signedApiUrlMerkleData, (bytes32, bytes32[]));
+        require(
+            hashes[SIGNED_API_URL_MERKLE_ROOT_HASH_TYPE].value ==
+                signedApiUrlMerkleRoot,
+            "Invalid root"
+        );
+        require(
+            MerkleProof.verify(
+                signedApiUrlMerkleProof,
+                signedApiUrlMerkleRoot,
+                keccak256(
+                    bytes.concat(keccak256(abi.encode(airnode, signedApiUrl)))
+                )
+            ),
+            "Invalid proof"
+        );
     }
 }
