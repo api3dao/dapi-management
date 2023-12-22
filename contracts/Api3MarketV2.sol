@@ -294,6 +294,54 @@ contract Api3MarketV2 is HashRegistryV2 {
         }
     }
 
+    function computeExpectedSponsorWalletBalanceAfterSubscriptionIsAdded(
+        bytes32 dapiName,
+        bytes calldata updateParameters,
+        uint256 duration,
+        uint256 price
+    ) external view returns (uint256 expectedSponsorWalletBalance) {
+        (
+            bytes32 subscriptionId,
+            uint32 endTimestamp,
+            bytes32 previousSubscriptionId,
+            bytes32 nextSubscriptionId
+        ) = prospectSubscriptionPositionInQueue(
+                dapiName,
+                updateParameters,
+                duration
+            );
+        uint256 dailyPrice = (price * 1 days) / duration;
+        bytes32 queuedSubscriptionId = dapiNameToCurrentSubscriptionId[
+            dapiName
+        ];
+        if (previousSubscriptionId == bytes32(0)) {
+            queuedSubscriptionId = subscriptionId;
+        }
+        uint32 startTimestamp = uint32(block.timestamp);
+        while (true) {
+            if (queuedSubscriptionId == subscriptionId) {
+                expectedSponsorWalletBalance +=
+                    ((endTimestamp - startTimestamp) * dailyPrice) /
+                    1 days;
+                startTimestamp = endTimestamp;
+                queuedSubscriptionId = nextSubscriptionId;
+            } else if (queuedSubscriptionId == bytes32(0)) {
+                break;
+            } else {
+                Subscription storage queuedSubscription = subscriptions[
+                    queuedSubscriptionId
+                ];
+                expectedSponsorWalletBalance +=
+                    ((queuedSubscription.endTimestamp - startTimestamp) *
+                        queuedSubscription.dailyPrice) /
+                    1 days;
+                startTimestamp = queuedSubscription.endTimestamp;
+                queuedSubscriptionId = subscriptions[queuedSubscriptionId]
+                    .nextSubscriptionId;
+            }
+        }
+    }
+
     function addSubscriptionToQueue(
         bytes32 dapiName,
         bytes32 dataFeedId,
