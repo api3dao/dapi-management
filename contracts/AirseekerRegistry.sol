@@ -311,6 +311,9 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
         return activeDataFeedIdsAndDapiNames.length();
     }
 
+    // Returns "" if the update parameters are not set. The alternative is to
+    // revert, but this is more flexible assuming "" is not valid (which may
+    // not be obvious).
     function dataFeedIdOrDapiNameHashToUpdateParameters(
         bytes32 dataFeedIdOrDapiNameHash
     ) public view returns (bytes memory updateParameters) {
