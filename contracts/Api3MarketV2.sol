@@ -342,6 +342,49 @@ contract Api3MarketV2 is HashRegistryV2 {
         }
     }
 
+    // This also returns the unflushed section. The user should ignore these if
+    // they want to.
+    function getSubscriptionQueue(
+        bytes32 dapiName
+    )
+        external
+        view
+        returns (
+            bytes[] memory updateParameters,
+            uint32[] memory endTimestamps,
+            uint224[] memory dailyPrices
+        )
+    {
+        uint256 queueLength = 0;
+        bytes32 queuedSubscriptionId = dapiNameToCurrentSubscriptionId[
+            dapiName
+        ];
+        while (true) {
+            if (queuedSubscriptionId == bytes32(0)) {
+                break;
+            }
+            queueLength++;
+            queuedSubscriptionId = subscriptions[queuedSubscriptionId]
+                .nextSubscriptionId;
+        }
+        updateParameters = new bytes[](queueLength);
+        endTimestamps = new uint32[](queueLength);
+        dailyPrices = new uint224[](queueLength);
+        queuedSubscriptionId = dapiNameToCurrentSubscriptionId[dapiName];
+        for (uint256 ind = 0; ind < queueLength; ind++) {
+            Subscription storage queuedSubscription = subscriptions[
+                queuedSubscriptionId
+            ];
+            updateParameters[ind] = updateParametersHashToValue[
+                queuedSubscription.updateParametersHash
+            ];
+            endTimestamps[ind] = queuedSubscription.endTimestamp;
+            dailyPrices[ind] = queuedSubscription.dailyPrice;
+            queuedSubscriptionId = subscriptions[queuedSubscriptionId]
+                .nextSubscriptionId;
+        }
+    }
+
     function addSubscriptionToQueue(
         bytes32 dapiName,
         bytes32 dataFeedId,
