@@ -262,17 +262,13 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
                 (dataFeedValue, dataFeedTimestamp) = IApi3ServerV1(api3ServerV1)
                     .dataFeeds(dataFeedId);
                 if (dapiName == bytes32(0)) {
-                    updateParameters = updateParametersHashToValue[
-                        dataFeedIdOrDapiNameHashToUpdateParametersHash[
-                            dataFeedId
-                        ]
-                    ];
+                    updateParameters = dataFeedIdOrDapiNameHashToUpdateParameters(
+                        dataFeedId
+                    );
                 } else {
-                    updateParameters = updateParametersHashToValue[
-                        dataFeedIdOrDapiNameHashToUpdateParametersHash[
-                            keccak256(abi.encodePacked(dapiName))
-                        ]
-                    ];
+                    updateParameters = dataFeedIdOrDapiNameHashToUpdateParameters(
+                        keccak256(abi.encodePacked(dapiName))
+                    );
                 }
                 if (
                     dataFeedDetails.length ==
@@ -305,7 +301,7 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
 
     function dataFeedIdOrDapiNameHashToUpdateParameters(
         bytes32 dataFeedIdOrDapiNameHash
-    ) external view returns (bytes memory updateParameters) {
+    ) public view returns (bytes memory updateParameters) {
         updateParameters = updateParametersHashToValue[
             dataFeedIdOrDapiNameHashToUpdateParametersHash[
                 dataFeedIdOrDapiNameHash
