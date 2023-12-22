@@ -179,14 +179,14 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
             // dataFeedId maps to a Beacon set with at least two Beacons.
             require(
                 dataFeedDetailsLength <= MAXIMUM_DATA_FEED_DETAILS_LENGTH,
-                "Details data too long"
+                "Feed details data too long"
             );
             (address[] memory airnodes, bytes32[] memory templateIds) = abi
                 .decode(dataFeedDetails, (address[], bytes32[]));
             require(
                 abi.encode(airnodes, templateIds).length ==
                     dataFeedDetailsLength,
-                "Trailing data"
+                "Feed details data trail"
             );
             require(
                 airnodes.length == templateIds.length,
