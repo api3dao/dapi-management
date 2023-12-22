@@ -44,6 +44,10 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
     uint256 private constant DATA_FEED_DETAILS_LENGTH_FOR_SINGLE_BEACON =
         32 + 32;
 
+    uint256
+        private constant DATA_FEED_DETAILS_LENGTH_FOR_BEACON_SET_WITH_TWO_BEACONS =
+        (2 * 32) + (32 + 2 * 32) + (32 + 2 * 32);
+
     uint256 private constant MAXIMUM_BEACON_COUNT_IN_SET = 21;
 
     // The length of abi.encode(address[],bytes32[]), where each array has
@@ -159,14 +163,19 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
         bytes calldata dataFeedDetails
     ) external returns (bytes32 dataFeedId) {
         uint256 dataFeedDetailsLength = dataFeedDetails.length;
-        if (dataFeedDetailsLength == 64) {
+        if (
+            dataFeedDetailsLength == DATA_FEED_DETAILS_LENGTH_FOR_SINGLE_BEACON
+        ) {
             // dataFeedId maps to a Beacon
             (address airnode, bytes32 templateId) = abi.decode(
                 dataFeedDetails,
                 (address, bytes32)
             );
             dataFeedId = deriveBeaconId(airnode, templateId);
-        } else if (dataFeedDetailsLength >= 256) {
+        } else if (
+            dataFeedDetailsLength >=
+            DATA_FEED_DETAILS_LENGTH_FOR_BEACON_SET_WITH_TWO_BEACONS
+        ) {
             // dataFeedId maps to a Beacon set with at least two Beacons.
             require(
                 dataFeedDetailsLength <= MAXIMUM_DATA_FEED_DETAILS_LENGTH,
