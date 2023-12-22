@@ -389,7 +389,7 @@ contract Api3MarketV2 is HashRegistryV2 {
         for (; ind < MAXIMUM_SUBSCRIPTION_QUEUE_LENGTH; ind++) {
             if (queuedSubscriptionId == bytes32(0)) {
                 // If the queue was empty, we immediately exit here, which
-                // implies a single item queue consisting of the new
+                // implies a resulting single item queue consisting of the new
                 // subscription.
                 // Alternatively, we may have reached the end of the queue
                 // before being able to find the `nextSubscriptionId`. This
