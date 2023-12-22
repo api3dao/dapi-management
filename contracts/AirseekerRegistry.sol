@@ -264,13 +264,13 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
                 if (dapiName == bytes32(0)) {
                     updateParameters = updateParametersHashToValue[
                         dataFeedIdOrDapiNameHashToUpdateParametersHash[
-                            dataFeedIdOrDapiName
+                            dataFeedId
                         ]
                     ];
                 } else {
                     updateParameters = updateParametersHashToValue[
                         dataFeedIdOrDapiNameHashToUpdateParametersHash[
-                            keccak256(abi.encodePacked(dataFeedIdOrDapiName))
+                            keccak256(abi.encodePacked(dapiName))
                         ]
                     ];
                 }
