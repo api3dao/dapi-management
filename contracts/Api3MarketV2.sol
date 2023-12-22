@@ -320,7 +320,7 @@ contract Api3MarketV2 is HashRegistryV2 {
         subscriptions[subscriptionId] = Subscription({
             updateParametersHash: updateParametersHash,
             endTimestamp: endTimestamp,
-            dailyPrice: uint224((price * duration) / 1 days),
+            dailyPrice: uint224((price * 1 days) / duration),
             nextSubscriptionId: nextSubscriptionId
         });
         if (previousSubscriptionId == bytes32(0)) {
