@@ -65,9 +65,21 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
         _;
     }
 
-    constructor(address api3ServerV1_) {
+    constructor(address owner_, address api3ServerV1_) {
+        require(owner_ != address(0), "Owner address zero");
         require(api3ServerV1_ != address(0), "Api3ServerV1 address zero");
+        _transferOwnership(owner_);
         api3ServerV1 = api3ServerV1_;
+    }
+
+    // Disabled ownership renouncing and transfers to enable this to be
+    // deployed deterministically
+    function renounceOwnership() public virtual override onlyOwner {
+        revert("Cannot renounce ownership");
+    }
+
+    function transferOwnership(address) public virtual override onlyOwner {
+        revert("Cannot transfer ownership");
     }
 
     function setDataFeedIdOrDapiNameToBeActivated(
