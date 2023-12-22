@@ -264,7 +264,7 @@ contract Api3MarketV2 is HashRegistryV2 {
         );
     }
 
-    // This exposed for monitoring
+    // This is exposed for monitoring
     function computeExpectedSponsorWalletBalance(
         bytes32 dapiName
     ) public view returns (uint256 expectedSponsorWalletBalance) {
