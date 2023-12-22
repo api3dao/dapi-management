@@ -126,7 +126,7 @@ contract Api3MarketV2 is HashRegistryV2 {
             "Subscription has not ended"
         );
         // We flush the queue all the way until we have a subscription that has
-        // not ended or the queue is empty. This is safe to do as the queue
+        // not ended or the queue is empty. This is safe to do, as the queue
         // length is bounded by `MAXIMUM_SUBSCRIPTION_QUEUE_LENGTH`.
         while (true) {
             currentSubscriptionId = subscriptions[currentSubscriptionId]
@@ -146,9 +146,8 @@ contract Api3MarketV2 is HashRegistryV2 {
             // may want to change this later
             AirseekerRegistry(airseekerRegistry)
                 .setDataFeedIdOrDapiNameToBeDeactivated(dapiName);
-            // Also not resetting update parameters with dAPI name, mostly
-            // because an all-zero update parameters means "update at every
-            // block", which feels dangerous
+            AirseekerRegistry(airseekerRegistry)
+                .setUpdateParametersWithDapiName(dapiName, "");
         } else {
             AirseekerRegistry(airseekerRegistry)
                 .setUpdateParametersWithDapiName(

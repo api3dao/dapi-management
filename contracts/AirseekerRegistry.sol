@@ -231,6 +231,9 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
     // will be zero/empty.
     // If the respective data feed is identified by a data feed ID and not a
     // dAPI name, `dapiName` will be zero as an indication of that fact.
+    // One can activate a data feed without setting the update parameters, or
+    // by setting invalid update parameters. The user should handle this
+    // possibility.
     function activeDataFeed(
         uint256 index
     )
