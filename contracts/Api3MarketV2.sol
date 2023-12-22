@@ -245,6 +245,17 @@ contract Api3MarketV2 is HashRegistryV2 {
         );
     }
 
+    function deployDapiProxyWithOev(
+        bytes32 dapiName,
+        address oevBeneficiary
+    ) external returns (address proxyAddress) {
+        proxyAddress = IProxyFactory(proxyFactory).deployDapiProxyWithOev(
+            dapiName,
+            oevBeneficiary,
+            ""
+        );
+    }
+
     function registerDataFeed(
         bytes calldata dataFeedDetails
     ) external returns (bytes32 dataFeedId) {
