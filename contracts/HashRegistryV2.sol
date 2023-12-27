@@ -39,7 +39,7 @@ contract HashRegistryV2 is Ownable {
         for (uint256 ind = 1; ind < signersCount; ind++) {
             require(
                 signers[ind] > signers[ind - 1],
-                "Signers duplicated or misordered"
+                "Signers not in ascending order"
             );
         }
         hashTypeToSignersHash[hashType] = keccak256(abi.encodePacked(signers));
