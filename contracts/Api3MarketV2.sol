@@ -152,8 +152,6 @@ contract Api3MarketV2 is HashRegistryV2, ExtendedSelfMulticall {
             // may want to change this later
             AirseekerRegistry(airseekerRegistry)
                 .setDataFeedIdOrDapiNameToBeDeactivated(dapiName);
-            AirseekerRegistry(airseekerRegistry)
-                .setUpdateParametersWithDapiName(dapiName, "");
         } else {
             AirseekerRegistry(airseekerRegistry)
                 .setUpdateParametersWithDapiName(
