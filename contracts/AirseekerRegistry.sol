@@ -9,16 +9,20 @@ import "@api3/airnode-protocol-v1/contracts/api3-server-v1/interfaces/IApi3Serve
 contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
-    event ActivatedDataFeedIdOrDapiName(bytes32 indexed dataFeedIdOrDapiName);
+    event ActivatedDataFeedId(bytes32 indexed dataFeedId);
 
-    event DeactivatedDataFeedIdOrDapiName(bytes32 indexed dataFeedIdOrDapiName);
+    event ActivatedDapiName(bytes32 indexed dapiName);
 
-    event UpdatedUpdateParametersWithDataFeedId(
+    event DeactivatedDataFeedId(bytes32 indexed dataFeedId);
+
+    event DeactivatedDapiName(bytes32 indexed dapiName);
+
+    event UpdatedDataFeedIdUpdateParameters(
         bytes32 indexed dataFeedId,
         bytes updateParameters
     );
 
-    event UpdatedUpdateParametersWithDapiName(
+    event UpdatedDapiNameUpdateParameters(
         bytes32 indexed dapiName,
         bytes updateParameters
     );
@@ -33,12 +37,15 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
 
     mapping(bytes32 => bytes) public dataFeedIdToDetails;
 
-    mapping(bytes32 => bytes32)
-        private dataFeedIdOrDapiNameHashToUpdateParametersHash;
+    mapping(bytes32 => bytes32) private dataFeedIdToUpdateParametersHash;
+
+    mapping(bytes32 => bytes32) private dapiNameToUpdateParametersHash;
 
     mapping(bytes32 => bytes) private updateParametersHashToValue;
 
-    EnumerableSet.Bytes32Set private activeDataFeedIdsAndDapiNames;
+    EnumerableSet.Bytes32Set private activeDataFeedIds;
+
+    EnumerableSet.Bytes32Set private activeDapiNames;
 
     // The length of abi.encode(address,bytes32)
     uint256 private constant DATA_FEED_DETAILS_LENGTH_FOR_SINGLE_BEACON =
@@ -57,11 +64,13 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
             (32 + MAXIMUM_BEACON_COUNT_IN_SET * 32) +
             (32 + MAXIMUM_BEACON_COUNT_IN_SET * 32);
 
-    modifier onlyNonZeroDataFeedIdOrDapiName(bytes32 dataFeedIdOrDapiName) {
-        require(
-            dataFeedIdOrDapiName != bytes32(0),
-            "Data feed ID or dAPI name zero"
-        );
+    modifier onlyNonZeroDataFeedId(bytes32 dataFeedId) {
+        require(dataFeedId != bytes32(0), "Data feed ID zero");
+        _;
+    }
+
+    modifier onlyNonZeroDapiName(bytes32 dapiName) {
+        require(dapiName != bytes32(0), "dAPI name zero");
         _;
     }
 
@@ -82,34 +91,47 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
         revert("Ownership cannot be transferred");
     }
 
-    function setDataFeedIdOrDapiNameToBeActivated(
-        bytes32 dataFeedIdOrDapiName
-    ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dataFeedIdOrDapiName) {
-        if (activeDataFeedIdsAndDapiNames.add(dataFeedIdOrDapiName)) {
-            emit ActivatedDataFeedIdOrDapiName(dataFeedIdOrDapiName);
+    function setDataFeedIdToBeActivated(
+        bytes32 dataFeedId
+    ) external onlyOwner onlyNonZeroDataFeedId(dataFeedId) {
+        if (activeDataFeedIds.add(dataFeedId)) {
+            emit ActivatedDataFeedId(dataFeedId);
         }
     }
 
-    function setDataFeedIdOrDapiNameToBeDeactivated(
-        bytes32 dataFeedIdOrDapiName
-    ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dataFeedIdOrDapiName) {
-        if (activeDataFeedIdsAndDapiNames.remove(dataFeedIdOrDapiName)) {
-            emit DeactivatedDataFeedIdOrDapiName(dataFeedIdOrDapiName);
+    function setDapiNameToBeActivated(
+        bytes32 dapiName
+    ) external onlyOwner onlyNonZeroDapiName(dapiName) {
+        if (activeDapiNames.add(dapiName)) {
+            emit ActivatedDapiName(dapiName);
         }
     }
 
-    function setUpdateParametersWithDataFeedId(
+    function setDataFeedIdToBeDeactivated(
+        bytes32 dataFeedId
+    ) external onlyOwner onlyNonZeroDataFeedId(dataFeedId) {
+        if (activeDataFeedIds.remove(dataFeedId)) {
+            emit DeactivatedDataFeedId(dataFeedId);
+        }
+    }
+
+    function setDapiNameToBeDeactivated(
+        bytes32 dapiName
+    ) external onlyOwner onlyNonZeroDapiName(dapiName) {
+        if (activeDapiNames.remove(dapiName)) {
+            emit DeactivatedDapiName(dapiName);
+        }
+    }
+
+    function setDataFeedIdUpdateParameters(
         bytes32 dataFeedId,
         bytes calldata updateParameters
-    ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dataFeedId) {
+    ) external onlyOwner onlyNonZeroDataFeedId(dataFeedId) {
         bytes32 updateParametersHash = keccak256(updateParameters);
         if (
-            dataFeedIdOrDapiNameHashToUpdateParametersHash[dataFeedId] !=
-            updateParametersHash
+            dataFeedIdToUpdateParametersHash[dataFeedId] != updateParametersHash
         ) {
-            dataFeedIdOrDapiNameHashToUpdateParametersHash[
-                dataFeedId
-            ] = updateParametersHash;
+            dataFeedIdToUpdateParametersHash[dataFeedId] = updateParametersHash;
             if (
                 keccak256(updateParametersHashToValue[updateParametersHash]) !=
                 updateParametersHash
@@ -118,26 +140,20 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
                     updateParametersHash
                 ] = updateParameters;
             }
-            emit UpdatedUpdateParametersWithDataFeedId(
+            emit UpdatedDataFeedIdUpdateParameters(
                 dataFeedId,
                 updateParameters
             );
         }
     }
 
-    function setUpdateParametersWithDapiName(
+    function setDapiNameUpdateParameters(
         bytes32 dapiName,
         bytes calldata updateParameters
-    ) external onlyOwner onlyNonZeroDataFeedIdOrDapiName(dapiName) {
-        bytes32 dapiNameHash = keccak256(abi.encodePacked(dapiName));
+    ) external onlyOwner onlyNonZeroDapiName(dapiName) {
         bytes32 updateParametersHash = keccak256(updateParameters);
-        if (
-            dataFeedIdOrDapiNameHashToUpdateParametersHash[dapiNameHash] !=
-            updateParametersHash
-        ) {
-            dataFeedIdOrDapiNameHashToUpdateParametersHash[
-                dapiNameHash
-            ] = updateParametersHash;
+        if (dapiNameToUpdateParametersHash[dapiName] != updateParametersHash) {
+            dapiNameToUpdateParametersHash[dapiName] = updateParametersHash;
             if (
                 keccak256(updateParametersHashToValue[updateParametersHash]) !=
                 updateParametersHash
@@ -146,10 +162,7 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
                     updateParametersHash
                 ] = updateParameters;
             }
-            emit UpdatedUpdateParametersWithDapiName(
-                dapiName,
-                updateParameters
-            );
+            emit UpdatedDapiNameUpdateParameters(dapiName, updateParameters);
         }
     }
 
@@ -225,10 +238,6 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
         }
     }
 
-    // If the index exceeds the boundaries of the data feed enumeration, all
-    // return parameters will be zero/empty.
-    // If the respective data feed is not registered, all return parameters
-    // will be zero/empty.
     // If the respective data feed is identified by a data feed ID and not a
     // dAPI name, `dapiName` will be zero as an indication of that fact.
     // One can activate a data feed without setting the update parameters, or
@@ -248,81 +257,73 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
             string[] memory signedApiUrls
         )
     {
-        if (index < activeDataFeedIdsAndDapiNames.length()) {
-            bytes32 dataFeedIdOrDapiName = activeDataFeedIdsAndDapiNames.at(
-                index
+        bytes32 dataFeedId;
+        uint256 activeDataFeedIdsLength = activeDataFeedIdCount();
+        if (index < activeDataFeedIdsLength) {
+            dataFeedId = activeDataFeedIds.at(index);
+            updateParameters = dataFeedIdToUpdateParameters(dataFeedId);
+        } else if (index < activeDataFeedIdsLength + activeDapiNames.length()) {
+            dapiName = activeDapiNames.at(index - activeDataFeedIdsLength);
+            dataFeedId = IApi3ServerV1(api3ServerV1).dapiNameHashToDataFeedId(
+                keccak256(abi.encodePacked(dapiName))
             );
-            // Start by guessing that `dataFeedIdOrDapiName` is the ID of a
-            // registered data feed
-            bytes32 dataFeedId = dataFeedIdOrDapiName;
-            dataFeedDetails = dataFeedIdToDetails[dataFeedId];
-            uint256 dataFeedDetailsLength = dataFeedDetails.length;
-            if (dataFeedDetailsLength == 0) {
-                // `dataFeedIdOrDapiName` is not the ID of a registered data
-                // feed. Check if it is the name of a dAPI that points to a
-                // registered data feed.
-                dataFeedId = IApi3ServerV1(api3ServerV1)
-                    .dapiNameHashToDataFeedId(
-                        keccak256(abi.encodePacked(dataFeedIdOrDapiName))
-                    );
-                dataFeedDetails = dataFeedIdToDetails[dataFeedId];
-                dataFeedDetailsLength = dataFeedDetails.length;
-                if (dataFeedDetailsLength != 0) {
-                    // Confirmed that `dataFeedIdOrDapiName` is the name of a
-                    // dAPI that points to a registered data feed
-                    dapiName = dataFeedIdOrDapiName;
-                }
-            }
-            if (dataFeedDetailsLength != 0) {
-                (dataFeedValue, dataFeedTimestamp) = IApi3ServerV1(api3ServerV1)
-                    .dataFeeds(dataFeedId);
-                if (dapiName == bytes32(0)) {
-                    updateParameters = dataFeedIdOrDapiNameHashToUpdateParameters(
-                        dataFeedId
-                    );
-                } else {
-                    updateParameters = dataFeedIdOrDapiNameHashToUpdateParameters(
-                        keccak256(abi.encodePacked(dapiName))
-                    );
-                }
-                if (
-                    dataFeedDetails.length ==
-                    DATA_FEED_DETAILS_LENGTH_FOR_SINGLE_BEACON
-                ) {
-                    signedApiUrls = new string[](1);
-                    signedApiUrls[0] = airnodeToSignedApiUrl[
-                        abi.decode(dataFeedDetails, (address))
-                    ];
-                } else {
-                    address[] memory airnodes = abi.decode(
-                        dataFeedDetails,
-                        (address[])
-                    );
-                    uint256 beaconCount = airnodes.length;
-                    signedApiUrls = new string[](beaconCount);
-                    for (uint256 ind = 0; ind < beaconCount; ind++) {
-                        signedApiUrls[ind] = airnodeToSignedApiUrl[
-                            airnodes[ind]
-                        ];
-                    }
+            updateParameters = dapiNameToUpdateParameters(dapiName);
+        }
+        dataFeedDetails = dataFeedIdToDetails[dataFeedId];
+        (dataFeedValue, dataFeedTimestamp) = IApi3ServerV1(api3ServerV1)
+            .dataFeeds(dataFeedId);
+        if (dataFeedDetails.length != 0) {
+            if (
+                dataFeedDetails.length ==
+                DATA_FEED_DETAILS_LENGTH_FOR_SINGLE_BEACON
+            ) {
+                signedApiUrls = new string[](1);
+                signedApiUrls[0] = airnodeToSignedApiUrl[
+                    abi.decode(dataFeedDetails, (address))
+                ];
+            } else {
+                address[] memory airnodes = abi.decode(
+                    dataFeedDetails,
+                    (address[])
+                );
+                uint256 beaconCount = airnodes.length;
+                signedApiUrls = new string[](beaconCount);
+                for (uint256 ind = 0; ind < beaconCount; ind++) {
+                    signedApiUrls[ind] = airnodeToSignedApiUrl[airnodes[ind]];
                 }
             }
         }
     }
 
     function activeDataFeedCount() external view returns (uint256) {
-        return activeDataFeedIdsAndDapiNames.length();
+        return activeDataFeedIdCount() + activeDapiNameCount();
+    }
+
+    function activeDataFeedIdCount() public view returns (uint256) {
+        return activeDataFeedIds.length();
+    }
+
+    function activeDapiNameCount() public view returns (uint256) {
+        return activeDapiNames.length();
     }
 
     // Returns "" if the update parameters are not set. The user should be
     // recommended to compare the returned value with the used hash.
-    function dataFeedIdOrDapiNameHashToUpdateParameters(
-        bytes32 dataFeedIdOrDapiNameHash
+    function dataFeedIdToUpdateParameters(
+        bytes32 dataFeedId
     ) public view returns (bytes memory updateParameters) {
         updateParameters = updateParametersHashToValue[
-            dataFeedIdOrDapiNameHashToUpdateParametersHash[
-                dataFeedIdOrDapiNameHash
-            ]
+            dataFeedIdToUpdateParametersHash[dataFeedId]
+        ];
+    }
+
+    // Returns "" if the update parameters are not set. The user should be
+    // recommended to compare the returned value with the used hash.
+    function dapiNameToUpdateParameters(
+        bytes32 dapiName
+    ) public view returns (bytes memory updateParameters) {
+        updateParameters = updateParametersHashToValue[
+            dapiNameToUpdateParametersHash[dapiName]
         ];
     }
 
@@ -332,18 +333,6 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
         bytes32 dataFeedId
     ) external view returns (bool) {
         return dataFeedIdToDetails[dataFeedId].length != 0;
-    }
-
-    // `activeDataFeed()` does not return data when the data feed is not
-    // registered. This function is implemented as a workaround to find out
-    // what the active yet unregistered feeds are.
-    function activeDataFeedIdOrDapiName(
-        uint256 index
-    ) external view returns (bytes32) {
-        if (index < activeDataFeedIdsAndDapiNames.length()) {
-            return activeDataFeedIdsAndDapiNames.at(index);
-        }
-        return bytes32(0);
     }
 
     function deriveBeaconId(

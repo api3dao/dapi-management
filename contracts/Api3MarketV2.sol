@@ -150,17 +150,16 @@ contract Api3MarketV2 is HashRegistryV2, ExtendedSelfMulticall {
         if (currentSubscriptionId == bytes32(0)) {
             // Not reseting the dAPI name based on some discussions, though we
             // may want to change this later
-            AirseekerRegistry(airseekerRegistry)
-                .setDataFeedIdOrDapiNameToBeDeactivated(dapiName);
+            AirseekerRegistry(airseekerRegistry).setDapiNameToBeDeactivated(
+                dapiName
+            );
         } else {
-            AirseekerRegistry(airseekerRegistry)
-                .setUpdateParametersWithDapiName(
-                    dapiName,
-                    updateParametersHashToValue[
-                        subscriptions[currentSubscriptionId]
-                            .updateParametersHash
-                    ]
-                );
+            AirseekerRegistry(airseekerRegistry).setDapiNameUpdateParameters(
+                dapiName,
+                updateParametersHashToValue[
+                    subscriptions[currentSubscriptionId].updateParametersHash
+                ]
+            );
         }
     }
 
@@ -460,10 +459,13 @@ contract Api3MarketV2 is HashRegistryV2, ExtendedSelfMulticall {
         });
         if (previousSubscriptionId == bytes32(0)) {
             dapiNameToCurrentSubscriptionId[dapiName] = subscriptionId;
-            AirseekerRegistry(airseekerRegistry)
-                .setUpdateParametersWithDapiName(dapiName, updateParameters);
-            AirseekerRegistry(airseekerRegistry)
-                .setDataFeedIdOrDapiNameToBeActivated(dapiName);
+            AirseekerRegistry(airseekerRegistry).setDapiNameUpdateParameters(
+                dapiName,
+                updateParameters
+            );
+            AirseekerRegistry(airseekerRegistry).setDapiNameToBeActivated(
+                dapiName
+            );
             // Let's not emit SetDapiName events for no reason
             bytes32 currentDataFeedId = IApi3ServerV1(api3ServerV1)
                 .dapiNameHashToDataFeedId(
