@@ -60,7 +60,7 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
     modifier onlyNonZeroDataFeedIdOrDapiName(bytes32 dataFeedIdOrDapiName) {
         require(
             dataFeedIdOrDapiName != bytes32(0),
-            "dAPI name or data feed ID zero"
+            "Data feed ID or dAPI name zero"
         );
         _;
     }
@@ -75,11 +75,11 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
     // Disabled ownership renouncing and transfers to enable this to be
     // deployed deterministically
     function renounceOwnership() public virtual override onlyOwner {
-        revert("Cannot renounce ownership");
+        revert("Ownership cannot be renounced");
     }
 
     function transferOwnership(address) public virtual override onlyOwner {
-        revert("Cannot transfer ownership");
+        revert("Ownership cannot be transferred");
     }
 
     function setDataFeedIdOrDapiNameToBeActivated(
