@@ -340,8 +340,12 @@ contract Api3MarketV2 is HashRegistryV2, ExtendedSelfMulticall {
                         queuedSubscription.dailyPrice) /
                     1 days;
                 startTimestamp = queuedSubscription.endTimestamp;
-                queuedSubscriptionId = subscriptions[queuedSubscriptionId]
-                    .nextSubscriptionId;
+                if (previousSubscriptionId == queuedSubscriptionId) {
+                    queuedSubscriptionId = subscriptionId;
+                } else {
+                    queuedSubscriptionId = subscriptions[queuedSubscriptionId]
+                        .nextSubscriptionId;
+                }
             }
         }
     }
