@@ -271,9 +271,11 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
             );
             updateParameters = dapiNameToUpdateParameters(dapiName);
         }
-        dataFeedDetails = dataFeedIdToDetails[dataFeedId];
-        (dataFeedValue, dataFeedTimestamp) = IApi3ServerV1(api3ServerV1)
-            .dataFeeds(dataFeedId);
+        if (dataFeedId != bytes32(0)) {
+            dataFeedDetails = dataFeedIdToDetails[dataFeedId];
+            (dataFeedValue, dataFeedTimestamp) = IApi3ServerV1(api3ServerV1)
+                .dataFeeds(dataFeedId);
+        }
         if (dataFeedDetails.length != 0) {
             if (
                 dataFeedDetails.length ==
