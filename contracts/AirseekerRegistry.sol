@@ -196,6 +196,7 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
                 dataFeedDetails,
                 (address, bytes32)
             );
+            require(airnode != address(0), "Airnode address zero");
             dataFeedId = deriveBeaconId(airnode, templateId);
         } else if (
             dataFeedDetailsLength >=
@@ -220,6 +221,7 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
             );
             bytes32[] memory beaconIds = new bytes32[](beaconCount);
             for (uint256 ind = 0; ind < beaconCount; ind++) {
+                require(airnodes[ind] != address(0), "Airnode address zero");
                 beaconIds[ind] = deriveBeaconId(
                     airnodes[ind],
                     templateIds[ind]
