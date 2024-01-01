@@ -83,11 +83,11 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
 
     // Disabled ownership renouncing and transfers to enable this to be
     // deployed deterministically
-    function renounceOwnership() public virtual override onlyOwner {
+    function renounceOwnership() public virtual override {
         revert("Ownership cannot be renounced");
     }
 
-    function transferOwnership(address) public virtual override onlyOwner {
+    function transferOwnership(address) public virtual override {
         revert("Ownership cannot be transferred");
     }
 
