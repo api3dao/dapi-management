@@ -889,8 +889,7 @@ describe('AirseekerRegistry', function () {
           });
           context('Data feed is a Beacon', function () {
             it('returns data feed ID, details, reading, update parameters and the respective signed API URL', async function () {
-              const { roles, airnodes, api3ServerV1, dataFeedId, airseekerRegistry, signedApiUrls } =
-                await helpers.loadFixture(deploy);
+              const { roles, api3ServerV1, airseekerRegistry, signedApiUrls } = await helpers.loadFixture(deploy);
               const templateId = deriveTemplateId(
                 `OIS title of Airnode with address ${roles.airnode1.address}`,
                 'ETH/USD'
@@ -961,8 +960,7 @@ describe('AirseekerRegistry', function () {
           });
           context('Data feed is a Beacon', function () {
             it('returns data feed ID, details, reading and the respective signed API URL', async function () {
-              const { roles, airnodes, api3ServerV1, dataFeedId, airseekerRegistry, signedApiUrls } =
-                await helpers.loadFixture(deploy);
+              const { roles, api3ServerV1, airseekerRegistry, signedApiUrls } = await helpers.loadFixture(deploy);
               const templateId = deriveTemplateId(
                 `OIS title of Airnode with address ${roles.airnode1.address}`,
                 'ETH/USD'
@@ -1031,8 +1029,9 @@ describe('AirseekerRegistry', function () {
             });
             context('Data feed is a Beacon', function () {
               it('returns data feed ID, dAPI name, details, reading, update parameters and the respective signed API URL', async function () {
-                const { roles, airnodes, api3ServerV1, dataFeedId, dapiName, airseekerRegistry, signedApiUrls } =
-                  await helpers.loadFixture(deploy);
+                const { roles, api3ServerV1, dapiName, airseekerRegistry, signedApiUrls } = await helpers.loadFixture(
+                  deploy
+                );
                 const templateId = deriveTemplateId(
                   `OIS title of Airnode with address ${roles.airnode1.address}`,
                   'ETH/USD'
@@ -1106,7 +1105,7 @@ describe('AirseekerRegistry', function () {
             });
             context('Data feed is a Beacon', function () {
               it('returns data feed ID, dAPI name, details, reading and the respective signed API URL', async function () {
-                const { roles, airnodes, api3ServerV1, dataFeedId, dapiName, airseekerRegistry, signedApiUrls } =
+                const { roles, api3ServerV1, dataFeedId, dapiName, airseekerRegistry, signedApiUrls } =
                   await helpers.loadFixture(deploy);
                 const templateId = deriveTemplateId(
                   `OIS title of Airnode with address ${roles.airnode1.address}`,
