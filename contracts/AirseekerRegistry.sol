@@ -249,6 +249,7 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
         external
         view
         returns (
+            bytes32 dataFeedId,
             bytes32 dapiName,
             bytes memory dataFeedDetails,
             int224 dataFeedValue,
@@ -257,7 +258,6 @@ contract AirseekerRegistry is Ownable, ExtendedSelfMulticall {
             string[] memory signedApiUrls
         )
     {
-        bytes32 dataFeedId;
         uint256 activeDataFeedIdsLength = activeDataFeedIdCount();
         if (index < activeDataFeedIdsLength) {
             dataFeedId = activeDataFeedIds.at(index);
