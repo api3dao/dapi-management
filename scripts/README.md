@@ -110,6 +110,12 @@ DATABASE_USER=
 DATABASE_PASSWORD=
 ```
 
+Run the script with:
+
+```shell
+node scripts/generate-dapi-pricing-mt.js
+```
+
 This script generates the dAPI pricing merkle tree by connecting to the `data-collectors` database and querying for three sets of data:
 
 1. The average daily update count for all `BeaconSets` found in `/data/dapis.json`. These are calculated from data fetched from each provider's Signed API.
