@@ -26,10 +26,6 @@ export function validateTreeRootSignatures(
   }, {} as Record<string, string>);
 }
 
-export function createDapiFallbackMerkleTree(values: string[][]) {
-  return StandardMerkleTree.of(values, ['bytes32', 'bytes32', 'address']);
-}
-
 export function createDapiManagementMerkleTree(values: string[][]) {
   return StandardMerkleTree.of(values, ['bytes32', 'bytes32', 'address']);
 }
@@ -42,13 +38,11 @@ export function createSignedApiUrlMerkleTree(values: string[][]) {
   return StandardMerkleTree.of(values, ['address', 'string']);
 }
 
-export const DAPI_FALLBACK_MERKLE_TREE_TYPE = 'dAPI fallback Merkle tree';
 export const DAPI_PRICING_MERKLE_TREE_TYPE = 'dAPI pricing Merkle tree';
 export const DAPI_MANAGEMENT_MERKLE_TREE_TYPE = 'dAPI management Merkle tree';
 export const SIGNED_API_URL_MERKLE_TREE_TYPE = 'Signed API URL Merkle tree';
 
 export type TreeType =
-  | typeof DAPI_FALLBACK_MERKLE_TREE_TYPE
   | typeof DAPI_PRICING_MERKLE_TREE_TYPE
   | typeof DAPI_MANAGEMENT_MERKLE_TREE_TYPE
   | typeof SIGNED_API_URL_MERKLE_TREE_TYPE;

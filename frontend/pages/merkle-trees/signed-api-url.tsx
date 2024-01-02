@@ -4,6 +4,7 @@ import RootLayout from '~/components/root-layout';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '~/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import {
+  PageHeading,
   TreeStatusBadge,
   TreeRootBadge,
   SignRootButton,
@@ -62,11 +63,9 @@ export default function SignedApiUrlTree(props: Props) {
 
   return (
     <RootLayout>
-      <div>
-        <TreeStatusBadge signatures={signatures} />
-      </div>
-      <h1 className="mb-2 text-3xl font-bold">Signed API URL Merkle Tree</h1>
-      <TreeRootBadge className="mb-3" root={currentTree.hash} />
+      <TreeStatusBadge signatures={signatures} />
+      <PageHeading>Signed API URL Merkle Tree</PageHeading>
+      <TreeRootBadge className="mb-5" root={currentTree.hash} />
 
       <div className="mb-10">
         <SignRootButton signatures={signatures} signRoot={signRoot} isSigning={isSigning} />
@@ -140,5 +139,5 @@ function RawValuesTable(props: RawValuesTableProps) {
 }
 
 function getProviders(airnodeAddress: string) {
-  return getOisTitlesWithAirnodeAddress(airnodeAddress)?.join(', ') || 'unknown';
+  return getOisTitlesWithAirnodeAddress(airnodeAddress)?.join(', ') || 'Unknown';
 }

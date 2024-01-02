@@ -4,14 +4,14 @@ import { deriveTreeHash } from './merkle-tree-utils';
 describe('deriveTreeHash', () => {
   it('produces the expected result', () => {
     const result = deriveTreeHash(
-      'dAPI fallback Merkle tree root',
-      '0x508b6d6bd706095091bc3cb96716d12a8e803f3b2b85a7cdc0274486452de6ec',
-      1676940000
+      'dAPI management Merkle tree root',
+      '0x513c019f1736f1880f20b1d45f2a490621657eb78f5b7d811b87458ef28c3092',
+      1702556115
     );
     expect(result).toEqual(
       new Uint8Array([
-        64, 122, 34, 79, 186, 15, 158, 201, 191, 246, 38, 21, 71, 244, 79, 42, 189, 223, 110, 207, 101, 73, 73, 204, 58,
-        109, 86, 105, 29, 194, 201, 121,
+        81, 157, 16, 83, 80, 110, 70, 53, 142, 65, 94, 204, 192, 225, 18, 141, 75, 60, 15, 73, 35, 186, 143, 176, 176,
+        56, 0, 20, 156, 52, 38, 190,
       ])
     );
   });

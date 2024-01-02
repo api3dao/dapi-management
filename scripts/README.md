@@ -1,43 +1,3 @@
-## Usage Of Merkle Tree Signing Scripts
-
-### 1. Prepare JSON Files:
-
-- Navigate to the respective directory under `data/` corresponding to each Merkle tree.
-- Transfer the contents of `current-hash.json` into `previous-hash.json`.
-- Update `current-hash.json` with the new values. Ensure it follows the format:
-
-```json
-{
-  "timestamp": [Unix Timestamp in seconds],
-  "hash": "[Merkle Root Hash]",
-  "signatures": {
-  },
-  "merkleTreeValues": {
-    "values": [...]
-  },
-}
-```
-
-### 2. Run the Script:
-
-- Execute the script for a specific Merkle tree:
-
-```bash
-yarn sign [MerkleTreeName]
-```
-
-For instance, to sign the `dAPI fallback Merkle tree` Merkle tree, you would use:
-
-```bash
-yarn sign "dAPI fallback Merkle tree"
-```
-
-This command constructs the Merkle tree based on the data, signs the root, and updates `current-hash.json` in the specified directory.
-
-### 3. Verification:
-
-- After running the script, confirm that `current-hash.json` is updated with the new Merkle root and the signature.
-
 ## Data File Details
 
 - **current-hash.json:** Stores the state of the Merkle tree. Updated by the script with each execution, recording the new Merkle root, signatures, and the timestamp.
@@ -62,14 +22,7 @@ This command constructs the Merkle tree based on the data, signs the root, and u
   - **Data Feed ID (bytes32)**: Identifier for the data feed.
   - **dAPI Sponsor Wallet Address (address)**: Wallet address of the dAPI sponsor wallet.
 
-### 3. dAPI fallback Merkle Tree
-
-- **Values**:
-  - **dAPI Name (bytes32)**: dAPI name string formatted as bytes32.
-  - **Data Feed ID (bytes32)**: Identifier for the data feed.
-  - **Sponsor Wallet Address (address)**: Address of the sponsor wallet.
-
-### 4. Signed API URL Merkle Tree
+### 3. Signed API URL Merkle Tree
 
 - **Values**:
   - **Airnode Address (address)**: The contract address of the Airnode.
@@ -84,19 +37,6 @@ The following code snippet shows how we derive the type of Signed API URL Merkle
 ```js
 keccak256(abi.encodePacked('Signed API URL Merkle tree root'));
 ```
-
-## How to update the dAPI Fallback Merkle Tree
-
-1. Update the @nodary/utilities package to the desired version.
-
-2. Run the `sync-dapi-fallback-values` script as follows:
-
-```bash
-yarn sync-dapi-fallback-values
-```
-
-This command checks the values in `current-hash.json` and compares it with what `@nodary/utilities` has. If they are not equal
-it saves the `current-hash.json` to `previous-hash.json` and updates `current-hash.json` with the new values.
 
 ## dAPI Pricing Merkle Tree Generation Script Details
 

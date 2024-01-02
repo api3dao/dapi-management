@@ -7,10 +7,6 @@ const {
 const { deriveWalletPathFromSponsorAddress } = require('@api3/airnode-node/dist/src/evm');
 const { airseekerXPub } = require('../data/airseeker.json');
 
-function createDapiFallbackMerkleTree(values) {
-  return StandardMerkleTree.of(values, ['bytes32', 'bytes32', 'address']);
-}
-
 function createDapiManagementMerkleTree(values) {
   return StandardMerkleTree.of(values, ['bytes32', 'bytes32', 'address']);
 }
@@ -29,9 +25,6 @@ function deriveTreeHash(hashType, treeRoot, timestamp) {
   );
 }
 
-function getDapiFallbackHashType() {
-  return ethers.utils.solidityKeccak256(['string'], ['dAPI fallback Merkle tree root']);
-}
 function getDapiManagementHashType() {
   return ethers.utils.solidityKeccak256(['string'], ['dAPI management Merkle tree root']);
 }
@@ -65,18 +58,17 @@ function deriveBeaconSetId(dataFeedName, apiProviders) {
 
 const PROTOCOL_ID_AIRSEEKER = '5';
 function deriveSponsorWalletAddress(dapiNameInBytes32) {
-  const sponsorAddress = ethers.utils.getAddress(dapiNameInBytes32.slice(0, 42));
+  const hashedDapiName = ethers.utils.keccak256(dapiNameInBytes32);
+  const sponsorAddress = ethers.utils.getAddress(hashedDapiName.slice(0, 42));
   const airnodeHdNode = ethers.utils.HDNode.fromExtendedKey(airseekerXPub);
   return airnodeHdNode.derivePath(deriveWalletPathFromSponsorAddress(sponsorAddress, PROTOCOL_ID_AIRSEEKER)).address;
 }
 
 module.exports = {
-  createDapiFallbackMerkleTree,
   createDapiManagementMerkleTree,
   createDapiPricingMerkleTree,
   createSignedApiUrlMerkleTree,
   deriveTreeHash,
-  getDapiFallbackHashType,
   getDapiManagementHashType,
   getDapiPricingHashType,
   getSignedApiUrlHashType,
