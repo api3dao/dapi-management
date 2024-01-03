@@ -5,16 +5,14 @@ import * as api3Integrations from '@api3/api-integrations';
 
 function supportedChainIds() {
   return supportedChains
-    .map((alias: string) => {
+    .map((alias) => {
       const chain = api3Chains.CHAINS.find((chain) => chain.alias === alias);
       if (!chain) {
         throw new Error(`Chain ${alias} does not exist`);
       }
       return chain.id;
     })
-    .sort((a: string, b: string) => parseInt(a) - parseInt(b));
+    .sort((a, b) => parseInt(a) - parseInt(b));
 }
-
-console.log('Supported chains:', supportedChainIds());
 
 export { dapis, supportedChainIds, api3Chains, api3Integrations };
