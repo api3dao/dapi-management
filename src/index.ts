@@ -3,7 +3,7 @@ import supportedChains from './generated/supported-chains.json';
 import * as api3Chains from '@api3/chains';
 import * as api3Integrations from '@api3/api-integrations';
 
-function supportedChainIds() {
+function getSupportedChainIds() {
   return supportedChains
     .map((alias) => {
       const chain = api3Chains.CHAINS.find((chain) => chain.alias === alias);
@@ -15,4 +15,4 @@ function supportedChainIds() {
     .sort((a, b) => parseInt(a) - parseInt(b));
 }
 
-export { dapis, supportedChainIds, api3Chains, api3Integrations };
+export { dapis, getSupportedChainIds, api3Chains, api3Integrations };
