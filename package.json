@@ -8,12 +8,14 @@
     "url": "https://github.com/api3dao/dapi-management.git"
   },
   "private": false,
-  "main": "src/index.js",
+  "main": "dist/src/index.js",
   "files": [
-    "src"
+    "dist"
   ],
   "scripts": {
     "build": "hardhat compile",
+    "build:package": "rm -rf ./dist && node scripts/generate-supported-chains.js && tsc --project tsconfig.build.json",
+    "prepublishOnly": "yarn build:package",
     "lint": "yarn run format:check && yarn run lint:eslint && yarn run lint:solhint",
     "lint:solhint": "solhint ./contracts/**/*.sol",
     "lint:eslint": "eslint . --ext .js,.ts,.tsx",
