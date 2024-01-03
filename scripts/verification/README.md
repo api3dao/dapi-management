@@ -7,7 +7,7 @@ The `scripts/verify-data.js` script verifies all merkle tree data and has two di
 For each current merkle tree (`current-hash.json`) we assert that:
 
 - the `hash` value matches the constructed merkle tree root
-- the `signatures` keys match the hash signers exactly (from `hash-signers.json`)
+- the `signatures` keys match the hash signers exactly (from `hash-signers.json`). The order of the `signatures` keys must match the order of the hash signers, otherwise the assertion fails
 - all signatures are valid
 
 ### dAPI Management Merkle tree
@@ -15,14 +15,14 @@ For each current merkle tree (`current-hash.json`) we assert that:
 Additional assertions include that:
 
 - all Data Feed IDs are derived from the dAPI Name and corresponding API Providers
-- all Sponsor Wallet Addresses are derived from the dAPI Name
+- all Sponsor Wallet addresses are derived from the dAPI Name
 - the `hash` value from `previous-hash.json` matches the constructed merkle tree root
 
 ### Signed API URL Merkle tree
 
 Additional assertions include that:
 
-- we have API Providers (in the `@api3/api-integrations` package) for all Airnode Addresses
+- we have API Providers (in the `@api3/api-integrations` package) for all Airnode addresses
 - the `hash` value from `previous-hash.json` matches the constructed merkle tree root
 
 ## Part 2: Verify all merkle tree data against the deployed `HashRegistry` contracts
