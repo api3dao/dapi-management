@@ -61,7 +61,7 @@ function checkDeviation(currentValue, nextValue, threshold) {
   return percentageDifference > threshold;
 }
 
-// This function is copied from utils, but removes the nodary restriction since we need the BeaconSet consituent dataFeedIds as well
+// This function is copied from utils, but removes the nodary restriction since we need the BeaconSet constituent dataFeedIds as well
 function deriveDataFeedId(dapiName, apiProviders) {
   if (apiProviders.length === 1) {
     const airnodeAddress = getAirnodeAddressByAlias(apiProviders[0]);
