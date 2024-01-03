@@ -80,3 +80,7 @@ The config contains these fields.
 - `chainSingleUpdateGasCosts`: chain specific single update costs including layer 1 and layer 2 values.
 - `chainIdToGasOracleContractAddress`: the address of a chain's gas oracle contract (must be defined for `optimism`-style chains).
 - `chainNativeTokenPrices`: The token prices for `Mantle` and `Ethereum`, in USD.
+
+## Data Verification
+
+See [documentation](verification/README.md)
