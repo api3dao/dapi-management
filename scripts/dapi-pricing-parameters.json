@@ -39,8 +39,8 @@
     "421613": { "fixedGasCost": 145000, "l1FixedGasCost": 15000 },
     "8453": { "fixedGasCost": 173000, "l1FixedGasCost": 27888 },
     "84531": { "fixedGasCost": 173000, "l1FixedGasCost": 27888 },
-    "5000": { "fixedGasCost": 173000, "l1FixedGasCost": 1850 },
-    "5001": { "fixedGasCost": 173000, "l1FixedGasCost": 1850 }
+    "5000": { "fixedGasCost": 173000, "l1FixedGasCost": 1854 },
+    "5001": { "fixedGasCost": 173000, "l1FixedGasCost": 1854 }
   },
   "chainIdToGasOracleContractAddress": {
     "534353": "0x5300000000000000000000000000000000000002",
