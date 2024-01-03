@@ -38,6 +38,49 @@ The following code snippet shows how we derive the type of Signed API URL Merkle
 keccak256(abi.encodePacked('Signed API URL Merkle tree root'));
 ```
 
+## dAPI Pricing Merkle Tree Generation Script Details
+
+Before running the script, add database connection credentials in `/.env` (you can get these values from Vekil or Aaron):
+
+```shell
+DATABASE_HOST=
+DATABASE_PORT=
+DATABASE_NAME=
+DATABASE_USER=
+DATABASE_PASSWORD=
+```
+
+Run the script with:
+
+```shell
+node scripts/generate-dapi-pricing-mt.js
+```
+
+This script generates the dAPI pricing merkle tree by connecting to the `data-collectors` database and querying for three sets of data:
+
+1. The average daily update count for all `BeaconSets` found in `/data/dapis.json`. These are calculated from data fetched from each provider's Signed API.
+2. The average chain gas prices from data collected by the gas collectors.
+3. The gas cost of a single BeaconSet update on each chain. The script file contains gas cost formulas for each chain.
+
+Finally, dAPI prices and the pricing merkle tree is generated.
+
+Configure the script parameters in `/scripts/dapi-pricing-parameters.json` and make sure to commit the changes for the script results to be replicable by others.
+
+The config contains these fields.
+
+- `startDate`: calculation start date
+- `endDate`: calculation end date.
+- `updateCountOptions`: the Airseeker configurations (`deviationThreshold` and `heartbeatInterval`) to calculate update counts for.
+- `updateCountCheckFrequency`: the frequency to check signed data for exceeding deviations, in seconds.
+- `defaultSingleUpdateGasCost`: the default fixed gas cost.
+- `defaultGasMultiplier`: the default chain gas multiplier (up to two decimals) to use for chains not defined in `chainGasMultipliers`.
+- `defaultSubscriptionDuration`: the default subscription period to use for chains not defined in `chainSubscriptionDurations`, in days.
+- `chainSubscriptionDurations`: chain specific subscription durations, in days.
+- `chainGasMultipliers`: chain specific gas multipliers (up to two decimlas).
+- `chainSingleUpdateGasCosts`: chain specific single update costs including layer 1 and layer 2 values.
+- `chainIdToGasOracleContractAddress`: the address of a chain's gas oracle contract (must be defined for `optimism`-style chains).
+- `chainNativeTokenPrices`: The token prices for `Mantle` and `Ethereum`, in USD.
+
 ## Data Verification
 
 See [documentation](verification/README.md)
